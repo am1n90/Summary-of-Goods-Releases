@@ -3554,8 +3554,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.2.1';
-var APP_BUILD = '2026-08-28T20:11:18.140Z';
+var APP_VERSION = '1.2.2';
+var APP_BUILD = '2026-08-28T21:13:01.874Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -3828,14 +3828,26 @@ function pubGetCore(cfg, info, cb){
       var rate = pubRateOf(status, j && JSON.stringify(j));
       cb(rate || err); return;
     }
-    if (!j || !j.content){ cb('shape'); return; }
+    if (!j || typeof j !== 'object'){ cb('shape'); return; }
+    /* Размер спрашивается ДО чтения: незачем качать сорок мегабайт,
+       чтобы потом отказаться. Он в БАЙТАХ — это ответ сервера, а не
+       длина строки. */
     if (j.size && j.size > PUB_MAX){ cb('shape'); return; }
-    var text = b64dec(j.content);
-    if (text === null){ cb('shape'); return; }
-    if (info.size && text.length !== info.size){ cb('size'); return; }
-    if (info.hash && updHash(text) !== info.hash){ cb('hash'); return; }
-    if (text.indexOf('GoodsTracker') < 0 || text.indexOf('<html') < 0){ cb('shape'); return; }
-    cb(null, text);
+    /* Ядро весит больше мегабайта, а Contents API отдаёт содержимое
+       только до него — и меряет БАЙТЫ, которых у русского текста вдвое
+       больше, чем символов. Поэтому читает ghFileText(): при пустом
+       `content` он доберёт текст из git/blobs. Пока этого здесь не
+       было, продуктовое обновление отказывало ВСЕГДА — и наборы этого
+       не видели, потому что поддельный GitHub отдавал содержимое
+       всегда. */
+    ghFileText(cfg, j, function(e2, text){
+      if (e2){ cb(e2); return; }
+      if (text === null){ cb('shape'); return; }
+      if (info.size && text.length !== info.size){ cb('size'); return; }
+      if (info.hash && updHash(text) !== info.hash){ cb('hash'); return; }
+      if (text.indexOf('GoodsTracker') < 0 || text.indexOf('<html') < 0){ cb('shape'); return; }
+      cb(null, text);
+    });
   });
 }
 
@@ -5279,6 +5291,56 @@ function ghUrl(cfg){
          '/contents/' + out.join('/');
 }
 
+/* ==================================================================
+ * ++++++ BIG CORE ++++++     ЧТЕНИЕ ФАЙЛА ИЗ РЕПОЗИТОРИЯ — ОДНО НА ВСЕХ
+ *
+ * ES5. Одна функция, и она отвечает на один вопрос: «дай мне ТЕКСТ
+ * файла, ответ на который уже пришёл из Contents API».
+ *
+ * ПОЧЕМУ ЭТО НЕ ОДИН ЗАПРОС. Contents API отдаёт содержимое только до
+ * 1 МБ — и меряет он БАЙТЫ UTF-8, а не символы. Ядро в 844 тысячи
+ * символов весит 1 063 тысячи байт, потому что почти весь его текст
+ * русский: предел уже перейдён. Тогда GitHub отвечает 200, но с пустым
+ * `content`, `encoding: "none"` и одним лишь `sha` — по нему текст
+ * берётся из git/blobs, где предел 100 МБ. Тот же хост, тот же ключ,
+ * никакого нового адреса.
+ *
+ * ПОЧЕМУ ФУНКЦИЯ ОДНА. У обмена документом эта вторая ветка была с
+ * самого начала; у обновления ядра её не было — и продуктовое ядро не
+ * могло приехать ВООБЩЕ, ни на одном устройстве. Два ответа на один
+ * вопрос разошлись молча, и заметить это можно было только выложив
+ * настоящий файл: поддельный GitHub в наборах отдавал `content`
+ * всегда, потому и был зелёным.
+ *
+ * ЧЕГО ЗДЕСЬ НЕТ: решений о том, годится ли этот текст. Размер,
+ * отпечаток, «это вообще ядро?» — забота вызывающего, и у обмена с
+ * обновлением они разные.
+ * ================================================================== */
+
+/* cb(err, text). `j` — уже разобранный ответ Contents API. */
+function ghFileText(cfg, j, cb){
+  if (!j || typeof j !== 'object'){ cb('server'); return; }
+  if (j.content){
+    var text = b64dec(j.content);
+    if (text === null){ cb('server'); return; }
+    cb(null, text);
+    return;
+  }
+  /* Пустой `content` без `sha` — ответ, из которого текст не достать
+     ничем: это не «файл пуст», это «ответ не тот». */
+  if (!j.sha){ cb('server'); return; }
+  var burl = 'https://api.github.com/repos/' +
+             encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) +
+             '/git/blobs/' + encodeURIComponent(j.sha);
+  ghReq(cfg, 'GET', burl, null, function(e2, b){
+    if (e2){ cb(e2); return; }
+    if (!b || !b.content){ cb('server'); return; }
+    var t2 = b64dec(b.content);
+    if (t2 === null){ cb('server'); return; }
+    cb(null, t2);
+  });
+}
+
 /* ---- забрать документ ------------------------------------------- */
 /* cb(err, res). res = { text, sha } либо { empty:true } — файла ещё нет,
    и это НЕ ошибка: так выглядит первый запуск на чистом репозитории. */
@@ -5291,26 +5353,15 @@ function ghGetDoc(cfg, cb){
     if (err){ cb(err); return; }
     if (!j || typeof j !== 'object'){ cb('server'); return; }
     if (j.size && j.size > SYNC_MAX){ cb('big'); return; }
-    /* Contents API отдаёт содержимое только до 1 МБ. Больше — пустая
-       строка и `sha`, по которому текст берётся из blobs. Документ на
-       1550 записей весит 414 КБ, так что вторая ветка — это запас,
-       а не обычный путь. */
-    if (j.content){
-      var text = b64dec(j.content);
-      if (text === null){ cb('server'); return; }
-      cb(null, { text: text, sha: String(j.sha) });
-      return;
-    }
-    if (!j.sha){ cb('server'); return; }
-    var burl = 'https://api.github.com/repos/' +
-               encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) +
-               '/git/blobs/' + encodeURIComponent(j.sha);
-    ghReq(cfg, 'GET', burl, null, function(e2, b){
+    /* Читает ghFileText() — та же дверь, которой пользуется обновление
+       ядра. Второй такой ветки в файле быть не должно: пока их было
+       две, у одной она была, а у другой нет, и это не давало ошибки
+       нигде. */
+    if (!j.sha && !j.content){ cb('server'); return; }
+    var docSha = String(j.sha);
+    ghFileText(cfg, j, function(e2, text){
       if (e2){ cb(e2); return; }
-      if (!b || !b.content){ cb('server'); return; }
-      var t2 = b64dec(b.content);
-      if (t2 === null){ cb('server'); return; }
-      cb(null, { text: t2, sha: String(j.sha) });
+      cb(null, { text: text, sha: docSha });
     });
   });
 }
