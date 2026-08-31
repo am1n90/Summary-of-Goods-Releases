@@ -2422,8 +2422,41 @@ var STR = {
                  ru:'Выход выполнен. Записи остались на этом устройстве.' },
 'gd.worksWithout': { en:'The app works without signing in: everything is here and the records are on this device. Signing in is only for syncing between devices.',
                  ru:'Программа работает и без входа: все возможности на месте, записи лежат на этом устройстве. Вход нужен только для обмена между устройствами.' },
-'gd.noFiles':  { en:'Photos and invoices do not travel between devices: they stay where they were added.',
-                 ru:'Фотографии и накладные не ездят между устройствами: они остаются там, где их добавили.' },
+/* ++++++ ATT SYNC ++++++ обмен вложениями */
+'att.unitGB':  { en:'GB', ru:'ГБ' },
+'as.coming':   { en:'The file is on its way — it was added on another device.',
+                 ru:'Файл ещё едет — его добавили на другом устройстве.' },
+'as.gone':     { en:'The file was deleted.', ru:'Файл удалён.' },
+'as.space':    { en:'{used} used · {free} free',
+                 ru:'занято {used} · свободно {free}' },
+'as.spaceUnlimited': { en:'{used} used · storage is not limited',
+                 ru:'занято {used} · место не ограничено' },
+'as.spaceFailed':    { en:'{used} used · could not read the free space',
+                 ru:'занято {used} · свободное узнать не удалось' },
+'as.spaceUnknown':   { en:'Drive space — will be known after the first exchange',
+                 ru:'место на Диске — узнаем при первом обмене' },
+'as.eNet':     { en:'No connection — the files will travel later.',
+                 ru:'Нет связи — файлы уедут позже.' },
+'as.eAuth':    { en:'Access expired — sign in to Google again.',
+                 ru:'Доступ истёк — войдите в Google заново.' },
+'as.eGone':    { en:'The file is not on the Drive any more.',
+                 ru:'Файла на Диске больше нет.' },
+'as.eQuota':   { en:'The Drive is full — free some space and try again.',
+                 ru:'На Диске кончилось место — освободите его и повторите.' },
+'as.eRate':    { en:'Too many requests — the files will travel a little later.',
+                 ru:'Слишком часто — файлы уедут чуть позже.' },
+'as.eBig':     { en:'The file is too large to travel.',
+                 ru:'Файл слишком велик, чтобы уехать.' },
+'as.eOff':     { en:'Sync is off — files stay on this device.',
+                 ru:'Обмен выключен — файлы остаются на этом устройстве.' },
+'as.eBrowser': { en:'This browser cannot exchange files.',
+                 ru:'В браузере обмен файлами недоступен.' },
+'as.eServer':  { en:'Google answered with an error — the files will travel later.',
+                 ru:'Google ответил ошибкой — файлы уедут позже.' },
+'as.filesGo':  { en:'Photos and invoices travel too — into the same hidden folder on your Drive.',
+                 ru:'Фотографии и накладные тоже ездят — в ту же скрытую папку вашего Диска.' },
+'as.pullInv':  { en:'Download the invoice', ru:'Скачать накладную' },
+'as.pulling':  { en:'Downloading…', ru:'Скачиваю…' },
 'gd.browser':  { en:'Signing in with Google works in the installed apps: the key has to live in the system keystore, and a page opened from a file has none. Everything else works here exactly as before.',
                  ru:'Вход в Google работает в установленных приложениях: ключ доступа нужно хранить в защищённом хранилище системы, а у страницы, открытой из файла, такого хранилища нет. Всё остальное здесь работает точно так же.' },
 'gd.noClient': { en:'This build has no Google key set, so there is nothing to sign in with. Everything else works.',
@@ -3554,8 +3587,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.2.2';
-var APP_BUILD = '2026-08-28T21:13:01.874Z';
+var APP_VERSION = '1.2.3';
+var APP_BUILD = '2026-08-31T20:19:29.818Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5540,22 +5573,46 @@ function gdReq(o, cb){
   var opt = { method: o.method || 'GET', headers: {} };
   if (o.token) opt.headers['Authorization'] = 'Bearer ' + o.token;
   if (o.contentType) opt.headers['Content-Type'] = o.contentType;
+  /* ++++++ ATT SYNC ++++++ файлам нужны три вещи, которых документу не
+     нужно, и все три живут ЗДЕСЬ, а не во второй точке запроса:
+       · Range        — докачка кусками; без неё пять мегабайт после
+                        обрыва качаются заново;
+       · Content-Range — возобновляемая отправка;
+       · binary       — на чтении arrayBuffer вместо text: текстовое
+                        чтение истолковало бы байты JPEG как символы,
+                        и файл не пережил бы дорогу.
+     Все поля необязательные: старый путь остаётся ровно тем, чем был. */
+  if (o.range) opt.headers['Range'] = o.range;
+  if (o.contentRange) opt.headers['Content-Range'] = o.contentRange;
   if (o.body !== undefined && o.body !== null) opt.body = o.body;
 
-  var status = 0;
+  var status = 0, head = { location: '', range: '' };
   window.fetch(o.url, opt).then(function(r){
     status = r.status;
-    return r.text();
+    /* Сессия отдаёт свой адрес заголовком Location, а «докуда дошли» —
+       заголовком Range: без них возобновление невозможно. */
+    try {
+      head.location = r.headers.get('Location') || '';
+      head.range    = r.headers.get('Range') || '';
+    } catch(e){ /* заголовков нет — не беда, ветка это переживает */ }
+    /* 308 у возобновляемой отправки — «продолжай», а не отказ. Тела у
+       него нет, и читать его нечего. */
+    if (o.resumable && status === 308) return null;
+    return o.binary ? r.arrayBuffer() : r.text();
   }).then(function(t){
+    if (o.resumable && status === 308){ cb(null, null, status, head); return; }
     if (status >= 200 && status < 300){
-      if (o.raw){ cb(null, t, status); return; }
+      if (o.binary){ cb(null, t, status, head); return; }
+      if (o.raw){ cb(null, t, status, head); return; }
       var j = null;
       try{ j = t ? JSON.parse(t) : null; }catch(e){ j = null; }
-      cb(null, j, status);
+      cb(null, j, status, head);
       return;
     }
-    cb(gdErrOf(status, t), null, status);
-  })['catch'](function(){ cb('net', null, status); });
+    /* Ошибку двоичного ответа читать как текст нельзя — но и разбирать
+       её нечем: причина берётся из кода состояния, как и раньше. */
+    cb(gdErrOf(status, o.binary ? '' : t), null, status, head);
+  })['catch'](function(){ cb('net', null, status, head); });
 }
 
 /* Какая именно беда. Google отвечает 403 на четыре разных случая, и
@@ -6262,6 +6319,1184 @@ function syncMsg(cfg, counts){
                     ' people, ' + counts.transactions + ' handouts, ' +
                     counts.payments + ' payments') : '';
   return 'data: save' + who + n;
+}
+
+/* ==================================================================
+ * ++++++ ATT SYNC ++++++     ВЛОЖЕНИЯ ЕЗДЯТ ЧЕРЕЗ СКРЫТУЮ ПАПКУ ДИСКА
+ *
+ * ES5. Ни одной стрелки, ни одного `let` — файл написан так, чтобы лечь
+ * в goods-tracker.html как есть.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *     ВЛОЖЕНИЕ НЕ ИМЕЕТ ПРАВА ПРОПАСТЬ МОЛЧА — НИ ПРИ ОТСУТСТВИИ
+ *     СЕТИ, НИ ПРИ ОБМЕНЕ, НИ ПРИ УБОРКЕ.
+ *
+ * Отсюда всё остальное:
+ *   · прикрепление НИКОГДА не ждёт сеть. Файл ложится в своё хранилище
+ *     и встаёт в ОЧЕРЕДЬ. Сеть появится — очередь уйдёт сама;
+ *   · удаление — НАДГРОБИЕ, ровно как у записей: без него файл
+ *     возвращается с другого устройства, где он ещё есть;
+ *   · то, чего нет локально, ДОКАЧИВАЕТСЯ, а не считается потерянным.
+ *     Разница между «файла нет» и «файл ещё не приехал» — это разница
+ *     между честным сообщением и ложью;
+ *   · ни одно поле не добавляется ВНУТРЬ записи товара. Причина не
+ *     стилистическая: bakSig() хеширует ИМЕНА собственных ключей
+ *     записи, и новое поле сдвинуло бы подпись документа — напоминание
+ *     о копии заявило бы «записи изменились» о нетронутых данных
+ *     (хрупкое место 64, четвёртое применение).
+ *
+ * ЧТО ЗДЕСЬ ИЗМЕНИЛОСЬ 2026-08-28, И ПОЧЕМУ. Прежняя редакция возила
+ * фото через репозиторий GitHub, а инвойсы — через видимую папку Drive
+ * со своим входом. Обе половины переписаны на ОДНУ дорогу: скрытую
+ * папку `appDataFolder` того же Google Диска, где лежит `data.json`.
+ * Причин две, и обе решающие:
+ *   · транспорт задаёт СБОРКА (`transportFor`), и в продуктовой сборке,
+ *     которой пользуется владелец, GitHub-дороги нет вовсе — фото через
+ *     неё не поехали бы никуда;
+ *   · второй вход в Google означал бы второе согласие, второй короткий
+ *     ключ и второй список адресов — прямо против правила «gdReq() —
+ *     вторая и последняя точка сетевого запроса; третьей быть не
+ *     должно» (решение 9 продуктовой ветки, решение 14 — это).
+ *
+ * ГДЕ ЖИВЁТ СОСТОЯНИЕ. Очередь, надгробия и карта «что уже уехало» —
+ * это НЕ документ: они описывают, что успело сделать ЭТО устройство, и
+ * на другом бессмысленны. Живут рядом с файлами, в том же IndexedDB —
+ * не в localStorage (там ~5 МБ на всё) и не в state (он уезжает в
+ * резервную копию и в обмен).
+ *
+ * ЧЕГО ЗДЕСЬ НЕТ. Ни одного запроса: этот файл только РЕШАЕТ, что
+ * отправить, что докачать и что забыть. Запросы делает attdrive.js —
+ * поверх gdReq(). Так его можно проверить без сети и без браузера —
+ * тем же приёмом, что merge.js.
+ * ================================================================== */
+
+/* Имя файла вложения в скрытой папке. Рядом с data.json, и это НЕ
+   небрежность: `appDataFolder` — плоская папка на одну программу, её
+   не видно ни владельцу, ни другим приложениям, и раскладывать там
+   подпапки не за чем. Приставка отличает вложение от документа при
+   любом взгляде на листинг. */
+var ATT_PREFIX = 'att-';
+
+/* Сколько ФОТО тянем за один заход. Не «все сразу»: сотня фото — сотня
+   запросов, и на телефоне через мобильную сеть это заметно. */
+var ATT_BATCH = 4;
+
+/* Сколько раз пробуем отправить один файл, прежде чем отложить его до
+   следующего обмена. Ноль повторов — потеря при первом же обрыве;
+   бесконечные — вечный цикл на файле, который сервер не принимает. */
+var ATT_TRIES = 3;
+
+/* ------------------------------------------------------------------ */
+/* Имя файла                                                          */
+/* ------------------------------------------------------------------ */
+/* id вложения приходит из чужого файла (импорт чужой копии), поэтому
+   склеивать имя из него напрямую нельзя. Проверка отвечает «да» только
+   на то, что порождает сам uid(): буквы, цифры, дефис. Она же защищает
+   и от `constructor`/`__proto__` в роли ключа карты — такой id просто
+   не пройдёт. */
+function attIdOk(id){
+  return typeof id === 'string' && id.length > 0 && id.length <= 64 &&
+         /^[A-Za-z0-9-]+$/.test(id);
+}
+
+function attName(id){
+  if (!attIdOk(id)) return null;
+  return ATT_PREFIX + id;
+}
+
+/* Обратный разбор: из имени файла в скрытой папке — id вложения.
+   Нужен ровно там, где читается листинг папки, и нигде больше.
+   `data.json` и всё остальное отвечают null, а не пустой строкой:
+   пустая строка — тоже ключ, и однажды окажется ключом карты. */
+function attIdOfName(name){
+  var s = String(name || '');
+  if (s.indexOf(ATT_PREFIX) !== 0) return null;
+  var id = s.slice(ATT_PREFIX.length);
+  return attIdOk(id) ? id : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Что документ вообще называет                                       */
+/* ------------------------------------------------------------------ */
+/* ДВА ВИДА, И ОНИ ВЕДУТ СЕБЯ ПО-РАЗНОМУ. Фото нужны на КАЖДОМ экране —
+   миниатюра в списке, картинка в карточке, — поэтому докачиваются
+   пачкой сами. Инвойс — это PDF на несколько мегабайт, их единицы, и
+   открывают их изредка: тянуть их все на телефон по мобильной сети
+   значит тратить трафик владельца на файлы, которые он, возможно, не
+   откроет ни разу. Поэтому инвойс скачивается ПО ОДНОМУ, при открытии.
+   Отправляются же обе половины одинаково: то, что владелец прикрепил,
+   обязано уехать.
+ *
+ * КОРЗИНА ВИДНА ЗДЕСЬ ЦЕЛИКОМ, и это решение, а не недосмотр. Товар в
+ * корзине остаётся в `state.products`, и его фотография не сирота:
+ * `attSweep` намеренно НЕ переведён на активный аксессор, потому что
+ * владельцу обещано, что отправка в корзину вложений не уничтожает.
+ * Читать здесь только активные записи значило бы перестать возить —
+ * и восстановление из корзины на другом устройстве дало бы запись без
+ * картинки. Поэтому `state.products`, а не `actProducts()`. */
+
+function attWantedPhotos(state){
+  var out = [], i, p;
+  if (!state || !state.products) return out;
+  for (i = 0; i < state.products.length; i++){
+    p = state.products[i];
+    if (p && p.photoId && attIdOk(p.photoId) && out.indexOf(p.photoId) < 0)
+      out.push(p.photoId);
+  }
+  return out;
+}
+
+function attWantedInvoices(state){
+  var out = [], i, j, p, ids;
+  if (!state || !state.products) return out;
+  for (i = 0; i < state.products.length; i++){
+    p = state.products[i];
+    ids = (p && p.invoiceIds) || [];
+    for (j = 0; j < ids.length; j++){
+      if (ids[j] && attIdOk(ids[j]) && out.indexOf(ids[j]) < 0) out.push(ids[j]);
+    }
+  }
+  return out;
+}
+
+/** Всё, что документ называет, — обе половины вместе. */
+function attWanted(state){
+  var out = attWantedPhotos(state), inv = attWantedInvoices(state), i;
+  for (i = 0; i < inv.length; i++) if (out.indexOf(inv[i]) < 0) out.push(inv[i]);
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Что надо отправить                                                 */
+/* ------------------------------------------------------------------ */
+/* Отправляем то, что есть локально, нужно документу и ещё не отмечено
+   как ушедшее. `sent` — карта id → номер файла на Диске: она же и
+   доказательство отправки, и то, чем потом файл удаляют. Отправлять
+   то, чего документ уже не называет, незачем: такой файл через две
+   загрузки уберёт уборка сирот. */
+function attToSend(state, have, sent, tombs){
+  var want = attWanted(state), out = [], i, id;
+  for (i = 0; i < want.length; i++){
+    id = want[i];
+    if (!own(have, id)) continue;      /* нет байтов — нечего слать */
+    if (own(sent, id)) continue;       /* уже там */
+    if (tombs && own(tombs, id)) continue;
+    out.push(id);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Чего не хватает локально                                           */
+/* ------------------------------------------------------------------ */
+/* `have` — карта id → true по МЕТАДАННЫМ хранилища (attMeta), а не по
+   байтам: метаданные читаются один раз при запуске и лежат в памяти, а
+   чтение байтов асинхронно и стоит дорого.
+   `tombs` — надгробия: помеченный удалённым не докачивается, иначе он
+   воскресает на каждом обмене. */
+function attMissing(state, have, tombs){
+  var want = attWanted(state), out = [], i, id;
+  for (i = 0; i < want.length; i++){
+    id = want[i];
+    if (own(have, id)) continue;
+    if (tombs && own(tombs, id)) continue;
+    out.push(id);
+  }
+  return out;
+}
+
+/** Чего не хватает ИЗ ФОТО — только они докачиваются сами. */
+function attMissingPhotos(state, have, tombs){
+  var want = attWantedPhotos(state), out = [], i, id;
+  for (i = 0; i < want.length; i++){
+    id = want[i];
+    if (own(have, id)) continue;
+    if (tombs && own(tombs, id)) continue;
+    out.push(id);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Что надо удалить на сервере                                        */
+/* ------------------------------------------------------------------ */
+/* Надгробие есть, а файл числится отправленным — значит он там лежит и
+   его надо убрать. Порядок «сначала надгробие, потом удаление»
+   повторяет порядок документа: пометка переживает обрыв связи, само
+   удаление — нет. */
+function attToDelete(sent, tombs){
+  var out = [], id;
+  if (!tombs) return out;
+  for (id in tombs){
+    if (!own(tombs, id)) continue;
+    if (own(sent, id)) out.push(id);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Один заход докачки                                                 */
+/* ------------------------------------------------------------------ */
+/* Возвращает СПИСОК на этот заход, а не всё сразу — и тем самым делает
+   «продолжается с места остановки» свойством конструкции, а не
+   обещанием: следующий заход снова спросит, чего не хватает, и получит
+   остаток. Никакого курсора хранить не надо, и потому нечего терять
+   при закрытии программы.
+   Инвойсы сюда не попадают вовсе — см. пояснение у attWanted*. */
+function attNextBatch(state, have, tombs, tried){
+  var miss = attMissingPhotos(state, have, tombs), out = [], i, id;
+  for (i = 0; i < miss.length && out.length < ATT_BATCH; i++){
+    id = miss[i];
+    if (tried && own(tried, id) && tried[id] >= ATT_TRIES) continue;
+    out.push(id);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Состояние для показа                                               */
+/* ------------------------------------------------------------------ */
+/* Одна функция — один ответ на вопрос «что сейчас с вложениями». Экран
+   не считает ничего сам: два места, считающие одно и то же, расходятся
+   при первой же правке (это правило файл уже применял к долям расходов
+   и к возвратам). */
+function attSyncStatus(state, have, sent, tombs, busy){
+  var miss = attMissing(state, have, tombs);
+  var send = attToSend(state, have, sent, tombs);
+  var want = attWanted(state);
+  return {
+    wanted: want.length,
+    here: want.length - miss.length,
+    missing: miss.length,
+    photosMissing: attMissingPhotos(state, have, tombs).length,
+    queued: send.length,
+    dropping: attToDelete(sent, tombs).length,
+    busy: !!busy
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Сколько места занято и сколько осталось                            */
+/* ------------------------------------------------------------------ */
+/* Требование владельца 2026-08-28: под именем учётной записи — строка
+   «занято 20 МБ · свободно 5 ГБ». Здесь только РЕШЕНИЕ о том, что
+   показать; сам вопрос Диску задаёт adQuota(), а текст собирает
+   приложение через tr() — как и у attErrKey(), возвращается КЛЮЧ, а не
+   слова.
+
+   ЗАНЯТОЕ СЧИТАЕТСЯ НА КОНЕЦ ОБОРОТА, а не на его начало. Листинг
+   говорит, что лежало на Диске ДО отправки; если показать это число,
+   владелец увидит прежнее занятое сразу после того, как отправил
+   накладную на 5 МБ, — то есть ровно тогда, когда смотрит. Поэтому к
+   размеру папки прибавляется то, что уехало за этот оборот, и
+   вычитается удалённое: обе величины оборот знает точно, он их сам и
+   отправил.
+
+   Отрицательным занятое быть не может: удалить больше, чем лежит,
+   нельзя, а если счёт разошёлся — врать в минус хуже, чем показать
+   ноль. */
+function attUsedBytes(listBytes, addedBytes, removedBytes){
+  var n = (listBytes || 0) + (addedBytes || 0) - (removedBytes || 0);
+  return n > 0 ? n : 0;
+}
+
+/* Четыре состояния, и каждое означает своё:
+
+     known      знаем и занятое, и свободное — обычный случай
+     unlimited  хранилище без лимита: свободного числа не существует
+     failed     занятое знаем, про свободное спросить не удалось
+     unknown    обмена файлами ещё не было — не знаем ничего
+
+   `failed` всегда приходит с известным занятым, и это свойство
+   ОБОРОТА, а не совпадение: квота спрашивается после листинга, а
+   упавший листинг обрывает оборот раньше. Если однажды порядок
+   изменится, состояние надо будет пересмотреть, а не подпереть.
+
+   Отказ квоты НЕ должен ронять обмен: место — это сведение, а не
+   условие работы. Поэтому «не удалось» — состояние строки, а не
+   ошибка оборота. */
+function attSpace(used, quota){
+  var u = used > 0 ? used : 0;
+  if (!quota) return { state: 'unknown', used: 0, free: 0 };
+  if (quota.err) return { state: 'failed', used: u, free: 0 };
+  /* Безлимит — отсутствие предела, а не ноль свободного. Ноль здесь
+     означал бы прямо противоположное тому, что есть на самом деле. */
+  if (quota.unlimited) return { state: 'unlimited', used: u, free: 0 };
+  /* Свободное — по ВСЕМ сервисам Google: `usage`, а не `usageInDrive`.
+     Почему именно так, с замером на живом аккаунте, — в adQuota(). */
+  var free = quota.limit - quota.usage;
+  return { state: 'known', used: u, free: free > 0 ? free : 0 };
+}
+
+/* Ключ словаря, а не текст: текст переводится, как всё видимое.
+   Незнакомое состояние читается как «не знаем» — самое скромное из
+   четырёх: выдумывать свободное место там, где о нём ничего не
+   известно, хуже, чем промолчать. */
+function attSpaceKey(sp){
+  var M = { known: 'as.space', unlimited: 'as.spaceUnlimited',
+            failed: 'as.spaceFailed', unknown: 'as.spaceUnknown' };
+  var st = sp && sp.state;
+  return own(M, st) ? M[st] : 'as.spaceUnknown';
+}
+
+/* ------------------------------------------------------------------ */
+/* Три состояния миниатюры                                            */
+/* ------------------------------------------------------------------ */
+/* Разница между ними — половина задачи. До неё состояние было одно на
+   всё — «файл отсутствует», — и оно одинаково описывало «удалили» и
+   «ещё не скачалось»: владелец, увидев его на новом телефоне, приложил
+   бы второе фото поверх первого. */
+function attViewState(id, have, tombs){
+  if (!attIdOk(id)) return 'none';
+  if (own(have, id)) return 'here';
+  if (tombs && own(tombs, id)) return 'gone';
+  return 'coming';
+}
+
+/* ------------------------------------------------------------------ */
+/* Двоичный base64                                                    */
+/* ------------------------------------------------------------------ */
+/* ПОЧЕМУ НЕ b64dec ИЗ ЯДРА. Тот написан для ТЕКСТА:
+   `decodeURIComponent(escape(atob(s)))` — это разбор байтов как UTF-8,
+   и на JPEG он либо бросает, либо портит. Для файлов нужен путь без
+   единой попытки истолковать байты как символы. Проверено измерением:
+   картинка, прошедшая через текстовый декодер, не открывается.
+   Второй копии ТЕКСТОВОГО декодера здесь нет и быть не должно — это
+   отдельная функция для отдельного вида данных. */
+function b64ToBytes(b64){
+  var clean = String(b64).replace(/\s+/g, '');
+  var bin;
+  try{ bin = window.atob(clean); }catch(e){ return null; }
+  var len = bin.length, out = new Uint8Array(len), i;
+  for (i = 0; i < len; i++) out[i] = bin.charCodeAt(i) & 0xff;
+  return out;
+}
+
+/* Обратно — тоже без единой строковой операции над содержимым.
+   Порциями по 8 КБ: `String.fromCharCode.apply(null, огромный массив)`
+   переполняет стек аргументов на файле в пару мегабайт. */
+function bytesToB64(bytes){
+  var CH = 8192, parts = [], i, n = bytes.length, sub;
+  for (i = 0; i < n; i += CH){
+    sub = bytes.subarray ? bytes.subarray(i, i + CH) : bytes.slice(i, i + CH);
+    parts.push(String.fromCharCode.apply(null, sub));
+  }
+  try{ return window.btoa(parts.join('')); }catch(e){ return null; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Мелочь, без которой всё разваливается                              */
+/* ------------------------------------------------------------------ */
+/* Каждая карта, ключом которой служит id, читается через own(): id
+   приходит из чужого файла и может называться 'constructor' — тогда
+   бесхитростное `map[id]` отвечает функцией из прототипа, и проверка
+   «есть ли такой файл» отвечает «да» о том, чего нет. Это R20, и он
+   уже стоил этому проекту одной находки. */
+if (typeof own !== 'function'){
+  /* eslint-disable no-unused-vars */
+  var own = function(o, k){
+    return !!o && Object.prototype.hasOwnProperty.call(o, k);
+  };
+}
+
+if (typeof module !== 'undefined' && module.exports){
+  module.exports = {
+    ATT_PREFIX: ATT_PREFIX, ATT_BATCH: ATT_BATCH, ATT_TRIES: ATT_TRIES,
+    attIdOk: attIdOk, attName: attName, attIdOfName: attIdOfName,
+    attWantedPhotos: attWantedPhotos, attWantedInvoices: attWantedInvoices,
+    attWanted: attWanted, attToSend: attToSend,
+    attMissing: attMissing, attMissingPhotos: attMissingPhotos,
+    attToDelete: attToDelete, attNextBatch: attNextBatch,
+    attSyncStatus: attSyncStatus, attViewState: attViewState,
+    attUsedBytes: attUsedBytes, attSpace: attSpace, attSpaceKey: attSpaceKey,
+    b64ToBytes: b64ToBytes, bytesToB64: bytesToB64
+  };
+}
+
+/* ==================================================================
+ * ++++++ ATT SYNC ++++++        РАЗГОВОР О ФАЙЛАХ СО СКРЫТОЙ ПАПКОЙ
+ *
+ * ES5. Тонкий слой поверх gdReq() — ЕДИНСТВЕННОЙ точки разговора с
+ * Google. Своего fetch здесь нет и быть не должно: второй сетевой путь
+ * это второе место, где можно ошибиться с ключом, и первое, что
+ * пропустит проверка «никакой сети, кроме объявленных адресов».
+ *
+ * ЧЕГО ЗДЕСЬ НЕТ: решений. Что отправлять, что докачивать и что
+ * забыть, решает attq.js. Здесь только «положи», «возьми», «убери» и
+ * «покажи, что лежит».
+ *
+ * ПОЧЕМУ БАЙТЫ, А НЕ ТЕКСТ. Документ — это JSON, и gdReq() читал ответ
+ * через `r.text()`. Для JPEG и PDF так нельзя: текстовое чтение
+ * истолкует байты как символы и файл не переживёт дорогу. Поэтому
+ * gdReq() получает признак `binary` — ОДИН параметр, а не вторую точку
+ * запроса: на чтении он берёт `r.arrayBuffer()`, на записи отдаёт тело
+ * как есть. Blob в теле fetch допустим, и части multipart собираются
+ * Blob'ом — ни одна строковая операция содержимого не касается.
+ *
+ * ПОЧЕМУ ЛИСТИНГ, А НЕ ПОИСК ПО ИМЕНИ. Спросить Drive «где файл
+ * att-XXX» можно, но тогда каждый файл стоит отдельного запроса, и
+ * сотня фото — сотня запросов ещё до первой закачки. `appDataFolder`
+ * плоская и содержит только наши файлы, поэтому один листинг отвечает
+ * сразу обо всех. Он же — источник карты «что уже уехало» после
+ * переустановки: карта живёт локально и на новом устройстве пуста, а
+ * файлы на Диске есть.
+ * ================================================================== */
+
+/* Сколько файлов Drive отдаёт за раз. 1000 — потолок метода; больше
+   вложений у одного владельца не бывает, но страницы всё равно
+   дочитываются: молча оборванный листинг означал бы «этого файла на
+   Диске нет», то есть повторную заливку того, что уже там. */
+var AD_PAGE = 1000;
+
+/* Наибольший файл, который мы вообще отправляем. Инвойс на 5 МБ —
+   норма, на 40 МБ — почти наверняка недоразумение, и лучше сказать об
+   этом словами, чем молча занять место у владельца. Совпадает с
+   пределом документа (GD_MAX) не случайно: два разных предела в одном
+   хранилище пришлось бы объяснять. */
+var AD_MAX = 40 * 1024 * 1024;
+
+/* Кусок докачки. Тяжёлый инвойс на мобильной сети рвётся регулярно, и
+   качать его одним запросом значит начинать сначала после каждого
+   обрыва. Кусок в 1 МБ — компромисс: достаточно мал, чтобы потеря
+   куска не была обидной, и достаточно велик, чтобы 5 МБ не стоили
+   полусотни запросов. */
+var AD_CHUNK = 1024 * 1024;
+
+/* С какого размера отправка идёт ВОЗОБНОВЛЯЕМОЙ сессией. Фото весит
+   ~125 КБ — ему сессия не нужна, там обрыв дешевле повтора. Инвойс на
+   мегабайты без сессии после обрыва пришлось бы слать заново. */
+var AD_RESUMABLE_FROM = 2 * 1024 * 1024;
+
+/* ------------------------------------------------------------------ */
+/* Что лежит в скрытой папке                                          */
+/* ------------------------------------------------------------------ */
+/* cb(err, map) — карта id вложения → { fileId, size }. Документ
+   (`data.json`) и всё, что не начинается с приставки, сюда не
+   попадает: attIdOfName() отвечает null, и такой файл просто
+   пропускается. Испорченное имя не роняет листинг — оно его не
+   касается. */
+function adList(access, cb){
+  var out = {}, bytes = 0;
+
+  function page(token){
+    var url = GD_API + '/files?spaces=appDataFolder' +
+              '&q=' + encodeURIComponent('trashed=false') +
+              '&fields=' + encodeURIComponent('nextPageToken,files(id,name,size)') +
+              '&pageSize=' + AD_PAGE +
+              (token ? '&pageToken=' + encodeURIComponent(token) : '');
+    gdReq({ url: url, token: access }, function(err, j){
+      if (err){ cb(err); return; }
+      var files = (j && j.files) || [], i, id;
+      for (i = 0; i < files.length; i++){
+        /* Байты считаются по ВСЕМ файлам папки, включая сам документ:
+           квоту владельца ест и он тоже. Счёт идёт ДО отбора по имени —
+           файл, который мы не считаем своим вложением, место всё равно
+           занимает. Так «занято» не стоит отдельного запроса: листинг
+           и так выполняется каждый оборот. */
+        bytes += parseInt(files[i].size || '0', 10) || 0;
+        id = attIdOfName(files[i].name);
+        if (!id) continue;
+        /* Два файла с одним именем означают, что что-то однажды пошло
+           не так. Берём первый и не молчим об этом наружу — счёт
+           лишних возвращается вызывающему. */
+        if (own(out, id)) continue;
+        out[id] = { fileId: String(files[i].id),
+                    size: parseInt(files[i].size || '0', 10) || 0 };
+      }
+      if (j && j.nextPageToken){ page(String(j.nextPageToken)); return; }
+      cb(null, out, bytes);
+    });
+  }
+
+  page('');
+}
+
+/* ------------------------------------------------------------------ */
+/* Положить файл                                                      */
+/* ------------------------------------------------------------------ */
+/* cb(err, fileId). Родитель `appDataFolder` — то самое слово, которое
+   кладёт файл в скрытую папку; без него он лёг бы в корень Диска
+   владельца, на виду, и потребовал бы области доступа пошире.
+ *
+ * Замена и создание — РАЗНЫЕ методы, и это не формальность: PATCH по
+ * номеру файла меняет байты, не трогая описание, а POST создаёт второй
+ * файл с тем же именем. Поэтому вызывающий передаёт `fileId`, если он
+ * уже знает его из листинга. */
+function adPut(access, id, blob, mime, fileId, cb){
+  var name = attName(id);
+  if (!name){ cb('badid'); return; }
+  if (!blob || typeof blob.size !== 'number'){ cb('nofile'); return; }
+  if (blob.size > AD_MAX){ cb('big'); return; }
+
+  var type = String(mime || 'application/octet-stream');
+
+  if (fileId){
+    gdReq({ method: 'PATCH',
+            url: GD_UPLOAD + '/' + encodeURIComponent(fileId) +
+                 '?uploadType=media&fields=' + encodeURIComponent('id'),
+            token: access, contentType: type, body: blob, binary: true },
+      function(err, j){
+        if (err){ cb(err); return; }
+        if (!j || !j.id){ cb('server'); return; }
+        cb(null, String(j.id));
+      });
+    return;
+  }
+
+  var b = 'gta' + String(new Date().getTime()) + 'x';
+  var meta = JSON.stringify({ name: name, parents: ['appDataFolder'] });
+  /* Сборка Blob'ом, а не строкой: строка тут означала бы истолковать
+     байты как символы, то есть испортить файл. */
+  var body = new Blob([
+    '--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta +
+      '\r\n--' + b + '\r\nContent-Type: ' + type + '\r\n\r\n',
+    blob,
+    '\r\n--' + b + '--'
+  ]);
+  gdReq({ method: 'POST',
+          url: GD_UPLOAD + '?uploadType=multipart&fields=' + encodeURIComponent('id'),
+          token: access,
+          contentType: 'multipart/related; boundary=' + b,
+          body: body, binary: true },
+    function(err, j){
+      if (err){ cb(err); return; }
+      if (!j || !j.id){ cb('server'); return; }
+      cb(null, String(j.id));
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/* Взять файл — КУСКАМИ, и продолжая с места обрыва                   */
+/* ------------------------------------------------------------------ */
+/* cb(err, res). При успехе res = { blob }. При обрыве вторым
+   аргументом приходит ТО, ЧТО УСПЕЛО ПРИЕХАТЬ: { part, got } — чтобы
+   вызывающий сохранил кусок, и следующий заход продолжил, а не начал
+   сначала. Инвойс на 5 МБ по мобильной сети рвётся регулярно, и
+   «начать заново» означало бы не докачать его никогда.
+
+   БИТОГО ФАЙЛА НЕ ПОЯВЛЯЕТСЯ НИ НА СЕКУНДУ, и это свойство
+   конструкции, а не аккуратности: blob собирается только когда
+   набралось РОВНО столько байт, сколько числится за файлом на Диске.
+   Пока их меньше — наружу отдаётся part, который вызывающий кладёт в
+   отдельное место, а не в хранилище вложений. Поэтому всё это время
+   вложение честно показывается как «ещё едет», а не как испорченная
+   картинка.
+
+   size берётся из листинга — своего запроса за ним не ходим. Если
+   размер неизвестен (0), файл качается одним куском: так ведёт себя
+   обычное фото, которое и так меньше куска. */
+function adGet(access, fileId, mime, size, part, cb){
+  if (!fileId){ cb('notfound'); return; }
+  var type = String(mime || 'application/octet-stream');
+  var total = parseInt(size, 10) || 0;
+  var have = (part && part.size) ? [part] : [];
+  var got  = (part && part.size) ? part.size : 0;
+
+  if (!total){
+    gdReq({ url: GD_API + '/files/' + encodeURIComponent(fileId) + '?alt=media',
+            token: access, raw: true, binary: true },
+      function(err, buf){
+        if (err){ cb(err); return; }
+        if (!buf || typeof buf.byteLength !== 'number' || !buf.byteLength){
+          cb('server'); return;
+        }
+        cb(null, { blob: new Blob([buf], { type: type }) });
+      });
+    return;
+  }
+
+  /* Кусок больше самого файла означает, что он остался от ДРУГОГО
+     содержимого: файл заменили на другом устройстве. Начинаем сначала,
+     а не склеиваем два разных файла в один битый. */
+  if (got > total){ have = []; got = 0; }
+
+  function step(){
+    if (got >= total){
+      cb(null, { blob: new Blob(have, { type: type }) });
+      return;
+    }
+    var to = Math.min(got + AD_CHUNK, total) - 1;
+    gdReq({ url: GD_API + '/files/' + encodeURIComponent(fileId) + '?alt=media',
+            token: access, raw: true, binary: true,
+            range: 'bytes=' + got + '-' + to },
+      function(err, buf){
+        if (err){ cb(err, { part: new Blob(have, { type: type }), got: got }); return; }
+        if (!buf || typeof buf.byteLength !== 'number' || !buf.byteLength){
+          cb('server', { part: new Blob(have, { type: type }), got: got }); return;
+        }
+        have.push(buf);
+        got += buf.byteLength;
+        step();
+      });
+  }
+  step();
+}
+
+/* ------------------------------------------------------------------ */
+/* Положить ТЯЖЁЛЫЙ файл — возобновляемой сессией                     */
+/* ------------------------------------------------------------------ */
+/* Тот же вопрос с другой стороны: инвойс на 5 МБ рвётся и на отправке.
+   Drive для этого даёт сессию — адрес, по которому загрузка
+   продолжается с того байта, до которого дошла. Адрес сессии живёт у
+   вызывающего вместе с очередью, поэтому продолжение переживает даже
+   закрытие программы.
+
+   cb(err, fileId). При обрыве вторым аргументом приходит
+   { url, sent } — то, чем продолжить в следующий раз.
+
+   ПОЧЕМУ НЕ ВСЕГДА СЕССИЕЙ. Фото весит ~125 КБ: там обрыв дешевле
+   лишнего запроса на открытие сессии, и обычный путь короче на целый
+   оборот. Порог — AD_RESUMABLE_FROM. */
+function adPutBig(access, id, blob, mime, session, cb, onPart){
+  var name = attName(id);
+  if (!name){ cb('badid'); return; }
+  if (!blob || typeof blob.size !== 'number'){ cb('nofile'); return; }
+  if (blob.size > AD_MAX){ cb('big'); return; }
+
+  var type = String(mime || 'application/octet-stream');
+  var total = blob.size;
+
+  function rangeEnd(h){
+    var m = /bytes=0-(\d+)/.exec(String((h && h.range) || ''));
+    return m ? parseInt(m[1], 10) + 1 : 0;
+  }
+  function done(j){
+    if (!j || !j.id){ cb('server'); return; }
+    cb(null, String(j.id));
+  }
+  /* Спросить сессию, сколько байт она уже приняла: пустое тело и
+     диапазон без начала — это и есть вопрос «докуда дошли». */
+  function ask(url){
+    gdReq({ method: 'PUT', url: url, token: access, resumable: true,
+            contentRange: 'bytes */' + total, body: null },
+      function(err, j, status, h){
+        if (err){ cb(err, { url: url, sent: (session && session.sent) || 0 }); return; }
+        if (status === 200 || status === 201){ done(j); return; }
+        send(url, rangeEnd(h));
+      });
+  }
+  function send(url, from){
+    if (from >= total){ ask(url); return; }
+    var to = Math.min(from + AD_CHUNK, total);
+    gdReq({ method: 'PUT', url: url, token: access, binary: true, resumable: true,
+            contentType: type,
+            contentRange: 'bytes ' + from + '-' + (to - 1) + '/' + total,
+            body: blob.slice(from, to) },
+      function(err, j, status, h){
+        if (err){ cb(err, { url: url, sent: from }); return; }
+        if (status === 200 || status === 201){ done(j); return; }
+        var next = rangeEnd(h);
+        /* Сервер не сказал — верим тому, что отправили сами: иначе next
+           остался бы нулём и кусок пошёл бы по кругу. */
+        if (next <= from) next = to;
+        if (onPart) onPart({ url: url, sent: next }, total);
+        send(url, next);
+      });
+  }
+
+  if (session && session.url){ ask(session.url); return; }
+
+  gdReq({ method: 'POST',
+          url: GD_UPLOAD + '?uploadType=resumable&fields=' + encodeURIComponent('id'),
+          token: access, contentType: 'application/json; charset=UTF-8',
+          body: JSON.stringify({ name: name, parents: ['appDataFolder'], mimeType: type }),
+          resumable: true },
+    function(err, j, status, h){
+      if (err){ cb(err); return; }
+      var url = h && h.location;
+      if (!url){ cb('server'); return; }
+      if (onPart) onPart({ url: url, sent: 0 }, total);
+      send(url, 0);
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/* Одна дверь на отправку                                             */
+/* ------------------------------------------------------------------ */
+/* Вызывающему незачем знать про пороги и сессии: он говорит «отправь»,
+   а какой дорогой — решается здесь, по размеру. Одно место принимает
+   это решение, и потому оно не может разойтись с очередью. */
+function adSend(access, id, blob, mime, fileId, session, cb, onPart){
+  if (blob && typeof blob.size === 'number' &&
+      (blob.size >= AD_RESUMABLE_FROM || (session && session.url))){
+    adPutBig(access, id, blob, mime, session, cb, onPart);
+    return;
+  }
+  adPut(access, id, blob, mime, fileId, cb);
+}
+
+/* ------------------------------------------------------------------ */
+/* Убрать файл                                                        */
+/* ------------------------------------------------------------------ */
+/* Удаление того, чего уже нет, — УСПЕХ, а не беда: два устройства
+   могут убрать одно и то же вложение, и второе не должно всякий раз
+   жаловаться владельцу на чужую работу. */
+function adDel(access, fileId, cb){
+  if (!fileId){ cb(null); return; }
+  gdReq({ method: 'DELETE',
+          url: GD_API + '/files/' + encodeURIComponent(fileId),
+          token: access, raw: true }, function(err){
+    if (err === 'notfound'){ cb(null); return; }
+    cb(err || null);
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Сколько места на Диске                                             */
+/* ------------------------------------------------------------------ */
+/* cb(err, q), где q = { unlimited, limit, usage } в БАЙТАХ.
+ *
+ * ПРОВЕРЕНО ЖИВЫМ ЗАПРОСОМ 2026-08-28, на аккаунте владельца, изнутри
+ * установленного приложения: области `drive.appdata` для этого ДОСТАТОЧНО
+ * — `about.get` ответил 200 и отдал квоту целиком. Новой области
+ * доступа не нужно, и это не рассуждение, а замер (README, «Пункт 7»).
+ *
+ * ПОЧЕМУ `usage`, А НЕ `usageInDrive`. Google отдаёт оба: первое —
+ * сколько занято ВО ВСЕХ сервисах (почта, фотографии, Диск), второе —
+ * только Диском. Свободное место у человека одно на всё, поэтому
+ * считать надо по первому. На аккаунте владельца разница в тот день
+ * была 2,52 ГБ: по `usageInDrive` вышло бы 13,89 ГБ свободного вместо
+ * настоящих 11,37 ГБ — программа пообещала бы место, которого нет.
+ *
+ * ПОЧЕМУ НЕ ПИШЕМ «ИЗ 15 ГБ». `limit` — весь тариф, а не то, что
+ * доступно программе: остальное может быть занято чем угодно. Число
+ * взято только для вычитания и наружу не показывается.
+ *
+ * БЕЗЛИМИТ — ЭТО ОТСУТСТВИЕ `limit`, А НЕ НОЛЬ. При неограниченном
+ * хранилище Google поля не присылает вовсе. Прочитать отсутствие как 0
+ * значит сказать «места нет» тому, у кого его сколько угодно, —
+ * ошибка ровно наоборот. Живьём это не воспроизвести (у владельца
+ * лимит есть), поэтому проверяется подделанным ответом.
+ *
+ * Числа приходят СТРОКАМИ («16106127360»), и это не мелочь: без
+ * разбора вычитание строк дало бы NaN, а NaN на экране — «свободно
+ * NaN».
+ */
+function adQuota(access, cb){
+  gdReq({ url: GD_API + '/about?fields=' + encodeURIComponent('storageQuota'),
+          token: access }, function(err, j){
+    if (err){ cb(err); return; }
+    var q = j && j.storageQuota;
+    /* Занятое Google присылает ВСЕГДА — и при безлимите тоже; не
+       присылает он только предел. Ответ без занятого это не «место без
+       границ», а ответ, из которого ничего не следует: прочитать его
+       как безлимит значило бы пообещать владельцу сколько угодно места
+       на основании молчания. */
+    if (!q || !own(q, 'usage')){ cb('server'); return; }
+    var hasLimit = own(q, 'limit') && q.limit !== null && q.limit !== '';
+    cb(null, {
+      unlimited: !hasLimit,
+      limit: hasLimit ? adNum(q.limit) : 0,
+      usage: adNum(q.usage)
+    });
+  });
+}
+
+/* Строка Google → число. Отдельно, потому что то же самое делает
+   листинг, и два разных разбора одного и того же разошлись бы на
+   пустом значении. */
+function adNum(v){
+  var n = parseInt(v, 10);
+  return n > 0 ? n : 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Сообщения                                                          */
+/* ------------------------------------------------------------------ */
+/* Владельцу нужны разные слова на разные беды: «нет сети» пройдёт
+   само, «нет доступа» требует нового входа, «файла нет» не исправить
+   вовсе, «место кончилось» он исправит сам, а «не подключён» — вообще
+   не беда, а состояние. Свалить их в одно слово значит посоветовать не
+   то. Ключи словаря, а не текст: текст переводится, как всё видимое. */
+function attErrKey(err){
+  var M = {
+    off: 'as.eOff', nofetch: 'as.eBrowser', net: 'as.eNet',
+    auth: 'as.eAuth', expired: 'as.eAuth', badclient: 'as.eAuth',
+    notfound: 'as.eGone', quota: 'as.eQuota', rate: 'as.eRate',
+    big: 'as.eBig', nofile: 'as.eGone', badid: 'as.eGone'
+  };
+  return own(M, err) ? M[err] : 'as.eServer';
+}
+
+if (typeof module !== 'undefined' && module.exports){
+  module.exports = {
+    AD_PAGE: AD_PAGE, AD_MAX: AD_MAX,
+    AD_CHUNK: AD_CHUNK, AD_RESUMABLE_FROM: AD_RESUMABLE_FROM,
+    adList: adList, adPut: adPut, adPutBig: adPutBig, adSend: adSend,
+    adGet: adGet, adDel: adDel, adQuota: adQuota, adNum: adNum,
+    attErrKey: attErrKey
+  };
+}
+
+/* ==================================================================
+ * ++++++ ATT SYNC ++++++     ОБОРОТ ОБМЕНА ФАЙЛАМИ: СОСТОЯНИЕ И ХОД
+ *
+ * ES5. Здесь встречаются три уже существующие вещи и ни одна из них не
+ * переписывается:
+ *
+ *   · attq.js      — решения: что отправить, что забрать, что убрать;
+ *   · attdrive.js  — разговор со скрытой папкой поверх gdReq();
+ *   · хранилище файлов приложения (IndexedDB `goods-tracker-att`).
+ *
+ * ЧТО ЖИВЁТ ГДЕ, и почему именно так:
+ *
+ *   · «что уже уехало», надгробия, начатые сессии и недокачанные куски
+ *     — это состояние ЭТОГО устройства. В документе оно уехало бы в
+ *     чужую копию и сдвинуло бы `bakSig()` (хрупкое место 64/76); в
+ *     localStorage заняло бы ключ ни за чем. Поэтому — служебной
+ *     записью в том же хранилище, где лежат сами файлы, рядом с
+ *     сентинелом уборки `__sweep_pending__`;
+ *   · «сколько места на Диске» — сведение об учётной записи, а не
+ *     запись: модульная переменная, как `attMeta`.
+ *
+ * ПОРЯДОК ОБОРОТА — ЗАЩИТА, а не список дел:
+ *
+ *       листинг → удаления → отправка → докачка → место
+ *
+ * Удаления раньше отправок: удаление исполняет уже принятое решение, а
+ * отправка может занять минуты. Докачка последней: она самая долгая, и
+ * её не жалко прервать — следующий заход продолжит с того же места.
+ * Место спрашивается ПОСЛЕДНИМ: наши файлы тоже едят квоту, и после
+ * закачки свободного меньше, чем было при листинге.
+ * ================================================================== */
+
+/* Служебная запись рядом с файлами. Имя в том же стиле, что и
+   `__sweep_pending__`, и по той же причине: читатели метаданных
+   пропускают всё, что начинается с двух подчёркиваний. */
+var ATT_SYNC_REC = '__att_sync__';
+
+/* Состояние этого устройства. Читается один раз за оборот и пишется
+   после каждого удавшегося шага: обрыв связи не должен стоить памяти
+   о том, что уже уехало. */
+var attSync = null;      /* { sent:{}, tombs:{}, sess:{}, part:{} } */
+var attSyncBusy = false;
+var attSyncErr = '';
+
+/* Сведение о месте: { used, quota } либо { err }. Не запись — не в
+   документ и не в localStorage. */
+var attSpaceInfo = null;
+
+function attSyncEmpty(){ return { sent: {}, tombs: {}, sess: {}, part: {} }; }
+
+/* ------------------------------------------------------------------ */
+/* Состояние: чтение и запись                                         */
+/* ------------------------------------------------------------------ */
+/* Ни одна из двух НИКОГДА не роняет программу: закрытое хранилище и
+   покорёженная запись — обычные состояния, и обе читаются как «ничего
+   ещё не уезжало». Это политика `attPendingRead`, а не новая. */
+
+function attSyncLoad(cb){
+  if (!attOn()){ attSync = attSyncEmpty(); cb('off'); return; }
+  var tx = attTx(['att'], 'readonly', function(){ attSync = attSyncEmpty(); cb('read-error'); });
+  if (!tx) return;
+  var g = tx.objectStore('att').get(ATT_SYNC_REC);
+  g.onsuccess = function(){
+    var r = g.result;
+    attSync = {
+      sent:  (r && r.sent  && typeof r.sent  === 'object') ? r.sent  : {},
+      tombs: (r && r.tombs && typeof r.tombs === 'object') ? r.tombs : {},
+      sess:  (r && r.sess  && typeof r.sess  === 'object') ? r.sess  : {},
+      part:  (r && r.part  && typeof r.part  === 'object') ? r.part  : {}
+    };
+    cb(null);
+  };
+  g.onerror = function(){ attSync = attSyncEmpty(); cb('read-error'); };
+}
+
+function attSyncSave(cb){
+  cb = cb || function(){};
+  if (!attOn() || !attSync){ cb('off'); return; }
+  var tx = attTx(['att'], 'readwrite', function(){ cb('write-error'); });
+  if (!tx) return;
+  try {
+    tx.objectStore('att').put({ id: ATT_SYNC_REC, sent: attSync.sent,
+      tombs: attSync.tombs, sess: attSync.sess, part: attSync.part });
+  } catch(e){ cb('write-error'); return; }
+  tx.oncomplete = function(){ cb(null); };
+  tx.onerror    = function(){ cb('write-error'); };
+}
+
+/* ------------------------------------------------------------------ */
+/* Надгробие: файл удалён владельцем                                  */
+/* ------------------------------------------------------------------ */
+/* Ставится ТОЛЬКО на явное удаление — там же, где документ уже
+   сохранён и файл убран с устройства (`commitThenDrop`). Уборка сирот
+   надгробий не ставит: сирота — файл, на который никто не ссылается, и
+   решение о нём принимает каждое устройство само.
+ *
+ * Надгробие живёт, пока файл не убран с Диска. После удаления оно
+ * снимается: вечный список удалённых рос бы без края. */
+
+function attTombAdd(ids){
+  if (!ids || !ids.length) return;
+  var put = function(){
+    var i;
+    for (i = 0; i < ids.length; i++) attSync.tombs[ids[i]] = 1;
+    attSyncSave();
+  };
+  if (attSync) put();
+  else attSyncLoad(function(){ put(); });
+}
+
+/* ------------------------------------------------------------------ */
+/* Чем является файл и как его показать                               */
+/* ------------------------------------------------------------------ */
+/* Метаданные приехавшего файла собираются ИЗ ДОКУМЕНТА: на Диске лежат
+   только байты под именем `att-<id>`, и это сделано нарочно — имя
+   файла на чужом Диске не должно рассказывать о товаре. Что это фото
+   или накладная и к какому товару оно относится, документ знает и так;
+   он приезжает раньше файлов и всегда. */
+
+function attKindOf(doc, id){
+  var ps = (doc && doc.products) || [], i, j, inv;
+  for (i = 0; i < ps.length; i++){
+    if (ps[i].photoId === id) return { kind: 'photo', productId: ps[i].id };
+    inv = ps[i].invoiceIds || [];
+    for (j = 0; j < inv.length; j++)
+      if (inv[j] === id) return { kind: 'invoice', productId: ps[i].id };
+  }
+  return null;
+}
+
+/* Миниатюра приехавшего фото строится ЗДЕСЬ и не пересжимает файл.
+   Прогнать его через shrinkPhoto() было бы проще и неверно: он делает
+   ДРУГОЙ файл, а отпечаток на Диске остался бы от прежнего. */
+function attThumbOf(blob, cb){
+  if (!blob || String(blob.type || '').indexOf('image/') !== 0){ cb(''); return; }
+  readDataUrl(blob, function(e1, url){
+    if (e1){ cb(''); return; }
+    loadImage(url, function(e2, img){
+      if (e2){ cb(''); return; }
+      var t = '';
+      try { t = drawScaled(img, THUMB_SIDE).toDataURL('image/jpeg', THUMB_Q); }
+      catch(e){ t = ''; }
+      cb(t);
+    });
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Один шаг за другим, по списку                                      */
+/* ------------------------------------------------------------------ */
+/* Последовательно, а не разом: десяток одновременных закачек на
+   мобильной сети мешают друг другу и рвутся все сразу. */
+
+function attStep(list, one, done){
+  var i = 0;
+  function next(){
+    if (i >= list.length){ done(); return; }
+    var item = list[i++];
+    one(item, next);
+  }
+  next();
+}
+
+/* ------------------------------------------------------------------ */
+/* Оборот                                                             */
+/* ------------------------------------------------------------------ */
+/* cb(err) — 'off' значит «нечем и незачем», и это не беда. */
+
+function attSyncRun(cb){
+  cb = cb || function(){};
+  if (attSyncBusy){ cb('busy'); return; }
+  if (!attOn()){ cb('off'); return; }
+  if (!modeIsProduct()){ cb('off'); return; }
+
+  attSyncBusy = true;
+  attSyncErr = '';
+  var finish = function(err){
+    attSyncBusy = false;
+    attSyncErr = err || '';
+    attSyncSave(function(){ cb(err || null); });
+  };
+
+  gdAuthLive(function(aerr, access){
+    if (aerr){ finish(aerr); return; }
+    attSyncLoad(function(){
+      adList(access, function(lerr, map, listBytes){
+        if (lerr){ finish(lerr); return; }
+
+        var addedBytes = 0, removedBytes = 0, doc = state, id;
+
+        /* ПЕРЕУСТАНОВКА ЛЕЧИТСЯ ЗДЕСЬ. Карта «что уже уехало» живёт на
+           устройстве, и на новом её нет. Листинг — единственный
+           источник правды о Диске: без этих трёх строк программа
+           залила бы всё заново поверх того же самого. */
+        for (id in map){
+          if (!own(map, id)) continue;
+          if (!own(attSync.sent, id)) attSync.sent[id] = map[id].fileId;
+        }
+
+        var toDel  = attToDelete(attSync.sent, attSync.tombs);
+        var toSend = attToSend(doc, attMeta, attSync.sent, attSync.tombs);
+        var batch  = attNextBatch(doc, attMeta, attSync.tombs, {});
+
+        attStep(toDel, function(delId, next){
+          adDel(access, attSync.sent[delId], function(e){
+            /* «Файла и так нет» — это успех задачи, а не отказ: цель
+               была в том, чтобы его там не было. */
+            if (e && e !== 'gone'){ next(); return; }
+            removedBytes += (map[delId] && map[delId].size) || 0;
+            delete attSync.sent[delId];
+            delete attSync.tombs[delId];
+            attSyncSave();
+            next();
+          });
+        }, function(){
+
+          attStep(toSend, function(sendId, next){
+            attGetBlob(sendId, function(be, blob){
+              if (be || !blob){ next(); return; }
+              var m = attMeta[sendId] || {};
+              adSend(access, sendId, blob, m.mime || blob.type || '',
+                     attSync.sent[sendId] || '', attSync.sess[sendId] || null,
+                function(e, res){
+                  if (e){
+                    /* Прерванная отправка запоминает, докуда дошла:
+                       следующий заход продолжит, а не начнёт заново. */
+                    if (res && res.url) attSync.sess[sendId] = res;
+                    attSyncSave();
+                    next(); return;
+                  }
+                  delete attSync.sess[sendId];
+                  attSync.sent[sendId] = res;
+                  if (!own(map, sendId)) addedBytes += blob.size;
+                  attSyncSave();
+                  next();
+                },
+                function(mark){ attSync.sess[sendId] = mark; });
+            });
+          }, function(){
+
+            attStep(batch, function(getId, next){
+              var meta = map[getId];
+              if (!meta){ next(); return; }          /* на Диске ещё нет */
+              var what = attKindOf(doc, getId);
+              if (!what){ next(); return; }          /* ссылки уже нет */
+              var mime = what.kind === 'photo' ? 'image/jpeg' : 'application/pdf';
+              adGet(access, meta.fileId, mime, meta.size, attSync.part[getId] || null,
+                function(e, res){
+                  if (e){
+                    /* Незаконченное НЕ показываем и НЕ храним: половина
+                       фотографии выглядит как испорченный файл. */
+                    if (res && res.part) attSync.part[getId] = res.part;
+                    attSyncSave();
+                    next(); return;
+                  }
+                  delete attSync.part[getId];
+                  attThumbOf(res.blob, function(thumb){
+                    attPut({ id: getId, kind: what.kind, productId: what.productId,
+                             name: '', mime: res.blob.type || mime,
+                             size: res.blob.size, addedAt: todayISO(),
+                             thumb: thumb || '' }, res.blob, function(){
+                      attSyncSave();
+                      next();
+                    });
+                  });
+                });
+            }, function(){
+
+              /* Место — последним, и каждый оборот. Занятое берётся из
+                 УЖЕ выполненного листинга: второй запрос за тем же
+                 числом разошёлся бы с первым. */
+              var used = attUsedBytes(listBytes, addedBytes, removedBytes);
+              adQuota(access, function(qe, q){
+                /* Отказ квоты НЕ роняет оборот: файлы уже съездили, а
+                   место — сведение, а не условие работы. Занятое при
+                   этом известно, и строка скажет именно его. */
+                attSpaceInfo = { used: used, quota: qe ? { err: qe } : q };
+                finish(null);
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Что показать вместо отсутствующего файла                           */
+/* ------------------------------------------------------------------ */
+/* До этой задачи «ещё едет» и «его нет» выглядели одинаково — строкой
+   «файл отсутствует». Это разные вещи: первое пройдёт само, второе не
+   исправить ничем. */
+
+function attMissKey(id){
+  if (!modeIsProduct() || !gdTokens) return 'att.missing';
+  var st = attViewState(id, attMeta, (attSync && attSync.tombs) || {});
+  if (st === 'gone') return 'as.gone';
+  return 'as.coming';
+}
+
+/* Строка о месте под именем учётной записи. Пусто, пока не спросили —
+   выдумывать число нельзя, а «0 из 0» хуже молчания. */
+function attSpaceLine(){
+  /* Обмена ещё не было — говорим об этом, а не показываем нули. */
+  if (!attSpaceInfo) return tr('as.spaceUnknown');
+  var sp = attSpace(attSpaceInfo.used, attSpaceInfo.quota);
+  var key = attSpaceKey(sp);
+  if (key === 'as.space')
+    return tr(key, { used: fmtBytes(sp.used), free: fmtBytes(sp.free) });
+  if (key === 'as.spaceUnlimited' || key === 'as.spaceFailed')
+    return tr(key, { used: fmtBytes(sp.used) });
+  return tr(key);
+}
+
+/* ------------------------------------------------------------------ */
+/* Одна накладная — по требованию                                     */
+/* ------------------------------------------------------------------ */
+/* Накладные НЕ тянутся пачкой: инвойс это несколько мегабайт, и качать
+   их все на телефон по мобильной сети значит тратить трафик на файлы,
+   которые владелец, возможно, не откроет ни разу. Фото ведут себя
+   иначе — они нужны на каждом экране, и потому едут сами.
+ *
+ * Прерванная докачка запоминает, докуда дошла: следующее нажатие
+ * продолжит с того же места, а не начнёт заново. */
+
+var attPullBusy = '';
+
+function attPullOne(id, cb){
+  cb = cb || function(){};
+  if (attPullBusy){ cb('busy'); return; }
+  if (!attOn() || !modeIsProduct()){ cb('off'); return; }
+  var what = attKindOf(state, id);
+  if (!what){ cb('notfound'); return; }
+
+  attPullBusy = id;
+  var finish = function(err){ attPullBusy = ''; cb(err || null); };
+
+  gdAuthLive(function(aerr, access){
+    if (aerr){ finish(aerr); return; }
+    attSyncLoad(function(){
+      adList(access, function(lerr, map){
+        if (lerr){ finish(lerr); return; }
+        var meta = map[id];
+        /* На Диске его ещё нет — значит другое устройство пока не
+           отправило. Это не поломка, и говорить надо именно это. */
+        if (!meta){ finish('notfound'); return; }
+        var mime = what.kind === 'photo' ? 'image/jpeg' : 'application/pdf';
+        adGet(access, meta.fileId, mime, meta.size, attSync.part[id] || null,
+          function(e, res){
+            if (e){
+              if (res && res.part){ attSync.part[id] = res.part; attSyncSave(); }
+              finish(e); return;
+            }
+            delete attSync.part[id];
+            attThumbOf(res.blob, function(thumb){
+              attPut({ id: id, kind: what.kind, productId: what.productId,
+                       name: '', mime: res.blob.type || mime,
+                       size: res.blob.size, addedAt: todayISO(),
+                       thumb: thumb || '' }, res.blob, function(){
+                attSyncSave();
+                finish(null);
+              });
+            });
+          });
+      });
+    });
+  });
 }
 
 /* ==================================================================
@@ -7537,6 +8772,11 @@ function commitThenDrop(ids){
      следующем обычном обмене. Теперь через неё идут ВСЕ окончательные
      удаления, и «когда-нибудь» перестало быть приемлемым. */
   if (syncCfgFull()) syncSoon(function(){ syncRun(false); });
+  /* ++++++ ATT SYNC ++++++ надгробие ставится ЗДЕСЬ и только здесь:
+     это единственное место, где файл убирает ВЛАДЕЛЕЦ. Уборка сирот
+     (attSweep) надгробий не ставит — сирота есть решение каждого
+     устройства о себе, а не приказ соседям. */
+  if (saved && ids && ids.length) attTombAdd(ids);
   if (saved && ids && ids.length) attDel(ids, function(){ render(); });
 }
 
@@ -7643,7 +8883,10 @@ function fmtBytes(n){
   /* through tr() like every other visible string — "KB" is not "КБ" */
   if (n < 1024) return n + ' ' + tr('att.unitB');
   if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' ' + tr('att.unitKB');
-  return (n / 1024 / 1024).toFixed(1) + ' ' + tr('att.unitMB');
+  if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' ' + tr('att.unitMB');
+  /* ++++++ ATT SYNC ++++++ гигабайты — в ТУ ЖЕ семью единиц, а не в
+     новую: две семьи разошлись бы при первом исправлении округления. */
+  return (n / 1024 / 1024 / 1024).toFixed(1) + ' ' + tr('att.unitGB');
 }
 /** null when the file may be stored, otherwise the message to show */
 function attCheck(file, kind){
@@ -12351,7 +13594,8 @@ function cardPhotoNoteHTML(p){
     return '<div class="note warn">' + tr('att.offShort') + '</div>';
   }
   if (p.photoId && !attById(p.photoId)){
-    return '<div class="note warn">' + tr('att.missing') + '</div>';
+    /* ++++++ ATT SYNC ++++++ «едет» и «нет» — разные вещи */
+    return '<div class="note warn">' + tr(attMissKey(p.photoId)) + '</div>';
   }
   return '';
 }
@@ -12383,7 +13627,14 @@ function cardInvoicesHTML(p){
       act:'att-open', arg:'a:' + m.id });
   });
   if (missing){
-    rows += '<div class="empty">' + tr('att.missing') + '</div>';
+    /* ++++++ ATT SYNC ++++++ то же различие в списке накладных */
+    rows += '<div class="empty">' + tr(attMissKey(missing)) + '</div>';
+    /* и кнопка: качать накладные пачкой нельзя, а эту — можно */
+    if (attMissKey(missing) === 'as.coming')
+      rows += '<div class="rb"><button type="button" data-act="att-pull" data-arg="' +
+              esc(missing) + '">' +
+              esc(tr(attPullBusy === missing ? 'as.pulling' : 'as.pullInv')) +
+              '</button></div>';
   }
   return '<section class="card"><div class="t">' + tr('att.invoices') + '</div>' +
     (rows || '<div class="empty">' + tr('att.invNone') + '</div>') +
@@ -15620,6 +16871,16 @@ function handleAct(act, arg, e, srcEl){
   if (act === 'sync-connect'){ syncConnect(); return; }
   if (act === 'sync-forget'){ syncForgetAll(); return; }
   if (act === 'sync-now'){ syncRun(true); return; }
+  /* ++++++ ATT SYNC ++++++ одна накладная по требованию */
+  if (act === 'att-pull'){
+    if (attPullBusy) return;
+    render();
+    attPullOne(arg, function(err){
+      if (err && err !== 'busy') toast(tr(attErrKey(err)), 'warn');
+      render();
+    });
+    return;
+  }
   if (act === 'sync-conf'){ syncConflictSheet(); return; }
   /* ++++++ BASE UNDO ++++++ R9. Возврат двигает деньги, поэтому спрашивает —
      как и всякое разрушительное действие в этом файле (жёсткое условие 8). */
@@ -16089,6 +17350,10 @@ function syncRun(loud){
          репозитория, ни учётной записи GitHub, и слово «GitHub» на
          экране владельца — про чужой механизм. */
       if (loud) toast(tr(modeIsProduct() ? 'gd.okNow' : 'sy.okNow'), 'ok');
+      /* ++++++ ATT SYNC ++++++ файлы едут ПОСЛЕ документа и отдельным
+         заходом. Документ маленький и от него зависят все цифры; файлы
+         большие, и прерванная закачка не должна задерживать записи. */
+      attSyncRun(function(){ render(); });
     } else {
       syncStatus.err = (r && r.err) || 'server';
       if (r && r.conflicts && r.conflicts.length){
@@ -16490,7 +17755,11 @@ function gdCardHTML(){
          esc(tr('gd.signIn')) + '</button></div>';
     h += '<div class="note">' + tr('gd.worksWithout') + '</div>';
   } else {
-    h += row({ k: esc(b ? b.name : '—'), sub: esc(tr('gd.account')) });
+    /* ++++++ ATT SYNC ++++++ место — ВТОРОЙ подписью: она переносится,
+       а не обрезается многоточием (хрупкое место 26), и первая уже
+       занята словом «Учётная запись». */
+    h += row({ k: esc(b ? b.name : '—'), sub: esc(tr('gd.account')),
+               sub2: esc(attSpaceLine()) });
     var line;
     if (syncStatus.busy) line = tr('gd.busy');
     else line = o.at ? tr('gd.lastAt', { when: bakStamp(o.at) }) : tr('gd.never');
@@ -16501,7 +17770,9 @@ function gdCardHTML(){
          '<button type="button" class="go" data-act="sync-now">' + esc(tr('gd.now')) + '</button> ' +
          '<button type="button" data-act="gd-signout">' + esc(tr('gd.signOut')) + '</button>' +
          '</div>';
-    h += '<div class="note">' + tr('gd.noFiles') + '</div>';
+    /* ++++++ ATT SYNC ++++++ раньше здесь стояло «фотографии не ездят».
+       Теперь ездят, и страница обязана говорить то, что есть. */
+    h += '<div class="note">' + tr('as.filesGo') + '</div>';
   }
 
   if (syncStatus.err){
@@ -16680,6 +17951,16 @@ window.GoodsTracker = {
     should: bakShouldRemind, dirty: bakDirty, paint: bakBarPaint
   },
   /* ++++++ ATTACHMENTS ++++++ the test suite drives the store through this */
+  /* ++++++ ATT SYNC ++++++ обмен вложениями — чтобы живая проверка
+     могла спросить его на настоящей оболочке, а не гадать по экрану */
+  attSync: {
+    run: attSyncRun, pull: attPullOne, tomb: attTombAdd,
+    kindOf: attKindOf, missKey: attMissKey, spaceLine: attSpaceLine,
+    get state(){ return attSync; },
+    get space(){ return attSpaceInfo; },
+    get busy(){ return attSyncBusy; },
+    REC: ATT_SYNC_REC
+  },
   att: {
     get meta(){ return attMeta; },
     get state(){ return attState; },
