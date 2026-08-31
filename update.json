@@ -1,11 +1,11 @@
 {
-  "version": "1.2.2",
-  "build": "2026-08-28T21:13:01.874Z",
+  "version": "1.2.3",
+  "build": "2026-08-31T20:19:29.818Z",
   "minShell": "1.2.0",
   "core": "app/goods-tracker.html",
-  "hash": "345e6898-18e8e10f-846408",
-  "size": 846408,
-  "notes": "Обновление приехало САМО — если видите это, цепочка работает",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.2.2",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.2.2/personal-accountant-1.2.2.apk"
+  "hash": "341ab7e8-2ecf5fa5-903836",
+  "size": 903836,
+  "notes": "Фотографии и накладные теперь ездят между устройствами — снимите фото на телефоне, и оно появится на компьютере",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.2.3",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.2.3/personal-accountant-1.2.3.apk"
 }
