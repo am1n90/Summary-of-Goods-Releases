@@ -2455,8 +2455,14 @@ var STR = {
                  ru:'Google ответил ошибкой — файлы уедут позже.' },
 'as.filesGo':  { en:'Photos and invoices travel too — into the same hidden folder on your Drive.',
                  ru:'Фотографии и накладные тоже ездят — в ту же скрытую папку вашего Диска.' },
-'as.pullInv':  { en:'Download the invoice', ru:'Скачать накладную' },
 'as.pulling':  { en:'Downloading…', ru:'Скачиваю…' },
+/* ++++++ INVOICE LIST ++++++ пометка строки, которая ещё не приехала:
+   короткое слово справа, а полное предложение — подписью под именем */
+'as.markAway': { en:'on the way', ru:'едет' },
+'as.markGone': { en:'deleted', ru:'удалена' },
+'as.markNone': { en:'not here', ru:'нет' },
+'as.eOpen':    { en:'There is no app on this device that can open this file.',
+                 ru:'На устройстве нечем открыть этот файл.' },
 /* ++++++ ATT NAME ++++++ подпись накладной, уехавшей до этой задачи:
    имени у неё нет нигде, и выдумывать его нельзя */
 'as.invNoName':{ en:'Invoice', ru:'Накладная' },
@@ -3591,8 +3597,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.2.4';
-var APP_BUILD = '2026-09-01T03:19:24.580Z';
+var APP_VERSION = '1.2.5';
+var APP_BUILD = '2026-09-01T06:31:22.524Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -7672,6 +7678,48 @@ function attPullOne(id, cb){
       });
     });
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* ++++++ INVOICE VIEW ++++++ ОТДАТЬ ДОКУМЕНТ СИСТЕМЕ                  */
+/* ------------------------------------------------------------------ */
+/* Нужно там, где показывать его нечем: WebView Android не умеет PDF ни
+ * в <iframe>, ни по ссылке. Оболочка кладёт файл в свой кэш и зовёт
+ * системный просмотрщик; наружу, в сеть, не уходит ничего, и нового
+ * адреса не появляется.
+ *
+ * Спрашиваем МОСТ, а не платформу. Строка браузера отвечает на другой
+ * вопрос — «кто я», — а нужен этот: «есть ли чем открыть». Оболочка,
+ * которая этого не умеет (а такие стоят на устройствах прямо сейчас),
+ * честно отвечает «нет», и ядро идёт прежним путём. */
+function attCanOpenOutside(){
+  var br = gdBridge();
+  return !!(br && typeof br.openFile === 'function');
+}
+
+function attOpenOutside(m, blob){
+  var br = gdBridge();
+  if (!br || !br.openFile) return;
+  var fr = new FileReader();
+  fr.onerror = function(){ toast(tr('as.eOpen'), 'warn'); };
+  fr.onload = function(){
+    /* data:...;base64,XXX — берём то, что после запятой: мосту нужны
+       голые байты, а не адрес. */
+    var s = String(fr.result || ''), at = s.indexOf(',');
+    if (at < 0){ toast(tr('as.eOpen'), 'warn'); return; }
+    var p;
+    try {
+      p = br.openFile(s.slice(at + 1), m.mime || 'application/pdf',
+                      m.name || attInvLabel(m, tr, fmtDateLong, true));
+    } catch(e){ toast(tr('as.eOpen'), 'warn'); return; }
+    if (!p || !p.then){ toast(tr('as.eOpen'), 'warn'); return; }
+    p.then(function(r){
+      /* «Открыть нечем» — не поломка: на телефоне может не быть ни
+         одной программы для PDF, и сказать об этом надо словами. */
+      if (!r || !r.ok) toast(tr('as.eOpen'), 'warn');
+    })['catch'](function(){ toast(tr('as.eOpen'), 'warn'); });
+  };
+  try { fr.readAsDataURL(blob); } catch(e){ toast(tr('as.eOpen'), 'warn'); }
 }
 
 /* ==================================================================
@@ -13592,7 +13640,16 @@ function attOpenSheet(id){
         cancelLabel: tr('w.close'), buttons: [] });
       return;
     }
-    var url = URL.createObjectURL(blob), pdf = m.mime === 'application/pdf';
+    var pdf = m.mime === 'application/pdf';
+    /* ++++++ INVOICE VIEW ++++++ WebView Android не умеет показывать
+       PDF ВООБЩЕ — ни в <iframe>, ни по ссылке; это отсутствующая
+       возможность, а не настройка, и чёрный прямоугольник вместо
+       документа получается именно из неё. Там документ отдаётся
+       системе — тому приложению, которым владелец и так читает PDF.
+       На Windows встроенный просмотрщик есть, и путь остаётся
+       прежним. */
+    if (pdf && attCanOpenOutside()){ attOpenOutside(m, blob); return; }
+    var url = URL.createObjectURL(blob);
     var body = pdf
       ? '<div class="attview"><iframe src="' + url + '" title="' + esc(m.name || '') + '"></iframe></div>' +
         '<div class="note calc">' + tr('att.pdfNote') + '</div>'
@@ -13788,10 +13845,39 @@ function cardInvoicesHTML(p){
     return '<section class="card"><div class="t">' + tr('att.invoices') + '</div>' +
       '<div class="b"><div class="note warn">' + tr('att.offShort') + '</div></div></section>';
   }
-  var rows = '', missing = 0;
+  /* ++++++ INVOICE LIST ++++++ СТРОКА НА КАЖДУЮ НАКЛАДНУЮ ДОКУМЕНТА,
+     а не только на те, чьи байты уже здесь. Не приехавшая помечена и
+     нажимается: сперва скачается, потом откроется — отдельной кнопки
+     под списком нет, потому что спрашивают не «скачай», а «покажи».
+
+     Прежний вид был ещё и неверен: под списком стояла ОДНА кнопка, и
+     ей передавался СЧЁТЧИК отсутствующих файлов вместо
+     идентификатора. Программа отвечала «файла на Диске нет» — про файл
+     с именем «1». Здесь такое невозможно: строка построена из своего
+     id и его же несёт. */
+  var rows = '';
   (p.invoiceIds || []).forEach(function(id){
     var m = attById(id);
-    if (!m){ missing++; return; }
+    if (!m){
+      /* Байтов нет. Строка всё равно стоит: спрятать её значило бы
+         скрыть от владельца накладную, которая у товара ЕСТЬ.
+
+         Три состояния, и они РАЗНЫЕ. «Едет» — файл лежит на Диске и
+         его можно забрать; «удалена» — его там нет и не будет;
+         «нет» — обмена в этой сборке нет вовсе, и качать неоткуда.
+         Нажимается только первое: строка, которая ничего не сделает,
+         обещала бы то, чего не может. */
+      var key = attMissKey(id), busy = attPullBusy === id;
+      var can = key === 'as.coming';
+      rows += row({
+        lead: '<span class="thumb file">' + fileIcon(true) + '</span>',
+        k: esc(tr('as.invNoName')),
+        sub: esc(tr(busy ? 'as.pulling' : key)),
+        v: esc(tr(busy ? 'as.pulling' : (can ? 'as.markAway'
+             : (key === 'as.gone' ? 'as.markGone' : 'as.markNone')))),
+        act: can ? 'att-get' : '', arg: id });
+      return;
+    }
     var pdf = m.mime === 'application/pdf';
     rows += row({
       lead: m.thumb
@@ -13806,16 +13892,6 @@ function cardInvoicesHTML(p){
       v: pdf ? tr('att.invPdf') : tr('att.invImage'),
       act:'att-open', arg:'a:' + m.id });
   });
-  if (missing){
-    /* ++++++ ATT SYNC ++++++ то же различие в списке накладных */
-    rows += '<div class="empty">' + tr(attMissKey(missing)) + '</div>';
-    /* и кнопка: качать накладные пачкой нельзя, а эту — можно */
-    if (attMissKey(missing) === 'as.coming')
-      rows += '<div class="rb"><button type="button" data-act="att-pull" data-arg="' +
-              esc(missing) + '">' +
-              esc(tr(attPullBusy === missing ? 'as.pulling' : 'as.pullInv')) +
-              '</button></div>';
-  }
   return '<section class="card"><div class="t">' + tr('att.invoices') + '</div>' +
     (rows || '<div class="empty">' + tr('att.invNone') + '</div>') +
     '<div class="b">' + btn(tr('att.invAdd'), 'att-pick', 'ghost', 'inv:p:' + p.id) +
@@ -17051,13 +17127,16 @@ function handleAct(act, arg, e, srcEl){
   if (act === 'sync-connect'){ syncConnect(); return; }
   if (act === 'sync-forget'){ syncForgetAll(); return; }
   if (act === 'sync-now'){ syncRun(true); return; }
-  /* ++++++ ATT SYNC ++++++ одна накладная по требованию */
-  if (act === 'att-pull'){
+  /* ++++++ INVOICE LIST ++++++ нажали на не приехавшую накладную:
+     сперва качаем, потом открываем — одним нажатием. Открываем ровно
+     то, что приехало: id тот же, каким качали. */
+  if (act === 'att-get'){
     if (attPullBusy) return;
     render();
     attPullOne(arg, function(err){
-      if (err && err !== 'busy') toast(tr(attErrKey(err)), 'warn');
       render();
+      if (err && err !== 'busy'){ toast(tr(attErrKey(err)), 'warn'); return; }
+      if (attById(arg)) attOpenSheet(arg);
     });
     return;
   }
@@ -17533,7 +17612,14 @@ function syncRun(loud){
       /* ++++++ ATT SYNC ++++++ файлы едут ПОСЛЕ документа и отдельным
          заходом. Документ маленький и от него зависят все цифры; файлы
          большие, и прерванная закачка не должна задерживать записи. */
-      attSyncRun(function(){ render(); });
+      /* ++++++ INVOICE LIST ++++++ и НЕ МОЛЧИТ о своей беде. Ответ
+         оборота никто не читал, поэтому файл, который не уехал,
+         выглядел ровно как файл, который ещё едет: запись есть, а
+         файла нет, и объяснить это было нечем. */
+      attSyncRun(function(ae){
+        if (ae && ae !== 'off' && ae !== 'busy') toast(tr(attErrKey(ae)), 'warn');
+        render();
+      });
     } else {
       syncStatus.err = (r && r.err) || 'server';
       if (r && r.conflicts && r.conflicts.length){
@@ -18135,6 +18221,16 @@ window.GoodsTracker = {
      могла спросить его на настоящей оболочке, а не гадать по экрану */
   attSync: {
     run: attSyncRun, pull: attPullOne, tomb: attTombAdd,
+    /* ++++++ INVOICE LIST ++++++ спросить, что РЕАЛЬНО лежит в скрытой
+       папке. Гадать по экрану, уехал файл или нет, — это ровно то, из
+       чего выросла эта задача. Читает и ничего не меняет. */
+    list: function(cb){
+      cb = cb || function(){};
+      gdAuthLive(function(e, access){
+        if (e){ cb(e); return; }
+        adList(access, function(le, map, bytes){ cb(le || null, map, bytes); });
+      });
+    },
     kindOf: attKindOf, missKey: attMissKey, spaceLine: attSpaceLine,
     get state(){ return attSync; },
     get space(){ return attSpaceInfo; },
