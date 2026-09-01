@@ -1,11 +1,11 @@
 {
-  "version": "1.2.4",
-  "build": "2026-09-01T03:19:24.580Z",
+  "version": "1.2.5",
+  "build": "2026-09-01T06:31:22.524Z",
   "minShell": "1.2.0",
   "core": "app/goods-tracker.html",
-  "hash": "9c8633f6-3227e993-912089",
-  "size": 912089,
-  "notes": "У накладной, приехавшей с другого устройства, теперь видно её имя",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.2.4",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.2.4/personal-accountant-1.2.4.apk"
+  "hash": "77b476e0-347f4289-916766",
+  "size": 916766,
+  "notes": "Накладные теперь списком: имя, размер и дата — нажатие открывает документ",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.2.5",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.2.5/personal-accountant-1.2.5.apk"
 }
