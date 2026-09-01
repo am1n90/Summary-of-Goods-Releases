@@ -2457,6 +2457,10 @@ var STR = {
                  ru:'Фотографии и накладные тоже ездят — в ту же скрытую папку вашего Диска.' },
 'as.pullInv':  { en:'Download the invoice', ru:'Скачать накладную' },
 'as.pulling':  { en:'Downloading…', ru:'Скачиваю…' },
+/* ++++++ ATT NAME ++++++ подпись накладной, уехавшей до этой задачи:
+   имени у неё нет нигде, и выдумывать его нельзя */
+'as.invNoName':{ en:'Invoice', ru:'Накладная' },
+'as.invOn':    { en:'Invoice of {date}', ru:'Накладная от {date}' },
 'gd.browser':  { en:'Signing in with Google works in the installed apps: the key has to live in the system keystore, and a page opened from a file has none. Everything else works here exactly as before.',
                  ru:'Вход в Google работает в установленных приложениях: ключ доступа нужно хранить в защищённом хранилище системы, а у страницы, открытой из файла, такого хранилища нет. Всё остальное здесь работает точно так же.' },
 'gd.noClient': { en:'This build has no Google key set, so there is nothing to sign in with. Everything else works.',
@@ -3587,8 +3591,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.2.3';
-var APP_BUILD = '2026-08-31T20:19:29.818Z';
+var APP_VERSION = '1.2.4';
+var APP_BUILD = '2026-09-01T03:19:24.580Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -6715,6 +6719,125 @@ if (typeof module !== 'undefined' && module.exports){
 }
 
 /* ==================================================================
+ * ++++++ ATT NAME ++++++        ИМЯ НАКЛАДНОЙ ЕДЕТ ВМЕСТЕ С ФАЙЛОМ
+ *
+ * ES5, без сети и без хранилища: чистые решения об одной строке.
+ *
+ * ЗАЧЕМ. На Диск уезжают только байты под именем `att-<id>` — список
+ * файлов в скрытой папке не должен рассказывать, чем владелец торгует.
+ * Для фотографии этого хватает: она сама себе подпись. Для накладной
+ * нет — у товара их бывает несколько, и «открывать по очереди, чтобы
+ * понять, где какая» есть ровно то, от чего программа избавляет.
+ *
+ * ГДЕ ЖИВЁТ ИМЯ. В свойствах файла Drive (`appProperties`) — машинных
+ * парах, которые едут вместе с файлом и в обычном списке Диска не
+ * видны. Имя самого файла остаётся `att-<id>`.
+ *
+ * ПРЕДЕЛ. Drive отводит на пару ключ+значение 124 байта. Ключ здесь
+ * один байт (`n`), поэтому имени достаётся 120 — и это БАЙТЫ UTF-8, а
+ * не символы: русская буква весит два. «Инвойс от поставщика Ахмад 12
+ * августа.pdf» — уже 76 байт, и бывают длиннее.
+ * ================================================================== */
+
+/* Сколько байт занимает строка в UTF-8. Тот же вопрос, что решал
+   предел ядра (хрупкое место 79): считать символы вместо байтов — это
+   ошибка, которая всплывает на русском тексте и никогда на английском. */
+function attNameBytes(s){
+  try { return unescape(encodeURIComponent(String(s == null ? '' : s))).length; }
+  catch (e){ return String(s == null ? '' : s).length * 2; }
+}
+
+var ATT_NAME_MAX = 120;
+
+/* Расширение — до 10 символов после последней точки, и только если
+   перед ней что-то есть. «.pdf» у файла без имени расширением не
+   считается: обрезать там нечего. */
+function attNameExt(name){
+  var s = String(name == null ? '' : name);
+  var at = s.lastIndexOf('.');
+  if (at <= 0) return '';
+  var ext = s.slice(at);
+  if (ext.length > 11) return '';           /* точка + десять символов */
+  if (/[\\/]/.test(ext)) return '';
+  return ext;
+}
+
+/* ОБРЕЗКА ПОСЕРЕДИНЕ — решение владельца 2026-09-01: начало и
+   расширение сохраняются, середина заменяется многоточием. Начало
+   говорит, ЧТО это, расширение — чем открыть; выпадает середина, где у
+   длинных имён обычно даты и уточнения.
+ *
+ * Байты считаются посимвольно и с конца: обрезать строку по числу
+ * байтов «на глаз» значит когда-нибудь разрубить букву пополам. */
+function attTrimName(name, maxBytes){
+  var s = String(name == null ? '' : name).replace(/[\r\n\t]+/g, ' ');
+  s = s.replace(/^\s+|\s+$/g, '');
+  var max = maxBytes > 0 ? maxBytes : ATT_NAME_MAX;
+  if (!s) return '';
+  if (attNameBytes(s) <= max) return s;
+
+  var ext = attNameExt(s);
+  var body = ext ? s.slice(0, s.length - ext.length) : s;
+  var dots = '…';
+  /* Хвост — половина того, что осталось после расширения и многоточия,
+     но не длиннее восьми символов: он нужен, чтобы отличить два имени
+     с одинаковым началом, а не чтобы пересказать конец. */
+  var room = max - attNameBytes(ext) - attNameBytes(dots);
+  if (room <= 0) return ext ? ext.slice(0, 8) : s.slice(0, 4);
+
+  var tailChars = 0, tailBytes = 0, i;
+  for (i = body.length - 1; i >= 0 && tailChars < 8; i--){
+    var b = attNameBytes(body.charAt(i));
+    if (tailBytes + b > Math.floor(room / 3)) break;
+    tailBytes += b; tailChars++;
+  }
+  var tail = tailChars ? body.slice(body.length - tailChars) : '';
+
+  var headRoom = room - tailBytes, head = '', got = 0;
+  for (i = 0; i < body.length - tailChars; i++){
+    var hb = attNameBytes(body.charAt(i));
+    if (got + hb > headRoom) break;
+    head += body.charAt(i); got += hb;
+  }
+  head = head.replace(/\s+$/, '');
+  return head + dots + tail + ext;
+}
+
+/* Что кладётся в свойства файла. Пустое имя — НЕ свойство: пустая пара
+   заняла бы место и ничего не сказала. */
+function attNameProps(name){
+  var t = attTrimName(name, ATT_NAME_MAX);
+  return t ? { n: t } : null;
+}
+
+/* Что прочиталось из свойств. Всё, что не строка, читается как «имени
+   нет»: свойства приходят с чужого Диска и могли быть чем угодно. */
+function attNameOf(props){
+  if (!props || typeof props !== 'object') return '';
+  var v = props.n;
+  if (typeof v !== 'string') return '';
+  v = v.replace(/[\r\n\t]+/g, ' ').replace(/^\s+|\s+$/g, '');
+  /* Приехавшее имя тоже обрезается: чужая сторона могла быть старее
+     или щедрее, а на экран идёт наша мерка. */
+  return attTrimName(v, ATT_NAME_MAX);
+}
+
+/* Подпись накладной, у которой имени нет ВООБЩЕ — она уехала до этой
+   задачи. Решение владельца: «Накладная» и дата добавления; выдумывать
+   имя нельзя, а пустая строка — то, от чего уходим. */
+/* `noDate` — для СПИСКА, где дата уже стоит второй строкой: повторять
+   её в заголовке значит сказать одно и то же дважды. В окне просмотра
+   второй строки нет, и там дата нужна. */
+function attInvLabel(meta, trFn, fmtDate, noDate){
+  var name = meta && typeof meta.name === 'string' ? meta.name : '';
+  if (name) return name;
+  if (noDate) return trFn('as.invNoName');
+  var at = meta && meta.addedAt ? String(meta.addedAt) : '';
+  var when = at ? (fmtDate ? fmtDate(at) : at) : '';
+  return when ? trFn('as.invOn', { date: when }) : trFn('as.invNoName');
+}
+
+/* ==================================================================
  * ++++++ ATT SYNC ++++++        РАЗГОВОР О ФАЙЛАХ СО СКРЫТОЙ ПАПКОЙ
  *
  * ES5. Тонкий слой поверх gdReq() — ЕДИНСТВЕННОЙ точки разговора с
@@ -6782,7 +6905,10 @@ function adList(access, cb){
   function page(token){
     var url = GD_API + '/files?spaces=appDataFolder' +
               '&q=' + encodeURIComponent('trashed=false') +
-              '&fields=' + encodeURIComponent('nextPageToken,files(id,name,size)') +
+              /* ++++++ ATT NAME ++++++ имя накладной едет свойством файла:
+                 имя САМОГО файла на Диске остаётся att-<id>, чтобы список
+                 в скрытой папке не рассказывал, чем владелец торгует. */
+              '&fields=' + encodeURIComponent('nextPageToken,files(id,name,size,appProperties)') +
               '&pageSize=' + AD_PAGE +
               (token ? '&pageToken=' + encodeURIComponent(token) : '');
     gdReq({ url: url, token: access }, function(err, j){
@@ -6802,7 +6928,10 @@ function adList(access, cb){
            лишних возвращается вызывающему. */
         if (own(out, id)) continue;
         out[id] = { fileId: String(files[i].id),
-                    size: parseInt(files[i].size || '0', 10) || 0 };
+                    size: parseInt(files[i].size || '0', 10) || 0,
+                    /* ++++++ ATT NAME ++++++ пусто, если файл уехал до
+                       этой задачи: подпись тогда соберёт attInvLabel() */
+                    label: attNameOf(files[i].appProperties) };
       }
       if (j && j.nextPageToken){ page(String(j.nextPageToken)); return; }
       cb(null, out, bytes);
@@ -6823,7 +6952,7 @@ function adList(access, cb){
  * номеру файла меняет байты, не трогая описание, а POST создаёт второй
  * файл с тем же именем. Поэтому вызывающий передаёт `fileId`, если он
  * уже знает его из листинга. */
-function adPut(access, id, blob, mime, fileId, cb){
+function adPut(access, id, blob, mime, fileId, cb, props){
   var name = attName(id);
   if (!name){ cb('badid'); return; }
   if (!blob || typeof blob.size !== 'number'){ cb('nofile'); return; }
@@ -6832,6 +6961,32 @@ function adPut(access, id, blob, mime, fileId, cb){
   var type = String(mime || 'application/octet-stream');
 
   if (fileId){
+    /* ++++++ ATT NAME ++++++ замена БЕЗ имени идёт как шла — одними
+       байтами. Со свойствами она идёт multipart'ом, потому что менять
+       метаданные методом media нечем; лишний конверт возникает только
+       тогда, когда есть что сказать. */
+    if (props){
+      var pb = 'gtp' + String(new Date().getTime()) + 'x';
+      var pmeta = JSON.stringify({ appProperties: props });
+      var pbody = new Blob([
+        '--' + pb + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + pmeta +
+          '\r\n--' + pb + '\r\nContent-Type: ' + type + '\r\n\r\n',
+        blob,
+        '\r\n--' + pb + '--'
+      ]);
+      gdReq({ method: 'PATCH',
+              url: GD_UPLOAD + '/' + encodeURIComponent(fileId) +
+                   '?uploadType=multipart&fields=' + encodeURIComponent('id'),
+              token: access,
+              contentType: 'multipart/related; boundary=' + pb,
+              body: pbody, binary: true },
+        function(err, j){
+          if (err){ cb(err); return; }
+          if (!j || !j.id){ cb('server'); return; }
+          cb(null, String(j.id));
+        });
+      return;
+    }
     gdReq({ method: 'PATCH',
             url: GD_UPLOAD + '/' + encodeURIComponent(fileId) +
                  '?uploadType=media&fields=' + encodeURIComponent('id'),
@@ -6845,7 +7000,11 @@ function adPut(access, id, blob, mime, fileId, cb){
   }
 
   var b = 'gta' + String(new Date().getTime()) + 'x';
-  var meta = JSON.stringify({ name: name, parents: ['appDataFolder'] });
+  /* ++++++ ATT NAME ++++++ свойство добавляется, только когда имя
+     есть: пустая пара заняла бы место в пределе и ничего не сказала. */
+  var metaObj = { name: name, parents: ['appDataFolder'] };
+  if (props) metaObj.appProperties = props;
+  var meta = JSON.stringify(metaObj);
   /* Сборка Blob'ом, а не строкой: строка тут означала бы истолковать
      байты как символы, то есть испортить файл. */
   var body = new Blob([
@@ -6948,7 +7107,7 @@ function adGet(access, fileId, mime, size, part, cb){
    ПОЧЕМУ НЕ ВСЕГДА СЕССИЕЙ. Фото весит ~125 КБ: там обрыв дешевле
    лишнего запроса на открытие сессии, и обычный путь короче на целый
    оборот. Порог — AD_RESUMABLE_FROM. */
-function adPutBig(access, id, blob, mime, session, cb, onPart){
+function adPutBig(access, id, blob, mime, session, cb, onPart, props){
   var name = attName(id);
   if (!name){ cb('badid'); return; }
   if (!blob || typeof blob.size !== 'number'){ cb('nofile'); return; }
@@ -7000,7 +7159,10 @@ function adPutBig(access, id, blob, mime, session, cb, onPart){
   gdReq({ method: 'POST',
           url: GD_UPLOAD + '?uploadType=resumable&fields=' + encodeURIComponent('id'),
           token: access, contentType: 'application/json; charset=UTF-8',
-          body: JSON.stringify({ name: name, parents: ['appDataFolder'], mimeType: type }),
+          /* ++++++ ATT NAME ++++++ свойства объявляются при ОТКРЫТИИ
+             сессии: тело потом уходит кусками, и метаданным там места
+             нет. Возобновление сессии их не трогает — они уже там. */
+          body: JSON.stringify(adBigMeta(name, type, props)),
           resumable: true },
     function(err, j, status, h){
       if (err){ cb(err); return; }
@@ -7011,19 +7173,27 @@ function adPutBig(access, id, blob, mime, session, cb, onPart){
     });
 }
 
+/* Метаданные новой сессии. Отдельной функцией, чтобы «со свойствами» и
+   «без» не разошлись двумя литералами. */
+function adBigMeta(name, type, props){
+  var m = { name: name, parents: ['appDataFolder'], mimeType: type };
+  if (props) m.appProperties = props;
+  return m;
+}
+
 /* ------------------------------------------------------------------ */
 /* Одна дверь на отправку                                             */
 /* ------------------------------------------------------------------ */
 /* Вызывающему незачем знать про пороги и сессии: он говорит «отправь»,
    а какой дорогой — решается здесь, по размеру. Одно место принимает
    это решение, и потому оно не может разойтись с очередью. */
-function adSend(access, id, blob, mime, fileId, session, cb, onPart){
+function adSend(access, id, blob, mime, fileId, session, cb, onPart, props){
   if (blob && typeof blob.size === 'number' &&
       (blob.size >= AD_RESUMABLE_FROM || (session && session.url))){
-    adPutBig(access, id, blob, mime, session, cb, onPart);
+    adPutBig(access, id, blob, mime, session, cb, onPart, props);
     return;
   }
-  adPut(access, id, blob, mime, fileId, cb);
+  adPut(access, id, blob, mime, fileId, cb, props);
 }
 
 /* ------------------------------------------------------------------ */
@@ -7349,6 +7519,7 @@ function attSyncRun(cb){
             attGetBlob(sendId, function(be, blob){
               if (be || !blob){ next(); return; }
               var m = attMeta[sendId] || {};
+              /* ++++++ ATT NAME ++++++ имя уезжает свойством файла */
               adSend(access, sendId, blob, m.mime || blob.type || '',
                      attSync.sent[sendId] || '', attSync.sess[sendId] || null,
                 function(e, res){
@@ -7365,7 +7536,8 @@ function attSyncRun(cb){
                   attSyncSave();
                   next();
                 },
-                function(mark){ attSync.sess[sendId] = mark; });
+                function(mark){ attSync.sess[sendId] = mark; },
+                attNameProps(m.name));
             });
           }, function(){
 
@@ -7387,7 +7559,10 @@ function attSyncRun(cb){
                   delete attSync.part[getId];
                   attThumbOf(res.blob, function(thumb){
                     attPut({ id: getId, kind: what.kind, productId: what.productId,
-                             name: '', mime: res.blob.type || mime,
+                             /* ++++++ ATT NAME ++++++ имя приехало
+                                свойством; у файла постарше его нет, и
+                                подпись соберёт attInvLabel() */
+                             name: meta.label || '', mime: res.blob.type || mime,
                              size: res.blob.size, addedAt: todayISO(),
                              thumb: thumb || '' }, res.blob, function(){
                       attSyncSave();
@@ -7486,7 +7661,7 @@ function attPullOne(id, cb){
             delete attSync.part[id];
             attThumbOf(res.blob, function(thumb){
               attPut({ id: id, kind: what.kind, productId: what.productId,
-                       name: '', mime: res.blob.type || mime,
+                       name: meta.label || '', mime: res.blob.type || mime,
                        size: res.blob.size, addedAt: todayISO(),
                        thumb: thumb || '' }, res.blob, function(){
                 attSyncSave();
@@ -13411,7 +13586,8 @@ function attOpenSheet(id){
   attGetBlob(id, function(err, blob){
     if (where !== ui.tab + '|' + (ui.detail ? ui.detail.id : '') + '|' + ui.seg.products) return;
     if (err || !blob){
-      dialog({ title: m.name || tr('att.invoices'),
+      /* ++++++ ATT NAME ++++++ в окне второй строки нет — дата нужна */
+      dialog({ title: attInvLabel(m, tr, fmtDateLong),
         html: '<div class="body">' + tr('att.missing') + '</div>',
         cancelLabel: tr('w.close'), buttons: [] });
       return;
@@ -13621,7 +13797,11 @@ function cardInvoicesHTML(p){
       lead: m.thumb
         ? '<span class="thumb"><img src="' + esc(m.thumb) + '" alt=""></span>'
         : '<span class="thumb file">' + fileIcon(pdf) + '</span>',
-      k: esc(m.name || (pdf ? tr('att.invPdf') : tr('att.invImage'))),
+      /* ++++++ ATT NAME ++++++ дата стоит второй строкой, поэтому в
+         заголовке её нет: одно и то же дважды — это не подпись */
+      k: esc(m.name || (m.kind === 'invoice'
+              ? attInvLabel(m, tr, fmtDateLong, true)
+              : (pdf ? tr('att.invPdf') : tr('att.invImage')))),
       sub: tr('att.invRow', {size: esc(fmtBytes(m.size)), date: esc(fmtDateLong(m.addedAt))}),
       v: pdf ? tr('att.invPdf') : tr('att.invImage'),
       act:'att-open', arg:'a:' + m.id });
