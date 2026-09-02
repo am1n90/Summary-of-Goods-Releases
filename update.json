@@ -1,11 +1,11 @@
 {
-  "version": "1.2.5",
-  "build": "2026-09-01T06:31:22.524Z",
+  "version": "1.3.0",
+  "build": "2026-09-02T06:02:01.459Z",
   "minShell": "1.2.0",
   "core": "app/goods-tracker.html",
-  "hash": "77b476e0-347f4289-916766",
-  "size": 916766,
-  "notes": "Накладные теперь списком: имя, размер и дата — нажатие открывает документ",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.2.5",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.2.5/personal-accountant-1.2.5.apk"
+  "hash": "a5881b10-5021e9b3-981809",
+  "size": 981809,
+  "notes": "Скидка теперь видна: поле «Скидка, %» в форме выдачи, метка на записях, «Отдано скидками» на Сводке и колонка в «Полном отчёте»",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.3.0",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.3.0/personal-accountant-1.3.0.apk"
 }
