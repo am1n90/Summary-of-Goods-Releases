@@ -1737,6 +1737,14 @@ var STR = {
                    ru:'Вышла версия {v} — обновление придёт из Google Play.' },
 'pu.apk':        { en:'Version {v} is out — download the file and install it over the current one.',
                    ru:'Вышла версия {v} — скачайте файл и поставьте поверх нынешнего.' },
+/* ++++++ ANDROID VERSION ++++++ то же самое, когда файла ещё нет: без
+   ссылки и без обещания её открыть. Отдельные слова, а не молчание —
+   владельцу важно знать, что версия вышла, даже если поставить её
+   сейчас неоткуда. */
+'pu.apkNoLink':  { en:'Version {v} is out — the app file has not been published yet.',
+                   ru:'Вышла версия {v} — файл приложения пока не выложен.' },
+'pu.shellNoLink':{ en:'Version {v} needs a newer app — the installer has not been published yet.',
+                   ru:'Версии {v} нужна новая версия приложения — установщик пока не выложен.' },
 'pu.eNet':       { en:'No connection — we will check again later.',
                    ru:'Нет сети — проверим позже.' },
 'pu.eBrowser':   { en:'The file is open from disk: the program cannot replace it.',
@@ -3901,8 +3909,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.3.0';
-var APP_BUILD = '2026-09-02T06:02:01.459Z';
+var APP_VERSION = '1.3.1';
+var APP_BUILD = '2026-09-02T07:28:36.407Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -3989,7 +3997,17 @@ function pubParse(text){
     size: parseInt(m.size, 10) || 0,
     notes: String(m.notes || ''),
     page: String(m.page || ''),      /* страница релиза для человека   */
-    apk: String(m.apk || '')         /* прямая ссылка на APK           */
+    apk: String(m.apk || ''),        /* прямая ссылка на APK           */
+    /* ++++++ ANDROID VERSION ++++++
+       Версия ПАКЕТА, лежащего в Releases, — не путать с version, которая
+       называет выложенное ЯДРО. На Windows ядро подменяется само, и
+       version отвечает на вопрос владельца; на Android ядро не
+       подменяется вовсе, поэтому единственный честный вопрос там —
+       «есть ли новый файл приложения». Пусто значит «пакета нет»: не
+       «нет обновлений» и не «неизвестно», а именно нечего ставить.
+       Манифест прежней выкладки этого поля не имеет, и читается он как
+       «пакета нет» — что для Android правда и есть. */
+    apkVersion: String(m.apkVersion || '')
   };
 }
 
@@ -4030,9 +4048,26 @@ function updPlanFor(info, env){
   if (env.platform === 'browser'){ out.do = 'browser'; out.why = 'nofile'; return out; }
 
   if (env.platform === 'android'){
-    /* Ядро на Android не подменяется вовсе: обновления раздаёт Play.
-       А пока приложение не в Play и стоит файлом — программа обязана
-       хотя бы сказать, что вышла новая версия. */
+    /* ++++++ ANDROID VERSION ++++++
+       Ядро на Android не подменяется вовсе — ни в одном случае. Значит
+       метка сборки здесь отвечает не на тот вопрос: она говорит «ядро
+       другое», а обновиться этим нельзя. И она НИКОГДА не совпадает —
+       пакет носит свою метку ('pkg-' плюс время сборки), намеренно
+       отличную от выложенной. Поэтому до этой правки программа сообщала
+       о новой версии ВСЕГДА — даже сразу после установки того самого
+       файла, — и рядом с этим стояло «Установлена последняя версия».
+       Найдено живой проверкой 2026-09-02, записано как D3.
+
+       Правильный вопрос на Android один: ЕСТЬ ЛИ ПАКЕТ НОВЕЕ ТОГО, ЧТО
+       СТОИТ. Отвечает на него номер: apkVersion манифеста против
+       APP_VERSION устройства (у пакетной сборки это и есть версия
+       пакета — её ставит build-product.mjs из версии оболочки).
+       Цена названа вслух: номер приходится поднимать, иначе устройство
+       о новом файле не узнает. На Windows от этого защищает метка, на
+       Android защищать нечем — там нет второго способа обновиться. */
+    var pv = info.apkVersion;
+    if (!pv || verCmp(pv, env.version) <= 0){ out.do = 'none'; return out; }
+    out.version = pv;
     out.do = env.store ? 'store' : 'apk';
     return out;
   }
@@ -4272,6 +4307,17 @@ function pubOpenNow(){
   try { window.open(to, '_blank'); } catch(e){ location.href = to; }
 }
 
+/* ++++++ ANDROID VERSION ++++++ «Установлена последняя версия» и «вышла
+   версия {v}» стояли на экране рядом и спорили друг с другом: первую
+   печатала карточка всегда, когда программа не ставит ядро САМА, а
+   вторую — план обновления. Один вопрос — одна строка; в личном режиме
+   ответ всегда «новостей нет», и карточка там побайтово прежняя. */
+function pubHasNews(){
+  if (!modeIsProduct()) return false;
+  var p = updState.plan;
+  return !!p && p.do !== 'none';
+}
+
 /* Строка под кнопками — только в продуктовом режиме и только когда
    есть что сказать. В личном возвращает пустую строку, поэтому
    карточка там побайтово прежняя. */
@@ -4280,10 +4326,20 @@ function pubNoteHTML(){
   var p = updState.plan;
   if (!p || p.do === 'none' || p.do === 'core') return '';
   if (p.do === 'browser') return '<div class="note">' + esc(tr('pu.eBrowser')) + '</div>';
-  var key = p.do === 'shell' ? 'pu.shell' : (p.do === 'store' ? 'pu.store' : 'pu.apk');
-  var btn = p.do === 'store' ? tr('pu.openStore') : tr('pu.open');
-  return '<div class="note">' + esc(tr(key, {v: p.version})) + '</div>' +
-         '<div class="rb"><button type="button" class="go" data-act="upd-open">' +
+  /* ++++++ ANDROID VERSION ++++++ кнопка печатается, ТОЛЬКО когда ей
+     есть куда вести. Play открывается мостом и адреса не требует; у
+     'apk' и 'shell' адрес приходит из манифеста, а выкладка пишет его
+     лишь тогда, когда релиз с файлом действительно существует. Пока
+     пакеты в Releases не кладутся, адреса нет — и кнопки нет: до этой
+     правки она вела на пустую страницу релизов, то есть на 404. */
+  var store = p.do === 'store';
+  var to = store ? 'market' : (p.do === 'apk' ? p.apk : p.page);
+  var key = p.do === 'shell' ? (to ? 'pu.shell' : 'pu.shellNoLink')
+                             : (store ? 'pu.store' : (to ? 'pu.apk' : 'pu.apkNoLink'));
+  var h = '<div class="note">' + esc(tr(key, {v: p.version})) + '</div>';
+  if (!to) return h;
+  var btn = store ? tr('pu.openStore') : tr('pu.open');
+  return h + '<div class="rb"><button type="button" class="go" data-act="upd-open">' +
          esc(btn) + '</button></div>';
 }
 
@@ -18567,7 +18623,7 @@ function updCardHTML(){
   if (updState.found){
     h += '<div class="note">' + esc(tr('up.found', {v: updState.found.version})) +
          (updState.found.notes ? ' ' + esc(updState.found.notes) : '') + '</div>';
-  } else if (updState.at){
+  } else if (updState.at && !pubHasNews()){
     h += '<div class="note">' + esc(tr('up.latest')) + '</div>';
   }
   /* ++++++ PRODUCT UPDATE ++++++ в личном режиме возвращает '' */
