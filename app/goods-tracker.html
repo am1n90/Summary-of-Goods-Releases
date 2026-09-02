@@ -59,6 +59,16 @@
     overscroll-behavior-y:none;
   }
   button,input,select,textarea{font:inherit;color:inherit}
+  /* ++++++ BUTTONS ++++++ СБРОС СИСТЕМНОГО ВИДА — ОДИН РАЗ, ЗДЕСЬ.
+     Прежде его ставили по месту, и потому у половины кнопок его не было
+     вовсе: у сегментов, у фильтра статуса, у плитки валюты, у строк
+     списка, у самой боковой панели. Видно это не всегда — background и
+     border часто прятали последствия, — но именно отсюда брались чужой
+     рост и серая рамка там, где её никто не просил.
+     input и select сюда НЕ входят намеренно: галочка в окне выбора
+     товаров со снятым видом просто исчезла бы, а полям формы свой сброс
+     уже задан там, где он им нужен. */
+  button{-webkit-appearance:none;appearance:none}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 
   /* ----------------------------------------------------- 2. ОБОЛОЧКА -- */
@@ -177,6 +187,17 @@
   .pill.free{background:var(--neutral-soft);color:var(--muted)}
   .pill.over{background:var(--accent-soft);color:var(--accent)}
 
+  /* ++++++ DISCOUNT ++++++ метка скидки на записи. Своё имя, а НЕ
+     `.pill.<key>`: множество .pill.* — это множество статусов, и правило
+     без статуса сломало бы «все три или ни одного» (правило добавления
+     статуса). Цвета взяты у соседей по смыслу и ни одного нового токена
+     не заводят: скидка — та же пара, что «оплачено», наценка — та же, что
+     предупреждение; контраст и тёмная тема на обеих уже проверены. */
+  .dmark{display:inline-block;padding:1px 7px;border-radius:999px;font-weight:600;
+    font-size:11.5px;white-space:nowrap}
+  .dmark.disc{background:var(--got-soft);color:var(--got-ink)}
+  .dmark.up{background:var(--warn-soft);color:var(--warn)}
+
   .av{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
     display:grid;place-items:center;font-weight:700;font-size:15px;flex:0 0 auto}
   .av.sq{border-radius:11px;background:var(--neutral-soft);color:var(--ink-2)}
@@ -196,16 +217,51 @@
   .f .pair select{flex:0 0 96px;width:96px}
   .f .two{display:flex;gap:10px}
   .f .two > *{flex:1 1 0;min-width:0}
+  /* ++++++ DISCOUNT ++++++ ряд «цена + скидка %» переносится на узком
+     экране. Своим классом, чтобы прежний `.two` («Количество/Дата») не
+     двинулся ни на пиксель. Без переноса селекту валюты достаётся жёсткие
+     96 px, а полю цены — 39 px, и на 320 px вместо «500.00» видно «00».
+     Найдено снимком, а не рассуждением. */
+  .f .two.wrap{flex-wrap:wrap}
+  .f .two.wrap > *{min-width:168px}
   .f small.hint{display:block;font-size:12.5px;color:var(--muted);margin-top:6px}
 
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
-    background:var(--accent);color:var(--accent-ink);border:none;border-radius:13px;
-    padding:14px 18px;font-weight:600;font-size:15.5px;cursor:pointer;min-height:50px}
-  .btn:hover{filter:brightness(.95)}
-  .btn.ghost{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
-  .btn.danger{background:var(--owed-soft);color:var(--bad);border:1px solid transparent}
-  .btns{display:flex;gap:9px}
-  .btns .btn{flex:1 1 0}
+  /* ++++++ BUTTONS ++++++ ОДНА база и три варианта. Общими остаются
+     радиус, отступы, высота и шрифт — именно их несовпадение было видно
+     на экране. `appearance:none` стоит ОДИН раз, здесь: отдельного
+     сброса у каждой кнопки нет и быть не должно, ровно от этого
+     разъезжались высоты.
+
+     Ширина ушла из базы в .btn.block — иначе компактный размер .sm
+     невозможен: кнопка во всю ширину не может стоять в ряду из трёх.
+     Прежние вызовы ширину не потеряли: формы печатают .block из
+     saveBtn(), а ряды — через .btns .btn{flex:1}. */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--accent);color:var(--accent-ink);
+    border:1px solid var(--accent);border-radius:13px;
+    padding:13px 18px;font:inherit;font-weight:600;font-size:15.5px;line-height:1.2;
+    cursor:pointer;min-height:50px;text-decoration:none;white-space:nowrap;
+    
+    transition:filter .12s ease, background-color .12s ease}
+  .btn:hover{filter:brightness(.94)}
+  .btn:active{filter:brightness(.88)}
+  .btn[disabled]{opacity:.45;cursor:default;filter:none}
+  /* .ghost — синоним .sec: его печатают четырнадцать мест, и
+     переименовывать их значило бы трогать четырнадцать функций ради
+     слова. */
+  .btn.sec,.btn.ghost{background:var(--surface);color:var(--accent);border-color:var(--line)}
+  .btn.sec:hover,.btn.ghost:hover{background:var(--accent-soft);filter:none}
+  .btn.sec:active,.btn.ghost:active{background:var(--accent-soft);filter:brightness(.96)}
+  /* Разрушающее — КРАСНЫЙ КОНТУР. Было мягкой заливкой без рамки и
+     терялось рядом со вторичной. */
+  .btn.danger{background:var(--surface);color:var(--bad);border-color:var(--bad)}
+  .btn.danger:hover{background:var(--owed-soft);filter:none}
+  .btn.danger:active{background:var(--owed-soft);filter:brightness(.96)}
+  .btn.sm{padding:9px 14px;min-height:40px;font-size:14px;border-radius:11px}
+  .btn.block{width:100%}
+  .btns{display:flex;gap:9px;flex-wrap:wrap}
+  .btns .btn{flex:1 1 0;min-width:132px}
+  @media (max-width:520px){ .btn.sm{min-height:44px} }
   a.btn{text-decoration:none}
   .btn .ic{width:19px;height:19px;flex:0 0 auto}
 
@@ -423,33 +479,15 @@
      прячет #alerts целиком, поэтому на печать полоса не попадает.
 
      Крестика у неё нет: закрывают её только два действия на ней самой. */
-  .alert.bakbar{align-items:center;gap:10px;flex-wrap:nowrap}
-  .bakbar .bt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bakbar .bt b{font-weight:700}
-  .bakbar .bb{flex:0 0 auto;display:flex;gap:7px;margin-left:auto}
-  .bakbar .bb button{
-    border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;line-height:1.2;
-    white-space:nowrap;cursor:pointer;min-height:34px;
-    background:none;border:1px solid currentColor;color:inherit;
-  }
+  /* Прежние правила .bakbar убраны вместе с двухкнопочной полосой —
+     их место занял .bakmini выше. Сохранена только заливка главной
+     кнопки: на полосе-уведомлении она по-прежнему берёт цвет полосы. */
   /* Главная кнопка — заливка цветом предупреждения. Текст на ней берёт
      --surface, а не отдельный токен: в светлой теме это белое на #b45309
      (5.0:1), в тёмной — почти чёрное на #fbbf24 (10.9:1). Обе стороны
      переворачиваются вместе с темой сами, потому что оба токена уже
      объявлены в обеих. */
-  .bakbar .bb button.go{background:var(--warn);border-color:var(--warn);color:var(--surface)}
-  .bakbar .bb button:hover{filter:brightness(.94)}
-
-  /* Ниже 520 px две кнопки и фраза в одну строку помещаются только
-     многоточием посреди слова, поэтому текст занимает первую строку, а
-     кнопки — вторую. Полоса остаётся одной полосой и остаётся в потоке;
-     проверено на 320, 375, 393 и 412 px, боковой прокрутки нет нигде. */
-  @media (max-width:520px){
-    .alert.bakbar{flex-wrap:wrap}
-    .bakbar .bt{flex:1 1 100%;white-space:normal;overflow:visible;text-overflow:clip}
-    .bakbar .bb{width:100%;margin-left:0}
-    .bakbar .bb button{flex:1 1 0}
-  }
+  .alert.warn .rb button.go{background:var(--warn);border-color:var(--warn);color:var(--surface)}
 
 
 
@@ -462,11 +500,31 @@
      Отдельный класс, а не общий с .bakbar: та полоса кладёт кнопки В СТРОКУ
      справа (margin-left:auto), а этой нужен перенос на свою строку — текст
      тут длиннее и на телефоне занимает две-три строки сам по себе. */
-  .alert .rb{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  /* ++++++ BUTTONS ++++++ ЗДЕСЬ И БЫЛИ «СЕРЫЕ КНОПКИ КАК В СТАРОМ
+     WINDOWS». Правило было написано как `.alert .rb button`, то есть
+     действовало ТОЛЬКО внутри полосы-уведомления. Но <div class="rb">
+     стоит ещё и внутри карточек — «Версия и обновление», «Обмен» обеих
+     сборок, «Вход», — и там у кнопок не было ни одного правила: браузер
+     рисовал свою, серую, с рамкой. Теперь правило безусловное, а полоса
+     переопределяет его под свой цвет: на полосе кнопка обязана стоять
+     на её фоне, а не на поверхности. */
+  .rb{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .rb button{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--surface);color:var(--accent);border:1px solid var(--line);
+    border-radius:11px;padding:9px 14px;font:inherit;font-weight:600;font-size:14px;
+    line-height:1.2;cursor:pointer;min-height:40px;white-space:nowrap;
+    
+  }
+  .rb button.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .rb button.danger{background:var(--surface);color:var(--bad);border-color:var(--bad)}
+  .rb button[disabled]{opacity:.45;cursor:default;filter:none}
+  .rb button svg{width:17px;height:17px;flex:0 0 auto}
+  @media (max-width:520px){ .rb button{min-height:44px} }
+  .alert .rb{margin-top:9px}
   .alert .rb button{
-    border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;line-height:1.2;
-    cursor:pointer;min-height:34px;
-    background:none;border:1px solid currentColor;color:inherit;
+    border-radius:9px;padding:7px 12px;font-size:13px;min-height:34px;
+    background:none;border-color:currentColor;color:inherit;
   }
   /* Главная кнопка — заливка цветом полосы; текст на ней --surface, оба
      токена объявлены в обеих темах и переворачиваются вместе с ней.
@@ -489,12 +547,129 @@
   .modal .body{font-size:14px;color:var(--ink-2);line-height:1.55}
   .modal .body b{color:var(--ink)}
   .modal .btns{margin-top:18px;flex-wrap:wrap}
-  .modal .btns button,.modal .btns a{
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1 1 0;min-width:120px;
-    background:var(--surface);color:var(--accent);border:1px solid var(--line);border-radius:13px;
-    padding:13px 16px;font-weight:600;font-size:15px;cursor:pointer;min-height:50px;text-decoration:none}
-  .modal .btns button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-  .modal .btns button.danger{background:var(--owed-soft);color:var(--bad);border-color:transparent}
+  /* ++++++ BUTTONS ++++++ своих правил на кнопку у листа больше НЕТ:
+     dialog() печатает те же .btn / .btn sec / .btn danger, что и экран.
+     Прежняя копия отличалась радиусом и высотой — оттого кнопки листа и
+     не были похожи на кнопки под ним. */
+  .modal .btns .btn{flex:1 1 0;min-width:120px}
+  /* ++++++ MONEY TABS ++++++ верхний ряд «Денег». Подчёркивание, а не
+     капсула: под ним стоит .seg («Список / Новая»), и два одинаковых
+     ряда подряд читались бы как один орган управления. Прокручивается
+     вбок, если не помещается: обрезать активную нельзя. */
+  .tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:1 1 auto;min-width:88px;background:none;border:none;cursor:pointer;
+    padding:11px 10px 10px;font:inherit;font-weight:600;font-size:14px;color:var(--muted);
+    min-height:46px;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;
+    -webkit-appearance:none;appearance:none}
+  .tabs button:hover{color:var(--ink)}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* ++++++ ACCOUNT ++++++ круглый аватар. ОДИН класс на все места —
+     панель, боковая панель, карточка; размер задаёт переменная --s, а не
+     второй класс, иначе размеров станет столько же, сколько мест.
+     Фотографии здесь нет и не будет: её адрес не объявлен в netHosts(),
+     а список читается оболочкой из УПАКОВАННОГО ядра. Инициалы — текст,
+     фигурка — inline-SVG; ни одного внешнего запроса. */
+  .ava{--s:38px;
+    width:var(--s);height:var(--s);border-radius:50%;flex:0 0 auto;
+    display:grid;place-items:center;overflow:hidden;
+    background:var(--accent-soft);color:var(--accent);
+    font-weight:700;font-size:calc(var(--s) * .40);letter-spacing:.01em;
+    box-shadow:inset 0 0 0 1px var(--line)}
+  .ava svg{width:calc(var(--s) * .58);height:calc(var(--s) * .58)}
+  .ava.anon{background:var(--neutral-soft);color:var(--muted)}
+  .rail button .ava{--s:22px;box-shadow:none}
+
+  /* карточка учётной записи: ТРИ строки, три величины, три цвета, и
+     каждая обрезается ОТДЕЛЬНО — длинная фамилия не должна съедать имя.
+     Ступень 17 → 15 → 13 та же, что уже есть у .row и .hero. */
+  .acct{display:flex;align-items:center;gap:14px;padding:18px var(--pad)}
+  .acct .ava{--s:56px}
+  .acct .who{min-width:0;flex:1 1 auto}
+  .acct .who > *{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acct .who b{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  .acct .who .fam{font-size:15px;font-weight:600;color:var(--ink-2);line-height:1.3;margin-top:1px}
+  .acct .who small{font-size:13px;color:var(--muted);margin-top:3px}
+
+  /* место: подпись НАЗЫВАЕТ хранилище, дальше цифры и тонкая полоса */
+  .space{padding:2px var(--pad) 14px}
+  .space .lab{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);
+    margin-bottom:7px}
+  .space .lab span{flex:0 0 auto}
+  .space .lab b{font-weight:600;color:var(--ink);min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+  .space .track{height:6px;border-radius:999px;background:var(--neutral-soft);overflow:hidden}
+  .space .track i{display:block;height:100%;background:var(--accent);border-radius:999px}
+  .space .sub{font-size:12.5px;color:var(--muted);margin-top:7px}
+  .signrow{padding:14px var(--pad) 16px}
+  .acctout{padding:0 var(--pad) 16px}
+
+  /* ++++++ SYNC ROW ++++++ строка обмена и круглая кнопка. 44 px — тот
+     же размер, что у поисковой строки и пунктов боковой панели, то есть
+     минимум, в который попадает палец. */
+  .syncrow{display:flex;align-items:center;gap:12px;
+    padding:13px var(--pad);border-top:1px solid var(--line-2)}
+  .syncrow .st{min-width:0;flex:1 1 auto}
+  .syncrow .st > *{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .syncrow .st b{font-size:14px;font-weight:600;line-height:1.3}
+  .syncrow .st .when{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .syncrow .st .pend{font-size:12px;color:var(--warn);font-weight:600;margin-top:2px}
+  .syncrow .st .pend.bad{color:var(--bad)}
+  /* Пояснение об отказе и выход из него — ВНУТРИ того же узла, что и
+     строка: они относятся к обмену и обязаны появляться и исчезать
+     вместе с ним. Держатся до удачного обмена, а не две секунды: внутри
+     бывает «Записать мои данные поверх», и на неё надо успеть нажать. */
+  .syncerr{padding:0 var(--pad) 14px}
+  .syncerr .note{margin-bottom:0;font-size:12.5px}
+  .syncerr .rb{margin-top:9px}
+
+  .syncbtn{flex:0 0 auto;position:relative;width:44px;height:44px;border-radius:50%;
+    background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+    cursor:pointer;padding:0;display:grid;place-items:center;
+    
+    transition:background-color .22s ease, border-color .22s ease}
+  .syncbtn:hover{filter:brightness(.94)}
+  .syncbtn:active{filter:brightness(.88)}
+  /* три значка лежат друг на друге; виден ровно один */
+  .syncbtn .i{grid-area:1/1;display:grid;place-items:center;line-height:0}
+  .syncbtn .i svg{width:21px;height:21px;stroke-width:2}
+  .syncbtn .ok,.syncbtn .err{opacity:0;transform:scale(.55)}
+  .syncbtn .arr{opacity:1;transform:none}
+  .syncbtn.is-busy{cursor:default}
+  .syncbtn.is-busy .arr{animation:syncSpin .9s linear infinite}
+  @keyframes syncSpin{to{transform:rotate(360deg)}}
+  .syncbtn.is-ok{background:var(--got);border-color:var(--got)}
+  .syncbtn.is-ok .arr{opacity:0;transform:scale(.55)}
+  .syncbtn.is-ok .ok{animation:syncPop .28s cubic-bezier(.2,1.3,.4,1) forwards}
+  .syncbtn.is-err{background:var(--bad);border-color:var(--bad)}
+  .syncbtn.is-err .arr{opacity:0;transform:scale(.55)}
+  .syncbtn.is-err .err{animation:syncPop .28s cubic-bezier(.2,1.3,.4,1) forwards}
+  @keyframes syncPop{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
+  [data-theme="dark"] .syncbtn.is-ok,[data-theme="dark"] .syncbtn.is-err{color:var(--accent-ink)}
+  @media (prefers-reduced-motion:reduce){
+    .syncbtn.is-busy .arr{animation:none;opacity:.7}
+    .syncbtn.is-ok .ok,.syncbtn.is-err .err{animation:none;opacity:1;transform:none}
+  }
+
+  /* ++++++ BACKUP MINI ++++++ короткое напоминание о копии. Прежняя
+     полоса несла ДВЕ полноразмерные кнопки и полную фразу и на телефоне
+     занимала две строки. Теперь одна: текст со стрелкой (он же кнопка
+     перехода на раздел копии) и «Позже» отдельной маленькой. */
+  .bakmini{display:flex;align-items:center;gap:8px;padding:0;overflow:hidden}
+  .bakmini .go{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:9px;
+    background:none;border:0;padding:11px 4px 11px 13px;cursor:pointer;font:inherit;
+    color:inherit;text-align:left;min-height:44px}
+  .bakmini .go b{font-weight:700}
+  .bakmini .go .t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-size:13.5px}
+  .bakmini .go .chev{flex:0 0 auto;opacity:.7;display:flex}
+  .bakmini .later{flex:0 0 auto;background:none;border:1px solid currentColor;border-radius:9px;
+    color:inherit;font:inherit;font-size:12.5px;font-weight:600;padding:6px 11px;margin-right:11px;
+    cursor:pointer;min-height:34px}
+  @media (max-width:520px){ .bakmini .later{min-height:38px} }
+
   .modal .stack{display:flex;flex-direction:column;gap:9px;margin-top:16px}
   .modal .stack .btn{width:100%}
   .modal .rows{margin:14px -16px 0}
@@ -502,6 +677,54 @@
     .modal-back{align-items:center;padding:20px}
     .modal{border-radius:20px;padding-bottom:20px}
   }
+
+  /* ============================================ ++++++ INFO ++++++ ==
+   * Иконка «i» у заголовка и окно пояснения.
+   *
+   * ХИТ-ОБЛАСТЬ ДЕЛАЕТ ОТСТУП, А НЕ РАЗМЕР ЗНАКА. Кружок 18 px — как у
+   * знака на строке; нажимать в него на телефоне нечем. Кнопка поэтому
+   * 38×38, а отрицательный отступ сверху и снизу забирает лишнее назад,
+   * чтобы заголовок не подрос. Справа отступа НЕТ: с ним кружок
+   * прижимался к самому углу карточки (замечание владельца 2026-09-01).
+   *
+   * Сброса системного вида здесь нет намеренно: он стоит один раз, на
+   * голом button (область 82). Своих правил по месту у иконки тоже нет —
+   * она всегда у заголовка, экрана или карточки. */
+  .ibtn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;margin:-10px 0 -10px -2px;padding:0;
+    background:none;border:0;color:var(--muted);cursor:pointer}
+  .ibtn i{display:block;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;
+    font-style:normal;font-weight:700;font-size:11px;line-height:15px;text-align:center}
+  .ibtn:hover{color:var(--ink)}
+  .ibtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:50%}
+
+  /* Заголовок карточки становится строкой: иконке нужно место рядом, и
+     она не имеет права столкнуть заголовок со строки. min-width:0 на
+     тексте — то же лекарство, что у .pagehead .ht. */
+  .card > .t{display:flex;align-items:center;gap:2px}
+  .card > .t > span{min-width:0;flex:1 1 auto}
+
+  /* Окно — тот же .modal-back/.modal, что у всех листов. Отличия ровно
+     два, и оба только у окна с признаком data-info: шапка не уезжает
+     при прокрутке, и нижнего ряда кнопок нет вовсе. */
+  .modal-back[data-info] .modal{display:flex;flex-direction:column;overflow:hidden}
+  .modal-back[data-info] .modal .body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* Шапка-строка: она у листа только когда в неё что-то положили —
+     крестик или иконку пояснения. Прежние листы печатают <h3> без
+     класса и этих правил не видят вовсе. */
+  .modal h3.hx{display:flex;align-items:flex-start;gap:10px;flex:0 0 auto;margin:0 0 12px}
+  .modal h3.hx > span{flex:1 1 auto;min-width:0}
+
+  .modal h3 .mx{flex:0 0 auto;width:36px;height:36px;margin:-8px -6px -8px 0;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:none;border:0;color:var(--muted);cursor:pointer}
+  .modal h3 .mx svg{width:17px;height:17px}
+  .modal h3 .mx:hover{color:var(--ink)}
+
+  /* Абзац пояснения. Тот же размер и цвет, что были у .note.calc: текст
+     переехал, а не пересказан другим шрифтом. */
+  .infobody .ip{margin:0 0 12px}
+  .infobody .ip:last-child{margin-bottom:0}
 
   /* ------------------------------------------------------- 5. ТЕЛЕФОН -- */
   /* своя полоса прокрутки: видна во время прокрутки и гаснет сама */
@@ -520,25 +743,32 @@
     .pagehead h1{font-size:20px}
 
     .bottombar{
-      display:grid;grid-template-columns:repeat(7,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
+      display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
       background:var(--surface);border-top:1px solid var(--line);
       padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 16px rgba(16,24,40,.07);
     }
     .bottombar button{
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
       background:none;border:none;padding:8px 2px 7px;min-height:56px;cursor:pointer;
-      color:var(--muted);font-size:10.5px;font-weight:600;line-height:1.1;
+      color:var(--muted);font-size:11px;font-weight:600;line-height:1.1;
+      
     }
-    .bottombar button svg{width:21px;height:21px}
+    .bottombar button svg{width:22px;height:22px}
     .bottombar button.on{color:var(--accent)}
+    /* ++++++ ACCOUNT ++++++ аватар в панели того же размера, что иконка.
+       Цветом активности он выделиться не может — он картинка, — поэтому
+       кольцо. */
+    .bottombar button .ava{--s:22px;box-shadow:none}
+    .bottombar button.on .ava{box-shadow:0 0 0 2px var(--accent)}
   }
   @media (max-width:359px){
-    .bottombar button{font-size:9.5px}
+    .bottombar button{font-size:10px}
     .seg button{font-size:12.5px;padding:9px 3px}
+    .tabs button{min-width:76px;font-size:13.5px}
   }
 
   @media print{
-    .rail,.bottombar,.seg,.filters,.sbox,.btn,.btns,.sbar,.dcpick,#alerts{display:none !important}
+    .rail,.bottombar,.seg,.tabs,.filters,.sbox,.btn,.btns,.sbar,.dcpick,#alerts{display:none !important}
     .card{break-inside:avoid}
   }
 
@@ -1431,7 +1661,11 @@ var STR = {
 
 /* ---------------- «Сегменты»: оболочка и общие слова ---------------- */
 'app.railSub':   { en:'Dubai &rarr; Tajikistan',            ru:'Дубай &rarr; Таджикистан' },
-'tab.more':      { en:'More',                               ru:'Ещё' },
+/* ++++++ NAV ++++++ два новых пункта панели. Прежние tab.transactions,
+   tab.payments, tab.expenses и tab.more остаются живыми: их печатают
+   вкладки внутри «Денег» и заголовки разделов. */
+'tab.money':     { en:'Money',                              ru:'Деньги' },
+'tab.acct':      { en:'Account',                            ru:'Аккаунт' },
 /* короткие подписи — только для нижней панели на телефоне */
 'tabS.summary':  { en:'Summary',                            ru:'Итог' },
 'tabS.products': { en:'Goods',                              ru:'Товар' },
@@ -1439,13 +1673,43 @@ var STR = {
 'tabS.tx':       { en:'Handouts',                           ru:'Выдачи' },
 'tabS.pay':      { en:'Payments',                           ru:'Оплаты' },
 'tabS.more':     { en:'More',                               ru:'Ещё' },
+'tabS.money':    { en:'Money',                              ru:'Деньги' },
+'tabS.acct':     { en:'Account',                            ru:'Аккаунт' },
 'w.back':        { en:'Back',                               ru:'Назад' },
 'w.close':       { en:'Close',                              ru:'Закрыть' },
+/* ++++++ INFO ++++++ подпись иконки «i». Единственная: своей подписи у
+   раздела нет, иначе их стало бы десять и они разошлись бы. */
+'info.aria':     { en:'Explanation',                        ru:'Пояснение' },
 'w.save':        { en:'Save',                               ru:'Сохранить' },
 'w.add':         { en:'Add',                                ru:'Добавить' },
 'w.empty':       { en:'Nothing here yet',                   ru:'Пока пусто' },
 /* ++++++ SELF UPDATE ++++++ обновление программы */
 'up.title':      { en:'About the app',                       ru:'О программе' },
+
+/* ++++++ ACCOUNT ++++++ экран учётной записи вместо вкладки «Ещё» */
+'acct.sections': { en:'Sections',                           ru:'Разделы' },
+'acct.cur':      { en:'Currencies and rates',               ru:'Валюты и курсы' },
+'acct.curSub':   { en:'base currency, rates, edit history',
+                   ru:'базовая валюта, курсы, история правок' },
+'acct.backup':   { en:'Backup',                             ru:'Резервная копия' },
+'acct.backupSub':{ en:'download, restore, erase data',
+                   ru:'скачать, восстановить, стереть данные' },
+'acct.trashSub': { en:'deleted records are kept for 30 days',
+                   ru:'удалённые записи хранятся 30 дней' },
+'acct.look':     { en:'Appearance',                         ru:'Внешний вид' },
+'acct.lookSub':  { en:'language and theme',                 ru:'язык и тема' },
+'acct.aboutSub': { en:'version and update',                 ru:'версия и обновление' },
+'acct.noSignIn': { en:'Not signed in',                      ru:'Вход не выполнен' },
+'acct.noLink':   { en:'Sync is not connected',              ru:'Обмен не подключён' },
+'acct.onlyHere': { en:'records are kept on this device only',
+                   ru:'записи хранятся только на этом устройстве' },
+'acct.gdrive':   { en:'Google Drive',                       ru:'Google Диск' },
+'acct.syncLast': { en:'Last sync',                          ru:'Последняя синхронизация' },
+'acct.syncFail': { en:'sync did not go through',            ru:'обмен не прошёл' },
+'acct.syncOk':   { en:'Sync went through',                  ru:'Обмен прошёл' },
+'acct.syncRetry':{ en:'Try again',                          ru:'Повторить обмен' },
+/* «есть неотправленные» печатают существующие gd.pending / sy.pending —
+   с числом, что даже точнее. Своего ключа для этого не заводится. */
 'up.version':    { en:'Version',                             ru:'Версия' },
 'up.built':      { en:'build {b}',                           ru:'сборка {b}' },
 'up.bar':        { en:'A new version is available: {v}',      ru:'Вышла новая версия: {v}' },
@@ -1510,7 +1774,6 @@ var STR = {
 /* Ярлык сегмента короткий не для красоты: «Синхронизация» в четвёртой
    кнопке обрезается многоточием уже на 420px — снято и проверено. Слово,
    которое владелец ищет, стоит заголовком карточки, где место есть. */
-'seg.sync':      { en:'Sync',                                ru:'Обмен' },
 'sy.title':      { en:'Sync through GitHub',                 ru:'Синхронизация через GitHub' },
 'sy.what':       { en:'Records travel between your devices through one private repository. Photos and invoices stay on the device they were added to.',
                    ru:'Записи ездят между вашими устройствами через один приватный репозиторий. Фотографии и накладные остаются на том устройстве, где их добавили.' },
@@ -1532,7 +1795,6 @@ var STR = {
 'sy.state':      { en:'State',                               ru:'Состояние' },
 'sy.off':        { en:'not set up',                          ru:'не настроен' },
 'sy.never':      { en:'not synced yet',                      ru:'обмена ещё не было' },
-'sy.lastAt':     { en:'last sync {when}',                    ru:'последний обмен {when}' },
 'sy.pending':    { en:'not sent yet: {n}',                   ru:'не отправлено: {n}' },
 'sy.busy':       { en:'syncing…',                            ru:'идёт обмен…' },
 'sy.okNow':      { en:'Synced. Everything is on GitHub.',    ru:'Обмен прошёл. Всё на GitHub.' },
@@ -1576,9 +1838,6 @@ var STR = {
 'seg.people':    { en:'People',                             ru:'Люди' },
 'seg.newTx':     { en:'New handout',                        ru:'Новая выдача' },
 'seg.newPay':    { en:'New payment',                        ru:'Новая оплата' },
-'seg.cur':       { en:'Currencies',                         ru:'Валюты' },
-'seg.data':      { en:'Data',                               ru:'Данные' },
-'seg.look':      { en:'Look',                               ru:'Вид' },
 
 /* ---------------- фильтр периода ---------------- */
 'flt.any':       { en:'All',                                ru:'Все' },
@@ -1873,7 +2132,6 @@ var STR = {
 'pay.sheetLine': { en:'{person} paid {sum}<br>{date}',      ru:'{person} оплатил {sum}<br>{date}' },
 
 /* ---------------- вкладка «Ещё» ---------------- */
-'more.sub':      { en:'currencies, data, sync, look',        ru:'валюты, данные, обмен, вид' },
 'cur.baseIs':    { en:'Everything is stored in',            ru:'Всё хранится в' },
 'cur.baseHint':  { en:'Changing it does not change what each tab shows.',
                    ru:'Смена валюты не меняет то, что показывают вкладки.' },
@@ -1944,8 +2202,10 @@ var STR = {
    почему, иначе несъёмная полоса читается как поломка. */
 'bk.barNoStore':{ en:'This browser saves nothing — download a copy',
                   ru:'Браузер ничего не сохраняет — скачайте копию' },
-'bk.now':       { en:'Download a copy',   ru:'Скачать копию' },
-'bk.later':     { en:'Remind me later',   ru:'Напомнить позже' },
+'bk.later':     { en:'Remind me later',   ru:'Позже' },
+/* ++++++ BACKUP MINI ++++++ хвост короткой строки: полоса теперь ведёт
+   на раздел копии, а не скачивает файл на месте. */
+'bk.barOpen':   { en:'Open the backup section', ru:'Откройте раздел копии' },
 'bk.snoozed':   { en:'All right — we will remind you in {n}',
                   ru:'Хорошо — напомним через {n}' },
 
@@ -2372,6 +2632,45 @@ var STR = {
 'sum.netProfit': { en:'Net profit',                         ru:'Чистая прибыль' },
 'sum.netProfitHint':{ en:'profit minus other expenses',     ru:'прибыль минус прочие расходы' },
 
+
+/* ++++++ DISCOUNT ++++++ шестнадцать ключей, оба языка. Ни один
+   существующий не тронут; каждый новый проверен грепом по всему STR
+   (область 17) и каждый ЧИТАЕТСЯ из кода — мёртвых записей в этом
+   словаре не осталось ни одной, и заводить их нельзя. */
+'disc.mark':     { en:'{pct}% off &middot; {sum}',          ru:'скидка {pct}% &middot; {sum}' },
+'disc.markUp':   { en:'{pct}% above &middot; {sum}',        ru:'наценка {pct}% &middot; {sum}' },
+'disc.hint':     { en:'discount {v} / unit &middot; {pct}%',
+                   ru:'скидка {v} за шт &middot; {pct}%' },
+'disc.hintUp':   { en:'{v} / unit above the usual price &middot; {pct}%',
+                   ru:'наценка {v} за шт &middot; {pct}%' },
+'disc.none':     { en:'the usual price',                    ru:'цена обычная, скидки нет' },
+'disc.noPrice':  { en:'no selling price set for this product — nothing to take a discount from',
+                   ru:'у товара не задана цена продажи — скидку считать не от чего' },
+'disc.pctField': { en:'Discount, %',                        ru:'Скидка, %' },
+'disc.errRange': { en:'The discount must be a number from -1000 to 100.',
+                   ru:'Скидка должна быть числом от -1000 до 100.' },
+'disc.errNeg':   { en:'Such a discount would make the price negative.',
+                   ru:'Такая скидка дала бы отрицательную цену.' },
+'sum.discGiven': { en:'Given away as discounts',            ru:'Отдано скидками' },
+'sum.discGivenHint':{ en:'for reference',                   ru:'справочно' },
+'sum.discInfo':  { en:'&laquo;Given away as discounts&raquo; is the difference between a ' +
+                      'product&rsquo;s usual price and the price it was actually handed out at, ' +
+                      'summed over the period. The figure is for reference only: it is NOT ' +
+                      'subtracted from profit or from net profit — those are already counted at ' +
+                      'the price of the handout. Mark-ups do not go into it: the line says ' +
+                      '&laquo;given away&raquo;. The discount is measured against the ' +
+                      'product&rsquo;s CURRENT price, so changing the selling price re-counts the ' +
+                      'discounts of past handouts on screen — it moves no money.',
+                   ru:'«Отдано скидками» — это разница между обычной ценой товара и той, по ' +
+                      'которой его отдали, сложенная по выдачам периода. Цифра справочная: из ' +
+                      'прибыли и из «Чистой прибыли» она НЕ вычитается — они и так посчитаны по ' +
+                      'цене выдачи. Наценки в неё не входят: строка называется «отдано». Скидка ' +
+                      'считается по НЫНЕШНЕЙ цене товара, поэтому, если поменять цену продажи, ' +
+                      'скидки прошлых выдач на экране пересчитаются — на деньги это не влияет.' },
+'ppl.discGot':   { en:'Received as discounts',              ru:'Получил скидками' },
+'ppl.discGotHint':{ en:'over all time',                     ru:'за всё время' },
+'rem.colDisc':   { en:'Discounts',                          ru:'Скидки' },
+'rem.colDiscSub':{ en:'all time',                           ru:'за всё время' },
 'err.expCat':    { en:'Choose a category.',                 ru:'Выберите категорию.' },
 'err.expAmount': { en:'The amount must be a number greater than zero, e.g. 100 or 100.50.',
                    ru:'Сумма должна быть числом больше нуля, например 100 или 100.50.' },
@@ -2406,18 +2705,20 @@ var STR = {
 'gd.title':    { en:'Sync',                          ru:'Синхронизация' },
 'gd.what':     { en:'Your records are kept on this device. Sign in with Google and they are kept in a hidden folder on your Google Drive as well — the one only this app can see. That is how the same products, people and debts appear on a second device.',
                  ru:'Ваши записи хранятся на этом устройстве. Если войти в Google, они будут храниться ещё и в скрытой папке вашего Google Диска — той, что видна только этой программе. Так те же товары, люди и долги появляются на втором устройстве.' },
+/* ++++++ INFO ++++++ то же самое ВОШЕДШЕМУ: условие «Если войти в
+   Google» вычеркнуто, остальное слово в слово. Отдельный ключ, а не
+   правка соседнего: gd.what по-прежнему читают те, кто не вошёл. */
+'gd.whatIn':   { en:'Your records are kept on this device and in a hidden folder on your Google Drive — the one only this app can see. That is how the same products, people and debts appear on a second device.',
+                 ru:'Ваши записи хранятся на этом устройстве и в скрытой папке вашего Google Диска — той, что видна только этой программе. Так те же товары, люди и долги появляются на втором устройстве.' },
 'gd.signIn':   { en:'Sign in with Google',           ru:'Войти через Google' },
 'gd.signOut':  { en:'Sign out',                      ru:'Выйти' },
 'gd.now':      { en:'Sync now',                      ru:'Синхронизировать сейчас' },
 'gd.account':  { en:'Google account',                ru:'учётная запись Google' },
-'gd.state':    { en:'state',                         ru:'состояние' },
 'gd.busy':     { en:'syncing…',                      ru:'идёт обмен…' },
 'gd.okNow':    { en:'Synced. Everything is on your Google Drive.',
                ru:'Обмен прошёл. Всё на вашем Google Диске.' },
 'gd.never':    { en:'not synced yet',                ru:'обмена ещё не было' },
-'gd.lastAt':   { en:'last sync {when}',              ru:'последний обмен {when}' },
 'gd.pending':  { en:'not sent: {n}',                 ru:'не отправлено: {n}' },
-'gd.allSent':  { en:'everything sent',               ru:'всё отправлено' },
 'gd.signedOut':{ en:'Signed out on this device. The records stayed where they were.',
                  ru:'Выход выполнен. Записи остались на этом устройстве.' },
 'gd.worksWithout': { en:'The app works without signing in: everything is here and the records are on this device. Signing in is only for syncing between devices.',
@@ -2553,7 +2854,6 @@ var STR = {
 /* ++++++ TRASH ++++++ корзина: удаление, которое можно отменить.
    Приставка `trash.` — своя; `dlg.trash*` стоят РЯДОМ с прежними телами
    подтверждений, ни одно из которых не переписано. */
-'seg.trash':       { en:'Trash',                  ru:'Корзина' },
 'trash.title':     { en:'Trash',                  ru:'Корзина' },
 'trash.empty':     { en:'The trash is empty',     ru:'Корзина пуста' },
 'trash.emptyHint': { en:'A deleted record waits here for {n} and can be brought back with one tap.',
@@ -3521,6 +3821,10 @@ function dcStats(ps){
      до копейки, потому что dcCents() в базе есть тождество. */
   d.rep.expenseD = expSumD(expPick(from, to));
   d.tot.expenseD = expSumD(actExp());
+  /* ++++++ DISCOUNT ++++++ то же самое в валюте показа: каждая запись
+     своим снимком, потом сложение. В базовой валюте обе величины
+     сходятся до копейки — dcCents() там тождественна. */
+  d.rep.discountD = discReportD(from, to, f.productId);
 
   Object.keys(d.prod).forEach(function(k){
     var x = d.prod[k];
@@ -3597,8 +3901,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.2.5';
-var APP_BUILD = '2026-09-01T06:31:22.524Z';
+var APP_VERSION = '1.3.0';
+var APP_BUILD = '2026-09-02T06:02:01.459Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5830,7 +6134,8 @@ function gdWhoAmI(access, cb){
   gdReq({ url: GD_INFO, token: access }, function(err, j){
     if (err){ cb(err); return; }
     if (!j || !gdSubOk(j.sub)){ cb('server'); return; }
-    cb(null, { sub: String(j.sub), name: gdNameOf(j) });
+    cb(null, { sub: String(j.sub), name: gdNameOf(j),
+               given: gdGivenOf(j), family: gdFamilyOf(j) });
   });
 }
 
@@ -5844,6 +6149,16 @@ function gdNameOf(j){
   var n = (j && typeof j.name === 'string') ? j.name : '';
   if (!n && j && typeof j.given_name === 'string') n = j.given_name;
   return n.slice(0, 100);
+}
+/* ++++++ ACCOUNT ++++++ имя и фамилия ОТДЕЛЬНО — те же поля того же
+   ответа, при той же области `profile`: нового согласия не нужно и
+   входить заново не придётся. Пусто там, где Google их не прислал; тогда
+   карточка делит целое имя сама (acctName). */
+function gdGivenOf(j){
+  return (j && typeof j.given_name === 'string') ? j.given_name.slice(0, 100) : '';
+}
+function gdFamilyOf(j){
+  return (j && typeof j.family_name === 'string') ? j.family_name.slice(0, 100) : '';
 }
 
 /* ==================================================================
@@ -6113,14 +6428,23 @@ function bindOf(o){
   if (!o || !o.bind || typeof o.bind !== 'object') return null;
   var b = o.bind;
   if (!gdSubOk(b.sub)) return null;
+  /* ++++++ ACCOUNT ++++++ given/family необязательны: устройство,
+     привязанное прежней сборкой, их не имеет и продолжает работать —
+     карточка тогда делит целое имя по первому пробелу. Живут они в
+     goods-tracker/sync-v1, а не в документе: bakSig() их не видит, и
+     схема из-за них не двигается. */
   return { sub: String(b.sub),
            name: (typeof b.name === 'string') ? b.name.slice(0, 100) : '',
+           given: (typeof b.given === 'string') ? b.given.slice(0, 100) : '',
+           family: (typeof b.family === 'string') ? b.family.slice(0, 100) : '',
            at: (typeof b.at === 'string') ? b.at : '' };
 }
 
 function bindSet(o, who){
   o = o || {};
   o.bind = { sub: String(who.sub), name: String(who.name || '').slice(0, 100),
+             given: String(who.given || '').slice(0, 100),
+             family: String(who.family || '').slice(0, 100),
              at: nowISO() };
   return o;
 }
@@ -8737,17 +9061,23 @@ function bakBarPaint(){
   if (old) old.remove();
   if (!bakShouldRemind()) return;
   var d = document.createElement('div');
-  d.className = 'alert warn bakbar';
+  d.className = 'alert warn bakmini';
   d.setAttribute('data-banner', 'bak-remind');
   d.setAttribute('role', 'status');
+  /* ++++++ BACKUP MINI ++++++ одна строка вместо двух кнопок и фразы.
+     Правило появления, семь дней, отсрочка и поведение при недоступном
+     хранилище не тронуты вовсе — изменилась ТОЛЬКО разметка. Нажатие
+     ведёт на раздел копии: оттуда до файла одно движение, и там же
+     видно, когда копия была и что в ней. */
   d.innerHTML =
-    '<span class="bt">' + bakBarText() + '</span>' +
-    '<span class="bb">' +
-      '<button type="button" class="go" data-act="export">' + tr('bk.now') + '</button>' +
-      (bakCanSnooze()
-        ? '<button type="button" data-act="bak-later">' + tr('bk.later') + '</button>'
-        : '') +
-    '</span>';
+    '<button type="button" class="go" data-act="bak-open" aria-label="' +
+        esc(tr('bk.barOpen')) + '">' +
+      '<span class="t">' + bakBarText() + '</span>' +
+      '<span class="chev">' + chev() + '</span>' +
+    '</button>' +
+    (bakCanSnooze()
+      ? '<button type="button" class="later" data-act="bak-later">' + tr('bk.later') + '</button>'
+      : '');
   box.insertBefore(d, box.firstChild);
 }
 
@@ -10671,6 +11001,16 @@ function computeReport(){
      производная, а не поправка к profitCents. */
   r.expenseCents = expSum(expPick(from, to));
   r.netProfitCents = r.profitCents - r.expenseCents;
+  /* ++++++ DISCOUNT ++++++ «Отдано скидками» за период, в базовых
+     минорных единицах. Отбор — тот же inRange() и тот же фильтр товара,
+     что у выручки строкой выше: выдача считается по своей дате, возврат
+     по своей.
+
+     ПРИБЫЛЬ И «ЧИСТАЯ ПРИБЫЛЬ» ВЫШЕ НЕ ТРОНУТЫ НИ НА КОПЕЙКУ. Скидка не
+     вычитается ни из одной из них и не может: обе посчитаны по цене
+     выдачи, то есть скидка в них уже учтена. Это новая производная,
+     а не поправка. */
+  r.discountCents = discReportCents(from, to, f.productId);
   return r;
 }
 function grandTotals(){
@@ -10816,14 +11156,35 @@ function dialog(opts){
     var root = $('modalRoot');
     var back = document.createElement('div');
     back.className = 'modal-back';
+    /* ++++++ INFO ++++++ признак окна пояснения — АТРИБУТ, а не второе
+       слово в классе: remOpen() сверяет className буквально и молча
+       вышел бы, появись там что-то ещё. */
+    if (opts.info) back.setAttribute('data-info', '1');
+    /* ++++++ BUTTONS ++++++ у листа больше нет своего оформления: он
+       печатает те же .btn / .btn sec / .btn danger, что и экран.
+       Прежние варианты передаются как передавались — меняются классы,
+       а не список. */
     var btns = (opts.buttons || [{key:'ok',label:tr('w.ok'),variant:'primary'}]).map(function(b){
-      return '<button type="button" data-key="' + esc(b.key) + '" class="' + (b.variant||'') + '">' + esc(b.label) + '</button>';
+      var cls = b.variant === 'danger' ? 'btn danger' : b.variant === 'primary' ? 'btn' : 'btn sec';
+      return '<button type="button" data-key="' + esc(b.key) + '" class="' + cls + '">' + esc(b.label) + '</button>';
     }).join('');
+    /* ++++++ INFO ++++++ крестик в шапке — ОБЫЧНАЯ кнопка с data-key="",
+       поэтому закрывает её существующий обработчик, без единой новой
+       строки в нём. Без closeX и bare разметка прежняя до байта. */
+    var mx = '<button type="button" class="mx" data-key="" aria-label="' +
+      esc(tr('w.close')) + '">' + ico('cross') + '</button>';
+    /* Шапка становится СТРОКОЙ только когда в неё что-то кладут —
+       крестик или иконку пояснения. Без них у листа прежний <h3> без
+       класса и без обёртки, до байта. */
+    var hx = opts.closeX || opts.aside;
     back.innerHTML =
       '<div class="modal" role="dialog" aria-modal="true">' +
-        '<h3>' + esc(opts.title || '') + '</h3>' +
+        (hx ? '<h3 class="hx"><span>' + esc(opts.title || '') + '</span>' +
+                (opts.aside || '') + (opts.closeX ? mx : '') + '</h3>'
+            : '<h3>' + esc(opts.title || '') + '</h3>') +
         '<div class="body">' + (opts.html || '') + '</div>' +
-        '<div class="btns"><button type="button" data-key="" class="">' + esc(opts.cancelLabel || tr('w.cancel')) + '</button>' + btns + '</div>' +
+        (opts.bare ? '' :
+        '<div class="btns"><button type="button" data-key="" class="btn sec">' + esc(opts.cancelLabel || tr('w.cancel')) + '</button>' + btns + '</div>') +
       '</div>';
     /* ================================== ++++++ RATE EDIT ++++++ ==
      * Здесь стояло `back.remove()` ПЕРЕД `resolve(key)`, и из-за этого
@@ -10859,7 +11220,17 @@ function dialog(opts){
       resolve(key);
       Promise.resolve().then(function(){ back.remove(); });
     }
-    function onKey(e){ if (e.key === 'Escape') done(null); }
+    /* ++++++ INFO ++++++ закрыть окно СНАРУЖИ — правильно, а не снятием
+       узла: снятый узел оставил бы за собой обработчик Escape. Нужно
+       ровно одному окну — пояснению, которое обязано быть на экране в
+       единственном экземпляре. */
+    back.__done = done;
+    /* ++++++ INFO ++++++ Escape закрывает ВЕРХНЕЕ окно, а не все сразу.
+       Обработчик у каждого листа свой и висит на документе; пока лист
+       был один, это ничего не значило, а пояснение открывается и поверх
+       другого листа — и закрыть заодно тот, из которого его открыли,
+       значит потерять место, куда человек возвращается. */
+    function onKey(e){ if (e.key === 'Escape' && root.lastChild === back) done(null); }
     back.addEventListener('click', function(e){
       var b = e.target.closest('button[data-key]');
       if (b) { done(b.dataset.key || null); return; }
@@ -10867,7 +11238,10 @@ function dialog(opts){
     });
     document.addEventListener('keydown', onKey);
     root.appendChild(back);
-    var first = back.querySelector('.btns button:last-child');
+    /* ++++++ INFO ++++++ у окна пояснения нижних кнопок нет — фокус
+       берёт крестик. Для всех прежних листов первая половина находит
+       то же, что находила. */
+    var first = back.querySelector('.btns button:last-child') || back.querySelector('h3 .mx');
     if (first) first.focus();
   });
 }
@@ -10875,6 +11249,170 @@ function confirmBox(title, html, okLabel, danger){
   return dialog({ title:title, html:html,
     buttons:[{key:'ok', label:okLabel || tr('w.confirm'), variant: danger ? 'danger' : 'primary'}]
   }).then(function(k){ return k === 'ok'; });
+}
+
+/* ================================================ ++++++ INFO ++++++ ==
+ * ПОЯСНЕНИЯ ЖИВУТ В ОДНОМ МЕСТЕ И ПОКАЗЫВАЮТСЯ ОДНИМ ОКНОМ.
+ *
+ * Правило, из которого следует всё: пояснение — это ОТВЕТ НА ВОПРОС, а
+ * не часть экрана. Двадцать текстов, которые раньше стояли на экранах
+ * абзацами, читают один раз, а место они занимали постоянно — столько
+ * же, сколько органы управления, ради которых экран и открывают.
+ *
+ * Три вещи, и ни одной четвёртой:
+ *   INFO       — реестр: ключ раздела -> заголовок и текст, с вариантами
+ *                по состоянию (вошёл / не вошёл, продуктовая / личная).
+ *   infoBtn()  — иконка. ОДНА на всё приложение, своей у раздела нет.
+ *   infoOpen() — окно. Тот же dialog(), что у всех листов, поэтому
+ *                Escape, нажатие мимо окна и «Назад» на Android работают
+ *                без единой новой строки.
+ *
+ * НИЧЕГО НЕ ХРАНИТСЯ. Ни поля в документе, ни ключа в localStorage, ни
+ * даже поля в ui: две модульные переменные, как prodEditAnchor, —
+ * наполовину открытому окну нечего делать в резервной копии.
+ *
+ * ЧТО ОСТАЛОСЬ НА ЭКРАНЕ И ПОЧЕМУ. Подсказки полей (их четырнадцать),
+ * предупреждения, состояния, вычисления и тексты окон подтверждения. Их
+ * читают в ту секунду, когда действуют: подсказка под полем, за которой
+ * надо открыть окно, — это не подсказка. Разбор пограничных случаев —
+ * в _claude_lab/Done/info-popup/inventory.md.
+ */
+var infoNode = null;                 /* открытое окно */
+var infoFrom = null;                 /* иконка, которой вернуть фокус */
+
+/** Иконка «i». Единственное место, где она печатается. */
+function infoBtn(key){
+  return '<button type="button" class="ibtn" data-act="info" data-arg="' + esc(key) + '"' +
+    ' aria-label="' + esc(tr('info.aria')) + '" title="' + esc(tr('info.aria')) + '"><i>i</i></button>';
+}
+/** Один абзац. Разметка внутри текста (<b>, <br>, <code>) — авторская,
+ *  из словаря, и попадает в тот же innerHTML, что и раньше. */
+function infoP(html){ return '<p class="ip">' + html + '</p>'; }
+
+/* РЕЕСТР. Ключ — раздел. title и html — ФУНКЦИИ, потому что обе идут
+   через tr() и обе зависят от состояния: строка заморозила бы язык
+   первой отрисовки (та же причина, по которой SEARCH[key].title —
+   функция).
+
+   Ни одна запись не решает сама, вошёл ли владелец и какая это сборка:
+   она спрашивает acctWho() и modeIsProduct() — те же две функции, на
+   которые смотрят экраны. Второй ответ на этот вопрос разошёлся бы с
+   первым при первой же правке. */
+var INFO = {
+
+  /* «Сводка» -> «Деньги» */
+  'summary.money': {
+    title: function(){ return tr('tab.summary'); },
+    /* ++++++ DISCOUNT ++++++ третий абзац: чем считается скидка, что она
+       не вычитается из прибыли, что наценки в неё не входят и что цифра
+       пересчитается, если поменять цену товара. */
+    html: function(){ return infoP(tr('sum.identities')) + infoP(tr('sum.byMovingAvg')) +
+                             infoP(tr('sum.discInfo')); }
+  },
+
+  /* Лист «Полный отчёт» */
+  'report': {
+    title: function(){ return tr('rem.title'); },
+    html: function(){ return infoP(tr('rem.hint')); }
+  },
+
+  /* «Деньги» -> «Расходы» */
+  'exp': {
+    title: function(){ return tr('tab.expenses'); },
+    html: function(){ return infoP(tr('exp.hint')); }
+  },
+
+  /* Карточка партии */
+  'lot': {
+    title: function(){ return tr('lot.expenses'); },
+    html: function(){ return infoP(tr('lot.hint')); }
+  },
+
+  /* «Корзина». ОБА предложения, всегда: на экране их разводило
+     состояние, и владелец видел половину рассказа. */
+  'trash': {
+    title: function(){ return tr('trash.title'); },
+    html: function(){
+      var days = nq(TRASH_DAYS, 'day');
+      return infoP(tr('trash.emptyHint', { n: days })) +
+             infoP(tr('trash.note30', { n: days }));
+    }
+  },
+
+  /* Раздел «Валюты и курсы» */
+  'cur': {
+    title: function(){ return tr('acct.cur'); },
+    html: function(){
+      return infoP(tr('cur.sectionNote', {
+               summary: esc(secWanted('summary').join(', ')),
+               tx: esc(secWanted('transactions').join(', ')) })) +
+             infoP(tr('cur.rateShows'));
+    }
+  },
+
+  /* Карточка «Курсы» в том же разделе — свой заголовок, свой текст */
+  'cur.rates': {
+    title: function(){ return tr('cur.rates'); },
+    html: function(){ return infoP(tr('rp.others')); }
+  },
+
+  /* Раздел «Резервная копия». Три блока подряд — один попап, в том же
+     порядке. Строка состояния «Хранилище: работает» осталась на экране:
+     это не рассказ, а то, что происходит сейчас. */
+  'backup': {
+    title: function(){ return tr('acct.backup'); },
+    html: function(){
+      var h = infoP(tr('store.where', {key: STORAGE_KEY}));
+      h += infoP(attOn()
+        ? tr('att.storeLine', {db: esc(ATT_DB), n: attCount(), size: fmtBytes(attBytes())})
+        : tr('att.storeOff'));
+      if (attOn() && attCount()) h += infoP(tr('att.storeWarn'));
+      h += infoP(tr('store.phoneWarn'));
+      return h;
+    }
+  },
+
+  /* Раздел «Внешний вид» */
+  'look': {
+    title: function(){ return tr('acct.look'); },
+    html: function(){ return infoP(tr('look.themeNote')); }
+  },
+
+  /* Обмен. ДВЕ сборки и ДВА состояния входа, и ни одна ветка не знает о
+     другой: личная не произносит слова Google, продуктовая — GitHub.
+     Вошедшему не показывается «Если войти в Google…»: у этого текста
+     есть свой ключ, gd.whatIn, где условие вычеркнуто. */
+  'sync': {
+    title: function(){ return tr(modeIsProduct() ? 'gd.title' : 'sy.title'); },
+    html: function(){
+      if (!modeIsProduct()) return infoP(tr('sy.what'));
+      if (acctWho()) return infoP(tr('gd.whatIn')) + infoP(tr('as.filesGo'));
+      return infoP(tr('gd.what')) + infoP(tr('gd.worksWithout'));
+    }
+  }
+};
+
+/** Открыть пояснение раздела. Единственный вход; ветка data-act="info"
+ *  состоит из одного её вызова. */
+function infoOpen(key){
+  var e = own(INFO, key) ? INFO[key] : null;
+  if (!e) return;                    /* ключа нет — молчим, а не рисуем пустое */
+  /* ОДНО ОКНО ЗА РАЗ, и открытое закрывается ПРАВИЛЬНО. */
+  if (infoNode && infoNode.__done) infoNode.__done(null);
+  var from = document.activeElement;
+  var mine = null;
+  dialog({ title: e.title(), html: '<div class="infobody">' + e.html() + '</div>',
+           closeX: true, bare: true, info: true })
+    .then(function(){
+      /* нас уже сменило другое окно — фокус ему, не нам */
+      if (infoNode !== mine) return;
+      infoNode = null;
+      if (from && from.focus && document.body.contains(from)) from.focus();
+    });
+  /* dialog() добавляет узел синхронно — тот же приём, что у remOpen(). */
+  mine = $('modalRoot').lastChild;
+  infoNode = mine;
+  infoFrom = from;
 }
 
 /* ------------------------------------------------------------------ */
@@ -11875,7 +12413,13 @@ function importBackup(file){
 
 /* ---- состояние экрана (никогда не сохраняется) ---- */
 ui.seg = { summary:'money', products:'list', people:'list', tx:'list', pay:'list',
-           exp:'list', more:'cur' };
+           exp:'list', more:'cur',
+           /* ++++++ MONEY TABS ++++++ какая из трёх вкладок «Денег»
+              открыта. Живёт в ui, значит помнится в пределах сеанса и
+              не попадает ни в документ, ни в копию. */
+           money:'tx' };
+/* ++++++ ACCOUNT ++++++ какой раздел «Аккаунта» открыт; '' — сам экран */
+ui.acct = '';
 ui.detail = null;                 /* {type:'person'|'product', id:'…'} */
 ui.reportPreset = 'all';
 ui.err = '';
@@ -11930,7 +12474,12 @@ function resetPersonForm(){
   ui.form.person = { name:'', phone:'', city:'', cityOther:'', shop:'', note:'', editId:'' };
   ui.edit.person = null;
 }
+/* ++++++ DISCOUNT ++++++ discErrDrop() — единственная правка сброса
+   формы: сама форма сбрасывается ровно как прежде, но ошибка процента —
+   состояние НАБИРАЕМОЙ формы, и пережить её она не может. Цена по-прежнему
+   пустая: подстановка привязана к ВЫБОРУ ТОВАРА, а не к сбросу. */
 function resetTxForm(keepPerson){
+  discErrDrop();
   var p = keepPerson || '';
   ui.form.tx = { personId:p, productId:'', qty:'', price:'', cur:lastTxCurFor(p),
     date:todayISO(), editId:'' };
@@ -12013,6 +12562,292 @@ function initials(name){
   return s ? s.charAt(0).toUpperCase() : '?';
 }
 function pctOf(part, whole){ return whole ? Math.round(part / whole * 1000) / 10 : 0; }
+
+/* ============================================ ++++++ DISCOUNT ++++++ ==
+ * СКИДКА — ПРОИЗВОДНАЯ, А НЕ ЗАПИСЬ.
+ *
+ * Она равна «обычная цена товара минус цена выдачи», умноженной на
+ * количество, и вычисляется заново на каждой отрисовке. Оба числа в
+ * документе уже есть: product.unitPriceCents и transaction.unitPriceCents.
+ *
+ * Отсюда всё остальное: схема не двигается, резервная копия побайтово
+ * прежняя, saveTx() не трогается ни на байт, и разойтись скидке с записью
+ * физически негде — второго числа просто не существует.
+ *
+ * Следствие, о котором сказано вслух за иконкой «i»: скидка считается по
+ * НЫНЕШНЕЙ цене товара, поэтому правка цены продажи пересчитает скидки
+ * прошлых выдач на экране. На деньги это не влияет никак — прибыль,
+ * выручка, долг и склад считаются по цене выдачи.
+ * ================================================================== */
+
+/* Три состояния записи. Ключи — стабильные опознаватели, они же имена
+   классов оформления, как у статусов: сравнивать по ключу, никогда по
+   подписи. Но `.pill.<key>` для них заводить НЕЛЬЗЯ: множество .pill.* —
+   это множество статусов, и правило без статуса сломало бы «все три или
+   ни одного». Своё имя — .dmark. */
+var DISC_NONE = 'none';   /* цена равна обычной, или обычной цены нет */
+var DISC_DOWN = 'disc';   /* скидка: отдали дешевле */
+var DISC_UP   = 'up';     /* наценка: отдали дороже */
+
+/** ОБЫЧНАЯ ЦЕНА товара в базовых копейках, или null — «цены нет».
+ *
+ *  Ноль читается как «цена не задана», а не как «товар бесплатный», и это
+ *  не выдумка этой задачи: ровно так его читает remainderReport(), где
+ *  `p.unitPriceCents > 0 ? 'list' : 'none'` решает, печатать цену или
+ *  прочерк. Два ответа на один вопрос разошлись бы при первой же правке.
+ *
+ *  Товара нет вовсе (удалён, в корзине, ссылка в никуда) — тоже null:
+ *  сравнивать не с чем. */
+function discUsualCents(p){
+  if (!p) return null;
+  var v = p.unitPriceCents;
+  if (typeof v !== 'number' || !isFinite(v) || v <= 0) return null;
+  return v;
+}
+
+/** ЕДИНСТВЕННАЯ производная скидки. Всё остальное здесь — обёртки над ней
+ *  и над её результатом.
+ *
+ *  pct считается существующей pctOf(): вторая арифметика процента в этом
+ *  файле недопустима ровно так же, как вторая арифметика денег. Знаменатель
+ *  один и тот же у скидки и у наценки — иначе «9.1%» значило бы разное в
+ *  двух строках одного списка. */
+function discOf(usualCents, priceCents, qty){
+  var out = { kind: DISC_NONE, usualCents: null, unitCents: 0, totalCents: 0, pct: 0 };
+  if (usualCents === null || usualCents === undefined) return out;
+  if (typeof priceCents !== 'number' || !isFinite(priceCents)) return out;
+  var q = (typeof qty === 'number' && isFinite(qty) && qty > 0) ? Math.floor(qty) : 0;
+  out.usualCents = usualCents;
+  var unit = usualCents - priceCents;
+  if (unit === 0) return out;
+  out.unitCents  = unit;
+  out.totalCents = unit * q;
+  out.pct        = pctOf(unit, usualCents);
+  out.kind       = unit > 0 ? DISC_DOWN : DISC_UP;
+  return out;
+}
+
+/** Скидка ВЫДАЧИ в базовых копейках — то, что складывается в «Отдано
+ *  скидками». Наценка сюда не попадает и даёт ноль: строка называется
+ *  «отдано», а наценка ничего не отдаёт. Прячется при этом наценка нигде —
+ *  она видна меткой на самой записи, своим словом и своим цветом. */
+function discGivenTx(t, p){
+  var d = discOf(discUsualCents(p), t.unitPriceCents, t.qty);
+  return d.kind === DISC_DOWN ? d.totalCents : 0;
+}
+
+/** Сколько скидки СНИМАЕТ возврат. Ровно та же форма, что у выручки в
+ *  computeReport(): возврат гасит начисленное в периоде СВОЕЙ даты, а не
+ *  даты выдачи. Считается по цене выдачи — своей у возврата нет. */
+function discGivenRet(x, t, p){
+  var d = discOf(discUsualCents(p), t.unitPriceCents, x.qty);
+  return d.kind === DISC_DOWN ? d.totalCents : 0;
+}
+
+/* ---- читатели: одна производная, разные экраны -------------------- */
+
+/** Скидка ЭТОЙ выдачи, готовая к показу. Один вызов на строку. */
+function discTx(t){
+  return discOf(discUsualCents(productById(t.productId)), t.unitPriceCents, t.qty);
+}
+
+/** Метка записи: процент и сумма скидки НА ВСЮ выдачу.
+ *
+ *  ФОРМАТТЕР ЗАДАЁТ ЭКРАН, А НЕ МЕТКА. Список выдач читает свои секционные
+ *  валюты, лента человека — базовую. Это не небрежность: так печатают
+ *  деньги сами эти экраны, и метка обязана стоять на том же основании,
+ *  что сумма рядом с ней — ровно как secV() и baseOne().
+ *
+ *  Процент печатается ЧИСЛОМ, а не денежным форматтером: NF даёт два
+ *  знака, и «9.1%» стало бы «9.10%». Так же печатает процент существующая
+ *  маржа на «Сводке». */
+function discMarkHTML(d, money){
+  if (d.kind === DISC_NONE) return '';
+  var cls = d.kind === DISC_DOWN ? 'disc' : 'up';
+  var key = d.kind === DISC_DOWN ? 'disc.mark' : 'disc.markUp';
+  return '<span class="dmark ' + cls + '">' +
+    tr(key, { pct: String(Math.abs(d.pct)), sum: money(Math.abs(d.totalCents)) }) + '</span>';
+}
+
+/** «Отдано скидками» за период, в БАЗОВЫХ копейках. Отбор — тот же
+ *  inRange() и тот же фильтр товара, что у выручки: разойтись строке и
+ *  итогу негде, потому что отбор ОДИН. */
+function discReportCents(from, to, productId){
+  var sum = 0;
+  actTx().forEach(function(t){
+    if (productId && t.productId !== productId) return;
+    if (!inRange(t.date, from, to)) return;
+    sum += discGivenTx(t, productById(t.productId));
+  });
+  actRet().forEach(function(x){
+    var t = txById(x.txId); if (!t) return;
+    if (productId && t.productId !== productId) return;
+    if (!inRange(x.date, from, to)) return;
+    sum -= discGivenRet(x, t, productById(t.productId));
+  });
+  return sum;
+}
+
+/** То же в валюте показа: КАЖДАЯ запись своим снимком курса, потом
+ *  сложение. Не «пересчитанная сумма», а «сумма пересчитанных» — правило,
+ *  на котором стоит вся семья dc*. Снимок берётся у ВЫДАЧИ: скидка
+ *  приписана ей, и стоять на другом курсе, чем её же выручка, она не
+ *  может. В базовой валюте обе величины сходятся до копейки, потому что
+ *  dcCents() там тождественна.
+ *
+ *  Начальное значение — dcCents(0, null), а не ноль: в валюте без курса
+ *  экран обязан быть в прочерках целиком, иначе пустой список напечатает
+ *  единственное число среди прочерков (правило expSumD). */
+function discReportD(from, to, productId){
+  var sum = dcCents(0, null);
+  actTx().forEach(function(t){
+    if (productId && t.productId !== productId) return;
+    if (!inRange(t.date, from, to)) return;
+    var c = discGivenTx(t, productById(t.productId));
+    if (c) sum = dcAdd(sum, dcCents(c, t.rateSnap));
+  });
+  actRet().forEach(function(x){
+    var t = txById(x.txId); if (!t) return;
+    if (productId && t.productId !== productId) return;
+    if (!inRange(x.date, from, to)) return;
+    var c = discGivenRet(x, t, productById(t.productId));
+    if (c) sum = dcSub(sum, dcCents(c, t.rateSnap));
+  });
+  return sum;
+}
+
+/** Скидки ОДНОГО человека за всё время, базовые копейки. Возвраты
+ *  вычитаются: вернувшийся товар не остался у него со скидкой. */
+function discPersonCents(personId){
+  var sum = 0;
+  actTx().forEach(function(t){
+    if (t.personId !== personId) return;
+    sum += discGivenTx(t, productById(t.productId));
+  });
+  actRet().forEach(function(x){
+    var t = txById(x.txId);
+    if (!t || t.personId !== personId) return;
+    sum -= discGivenRet(x, t, productById(t.productId));
+  });
+  return sum;
+}
+
+/** Скидки по ОДНОМУ товару за всё время, в валюте показа — колонка
+ *  «Полного отчёта». Периода отчёт не знает ПО ПОСТРОЕНИЮ (область 18), и
+ *  колонка тоже: она за всё время, и подпись столбца об этом говорит. */
+function discProductD(productId){
+  return discReportD('', '', productId);
+}
+
+/* ---- форма выдачи: подсказка и двусторонняя пара «цена ↔ скидка %» ---
+ *
+ * Источник истины ОДИН — цена: она и сохраняется. Процент нигде не
+ * хранится, даже в ui, — он вычисляется из цены при каждой отрисовке.
+ * Поэтому расходиться двум полям не в чем: второго значения не существует.
+ *
+ * Считается пара В ВАЛЮТЕ ПОЛЯ, а не в базовых копейках, и это не мелочь.
+ * Через базу: 550 AED, 10% дают 495.00 AED, это 134.79 USD, а обратно
+ * toBaseCents() даёт 49502, то есть 9.998% — поле показало бы 10.0, а
+ * после пересчёта 9.0. В валюте поля обе стороны стоят на одном
+ * округлении, и 10% остаются десятью. Остаётся цена цента: на суммах
+ * около десяти единиц один цент и есть десятая доля процента, и точнее
+ * валюта просто не умеет.
+ */
+
+/* Негодный процент — состояние НАБИРАЕМОЙ формы, и в документе ему делать
+   нечего: модульная переменная, как prodEditAnchor и moneyAnchor. */
+var discErr = '';
+function discErrDrop(){ discErr = ''; }
+
+/** Разбор процента. Отдельный от денег, потому что процент — не деньги: у
+ *  него бывает знак (минус = наценка), а parseMoneyToCents() знака не
+ *  принимает вовсе и принимать не должен.
+ *
+ *  Предел не косметический: 1000% наценки — это цена в одиннадцать раз
+ *  выше обычной, дальше начинается опечатка, а не сделка. */
+function parsePct(raw){
+  if (raw === null || raw === undefined) return null;
+  var s = String(raw).trim().replace(/\s/g, '');
+  if (s === '') return null;
+  if (s.indexOf(',') > -1 && s.indexOf('.') > -1) s = s.replace(/,/g, '');
+  else if (s.indexOf(',') > -1) s = s.replace(/,/g, '.');
+  if (!/^-?\d*\.?\d+$/.test(s)) return null;
+  var v = parseFloat(s);
+  if (!isFinite(v)) return null;
+  if (v > 100 || v < -1000) return null;
+  return v;
+}
+
+/** Цена по проценту, в мажорных единицах ВАЛЮТЫ ПОЛЯ.
+ *  null — когда считать нечем или когда результат отрицателен: цена ниже
+ *  нуля невозможна нигде в этой программе (parseMoneyToCents не принимает
+ *  знака вовсе), и молча подставить ноль значило бы выдать «отдал даром»
+ *  за «ошибся на клавише». */
+function discPriceValue(usualMajor, pct){
+  if (typeof usualMajor !== 'number' || !isFinite(usualMajor)) return null;
+  if (typeof pct !== 'number' || !isFinite(pct)) return null;
+  if (pct > 100) return null;
+  var v = usualMajor * (100 - pct) / 100;
+  if (!isFinite(v) || v < 0) return null;
+  return v;
+}
+
+/** Обычная цена выбранного товара, базовые копейки, или null. */
+function txUsualCents(){
+  return discUsualCents(productById(ui.form.tx.productId));
+}
+/** Цена из поля, приведённая к базовым копейкам, или null. */
+function txPriceCents(){
+  var m = parseMoneyToCents(ui.form.tx.price);
+  return m === null ? null : toBaseCents(m, ui.form.tx.cur);
+}
+/** Текст поля «скидка %» — ПРОИЗВОДНОЕ от цены, нигде не хранимое.
+ *  Пустая строка честнее нуля: ноль здесь значит «цена ровно обычная», а
+ *  это утверждение. */
+function txDiscText(){
+  var u = txUsualCents(), c = txPriceCents();
+  if (u === null || c === null) return '';
+  return String(pctOf(u - c, u));
+}
+
+/** Синхронизация пары. Правило одно: ПОЛЕ, В КОТОРОМ СЕЙЧАС КАРЕТКА,
+ *  НИКОГДА НЕ ПЕРЕПИСЫВАЕТСЯ. Второе — производное, его значение просто
+ *  ставится. Ни таймеров, ни перерисовки формы: трогаются ровно два узла,
+ *  и ни один из них не предок того, в котором печатают (область 12). */
+function discSyncPair(source){
+  var f = ui.form.tx, pctEl = $('txDiscIn');
+  if (!pctEl) return;
+  var priceEl = document.querySelector('#fTx input[data-f="tx.price"]');
+  discErr = '';
+  if (source === 'pct'){
+    var raw = pctEl.value;
+    /* стёрли процент — цену не трогаем: стирание не значит «даром» */
+    if (String(raw).trim() !== ''){
+      var u = txUsualCents(), pct = parsePct(raw);
+      if (u === null) discErr = tr('disc.noPrice');
+      else if (pct === null) discErr = tr('disc.errRange');
+      else {
+        var um = convertFor(u, f.cur);
+        var v = um === null ? null : discPriceValue(um, pct);
+        if (v === null) discErr = tr('disc.errNeg');
+        else {
+          var txt = v.toFixed(2);
+          setF('tx.price', txt);
+          /* ++++++ R14 ++++++ якорь двигается вместе с ценой: иначе первое
+             же переключение валюты пересчитает не от того числа. */
+          moneyAnchorSet('tx.price', txt);
+          if (priceEl && document.activeElement !== priceEl) priceEl.value = txt;
+        }
+      }
+    }
+  } else if (document.activeElement !== pctEl){
+    pctEl.value = txDiscText();
+  }
+}
+
+/* ++++++ DISCOUNT END ++++++ конец блока скидки: границу называет он сам,
+   а не соседняя функция — сосед переедет, и проверка станет смотреть на
+   весь остаток файла, ничего об этом не сказав. */
 
 /* ---- телефон и города (v8) ---- */
 var CITIES = [
@@ -12165,6 +13000,10 @@ function row(o){
   h += '<span class="k"><b>' + o.k + '</b>' + (o.sub ? '<small>' + o.sub + '</small>' : '') +
     /* ++++++ REMINDER LIST ++++++ вторая подпись, если она есть */
     (o.sub2 ? '<small class="age">' + o.sub2 + '</small>' : '') + '</span>';
+  /* ++++++ ACCOUNT ++++++ счётчик у строки раздела — «Корзина · 3».
+     Признак необязательный: каждый прежний вызов row() печатает ту же
+     разметку до байта. */
+  if (o.cnt) h += '<span class="cnt">' + esc(o.cnt) + '</span>';
   if (o.v !== undefined && o.v !== '') h += '<span class="v' + (o.vcls ? ' ' + o.vcls : '') + '">' + o.v + '</span>';
   /* ++++++ EXPENSE LOT ++++++ строка-ФЛАЖОК ничего не открывает, и шеврон
      на ней обещал бы переход, которого нет. Признак опциональный: каждый
@@ -12227,7 +13066,14 @@ function field(o){
   return h + '</label>';
 }
 function input(o){
-  return '<input type="' + (o.type || 'text') + '" data-f="' + o.f + '"' +
+  /* ++++++ DISCOUNT ++++++ два необязательных признака. `d` — поле пишет
+     не в форму, а в пару «цена ↔ скидка %», как data-s пишет в ui, а не в
+     ui.form; `dis` — сравнивать не с чем, и поле честно выключено.
+     Каждый прежний вызов печатает ту же разметку до байта: у всех есть
+     o.f, и data-f стоит ровно там, где стоял. */
+  return '<input type="' + (o.type || 'text') + '"' +
+    (o.f ? ' data-f="' + o.f + '"' : '') +
+    (o.d ? ' data-d="1"' : '') + (o.dis ? ' disabled' : '') +
     (o.mode ? ' inputmode="' + o.mode + '"' : '') +
     ' value="' + esc(o.value === null || o.value === undefined ? '' : o.value) + '"' +
     (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') +
@@ -12262,7 +13108,7 @@ function btn(label, act, cls, arg){
   return '<button type="button" class="btn' + (cls ? ' ' + cls : '') + '" data-act="' + act + '"' +
     (arg !== undefined ? ' data-arg="' + esc(arg) + '"' : '') + '>' + label + '</button>';
 }
-function saveBtn(label){ return '<button class="btn" type="submit">' + label + '</button>'; }
+function saveBtn(label){ return '<button class="btn block" type="submit">' + label + '</button>'; }
 function pillHTML(st){ return '<span class="pill ' + st + '">' + tr('status.' + st) + '</span>'; }
 function av(name){ return '<span class="av">' + esc(initials(name)) + '</span>'; }
 function avsq(txt){ return '<span class="av sq">' + esc(txt) + '</span>'; }
@@ -12283,6 +13129,14 @@ var ICON = {
   exp:     '<path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-2.6-1.6-2.5 1.6-2.5-1.6-2.6 1.6v-16a1 1 0 0 1 1-1z"/>' +
            '<path d="M9.2 8.4h5.6"/><path d="M9.2 12.4h5.6"/>',
   more:    '<circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>',
+  /* ++++++ NAV ++++++ кошелёк для «Денег». Прежние tx/pay/exp остаются
+     живыми: их печатают вкладки внутри раздела. */
+  money:   '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h11A2.5 2.5 0 0 1 19 8.5V9"/>' +
+           '<rect x="3" y="9" width="18" height="10.5" rx="2.6"/><circle cx="16.6" cy="14.2" r="1.35"/>',
+  person:  '<circle cx="12" cy="8.6" r="3.6"/><path d="M4.8 20c0-3.7 3.2-5.9 7.2-5.9s7.2 2.2 7.2 5.9"/>',
+  refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/>',
+  check:   '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  cross:   '<path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/>',
   search:  '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
   filter:  '<path d="M4 5.5h16l-6.3 7.4v5.2l-3.4 1.7v-6.9z"/>'
 };
@@ -12294,15 +13148,78 @@ function ico(n){
    «Ещё»: расход — такая же запись о деньгах, как выдача и оплата, и место
    ему рядом с ними, а не в настройках. Нижняя панель раздаётся с шести
    колонок до семи одной цифрой в таблице стилей. */
-var TABS = [['summary','tab.summary'],['products','tab.products'],['people','tab.people'],
-            ['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses'],
-            ['more','tab.more']];
+/* ++++++ NAV ++++++ ПЯТЬ пунктов вместо семи.
+   Выдачи, оплаты и расходы ушли вкладками внутрь «Денег», пять
+   сегментов «Ещё» — разделами «Аккаунта». Ни одна возможность не
+   переехала и не переписалась: изменилось только то, как до неё
+   добираются. Последний пункт показывает круглый аватар. */
+var NAV = [['summary','tab.summary'],['products','tab.products'],['people','tab.people'],
+           ['money','tab.money'],['acct','tab.acct']];
+
+/* Какой раздел «Аккаунта» отвечает прежнему сегменту «Ещё». Читается
+   ТОЛЬКО в navNorm(): второго ответа на этот вопрос быть не должно. */
+var MORE_TO_ACCT = { cur:'cur', data:'backup', trash:'trash', sync:'', look:'look' };
+
+/* ++++++ NAV ++++++ СОВМЕСТИМОСТЬ МАРШРУТОВ — ОДИН ВХОД, НЕ ВТОРОЙ.
+   Старое имя вкладки продолжает работать: оно переводится в новую пару
+   ЗДЕСЬ, до отрисовки, и обработчик с отрисовкой остаются в одном
+   экземпляре. Это не украшение: сорок два набора из семидесяти девяти
+   ставят ui.tab напрямую, и без этого перестали бы работать все разом.
+   Заодно так же ведёт себя окно, открытое по старой ссылке. */
+function navNorm(){
+  if (ui.tab === 'tx' || ui.tab === 'pay' || ui.tab === 'exp'){
+    ui.seg.money = ui.tab;
+    ui.tab = 'money';
+  } else if (ui.tab === 'more'){
+    ui.acct = own(MORE_TO_ACCT, ui.seg.more) ? MORE_TO_ACCT[ui.seg.more] : '';
+    ui.tab = 'acct';
+  }
+}
+
+/* ++++++ ACCOUNT ++++++ Кто вошёл. null — не вошли или личная сборка:
+   там учётной записи нет вовсе, обмен идёт через свой репозиторий. */
+function acctWho(){
+  if (!modeIsProduct() || !gdTokens) return null;
+  return bindOf(syncRead() || {});
+}
+/* Имя и фамилия ОТДЕЛЬНО. `userinfo` отдаёт given_name и family_name
+   при той же области `profile`, которую программа уже просит: нового
+   согласия не нужно. У привязки, сделанной прежней сборкой, есть только
+   целое имя — тогда оно делится по ПЕРВОМУ пробелу, и остаток считается
+   фамилией. Обратный порядок («последнее слово — фамилия») ломается на
+   «Ниязов-Каримов» ровно так же, как этот — на «ван Дейк»; выбран тот,
+   что совпадает с порядком слов в самой строке. */
+function acctName(b){
+  if (!b) return { first:'', last:'' };
+  if (b.given || b.family) return { first: b.given || '', last: b.family || '' };
+  var s = String(b.name || '').trim(), i = s.indexOf(' ');
+  if (i < 0) return { first: s, last: '' };
+  return { first: s.slice(0, i), last: s.slice(i + 1).replace(/^\s+/, '') };
+}
+function acctInitials(n){
+  var a = n.first ? n.first.charAt(0) : '';
+  var b = n.last ? n.last.charAt(0) : '';
+  return (a + b).toUpperCase();
+}
+/* Круглый аватар — ОДИН класс на все места, размер через переменную.
+   Фотографии нет: её адрес не объявлен в netHosts(), а список читается
+   оболочкой из УПАКОВАННОГО ядра. Инициалы — как в приложениях Google,
+   когда фотографии нет. */
+function avaHTML(size){
+  var st = size ? ' style="--s:' + size + 'px"' : '';
+  var b = acctWho(), n = b ? acctName(b) : null;
+  var ini = n ? acctInitials(n) : '';
+  if (!ini) return '<span class="ava anon"' + st + '>' + ico('person') + '</span>';
+  return '<span class="ava"' + st + '>' + esc(ini) + '</span>';
+}
 
 function renderNav(){
   var rail = '<div class="brand">' + tr(modeTitleKey()) + '<small>' + tr('app.railSub') + '</small></div>';
-  TABS.forEach(function(t){
+  NAV.forEach(function(t){
     rail += '<button type="button" data-act="tab" data-arg="' + t[0] + '"' +
-      (ui.tab === t[0] ? ' class="on"' : '') + '>' + ico(t[0]) + '<span>' + tr(t[1]) + '</span></button>';
+      (ui.tab === t[0] ? ' class="on"' : '') +
+      '>' + (t[0] === 'acct' ? avaHTML(22) : ico(t[0])) +
+      '<span>' + tr(t[1]) + '</span></button>';
   });
   rail += '<div class="foot">' +
     '<button type="button" data-act="theme">' +
@@ -12310,9 +13227,10 @@ function renderNav(){
   $('rail').innerHTML = rail;
 
   var bar = '';
-  TABS.forEach(function(t){
+  NAV.forEach(function(t){
     bar += '<button type="button" data-act="tab" data-arg="' + t[0] + '"' +
-      (ui.tab === t[0] ? ' class="on"' : '') + '>' + ico(t[0]) +
+      (ui.tab === t[0] ? ' class="on"' : '') +
+      '>' + (t[0] === 'acct' ? avaHTML(22) : ico(t[0])) +
       '<span>' + tr('tabS.' + t[0]) + '</span></button>';
   });
   $('bar').innerHTML = bar;
@@ -12440,7 +13358,11 @@ function remainderReport(productId){
      поэтому «Итого» равно сумме ровно тех чисел, которые напечатаны в
      строках, в любой валюте, а не только в базовой. */
   var ps = productStats(), dd = dcStats(ps), rows = [];
-  var t = { leftUnits:0, stockD:0, revD:0, profD:0, priced:0, unpriced:0 };
+  var t = { leftUnits:0, stockD:0, revD:0, profD:0, priced:0, unpriced:0,
+            /* ++++++ DISCOUNT ++++++ начальное значение — dcCents(0, null),
+               а не ноль: в валюте без курса таблица обязана быть в
+               прочерках целиком (правило expSumD). */
+            discD: dcCents(0, null) };
   actProducts().forEach(function(p){
     if (productId && p.id !== productId) return;
     var s = ps[p.id];
@@ -12471,6 +13393,11 @@ function remainderReport(productId){
     var src   = sold ? 'sales' : (p.unitPriceCents > 0 ? 'list' : 'none');
     var rev   = (src === 'none' || exact === null) ? null : dcRound(left * exact);
     var prof  = dcSub(rev, stock);
+    /* ++++++ DISCOUNT ++++++ считается ОДИН раз и читается дважды: строкой
+       ниже в саму строку, и ещё ниже в итог. Итог обязан быть суммой ровно
+       тех чисел, которые напечатаны, — как и все остальные итоги этого
+       отчёта. */
+    var disc  = discProductD(p.id);
     rows.push({ id:p.id, name:p.name, left:left, taken:s.taken,
       /* ++++++ MOVING AVG ++++++ цена единицы ТОГО, ЧТО ОСТАЛОСЬ, а не
          пожизненная средняя: иначе подпись говорила бы о закупках вообще,
@@ -12494,9 +13421,17 @@ function remainderReport(productId){
                               : (p.qty > 0 ? (x.spentD === null ? null : x.spentD / p.qty) : 0)),
       stockD:stock,
       priceD: (src === 'none' || exact === null) ? null : dcRound(exact),
+      /* ++++++ DISCOUNT ++++++ ЗА ВСЁ ВРЕМЯ, и это не упущение: отчёт по
+         остаткам периода не знает по построению (область 18), и колонка
+         стоит на том же основании. Подпись столбца так и говорит. */
+      discD: disc,
       src:src, revD:rev, profD:prof });
     t.leftUnits += left;
     t.stockD = dcAdd(t.stockD, stock);
+    /* ++++++ DISCOUNT ++++++ товар без цены складывается наравне с
+       остальными: скидку он принести не может — сравнивать не с чем, —
+       и вклад его ноль. Прочерк в строке значит именно ноль. */
+    t.discD = dcAdd(t.discD, disc);
     /* товар без цены не попадает в выручку и прибыль, но его штуки и его
        себестоимость на складе считаются: он лежит, деньги в нём есть */
     /* «нет цены» и «нечем пересчитать» — разные вещи: первое исключает
@@ -12537,6 +13472,14 @@ function remBodyHTML(d){
     return '<section class="card"><div class="empty">' + tr('rem.empty') + '</div></section>';
   }
   var t = d.tot, body = '';
+  /* ++++++ DISCOUNT ++++++ СТОЛБЦА НЕТ ВОВСЕ, если скидок не было ни у
+     одного товара. Столбец сплошных прочерков — это не сведения, а шум,
+     и на узкой таблице он отнимает место у тех, что читают (то же
+     правило, по которому строка «Получил скидками» печатается только при
+     ненулевом итоге). Заодно это делает буквально верным утверждение
+     «на документе без скидок отчёт прежний»: печатать нечего. */
+  var hasDisc = !!t.discD;
+  d.rows.forEach(function(r){ if (r.discD) hasDisc = true; });
   d.rows.forEach(function(r){
     body += '<tr>' +
       '<td title="' + esc(r.name) + '">' + esc(r.name) + '</td>' +
@@ -12547,7 +13490,12 @@ function remBodyHTML(d){
         remSrcHTML(r) + '</td>' +
       '<td>' + (r.revD === null ? remDash() : remBare(r.revD)) + '</td>' +
       '<td class="' + (r.profD === null ? '' : remSign(r.profD)) + '">' +
-        (r.profD === null ? remDash() : remBare(r.profD)) + '</td></tr>';
+        (r.profD === null ? remDash() : remBare(r.profD)) + '</td>' +
+      /* ++++++ DISCOUNT ++++++ ноль печатается прочерком, а не «0.00»:
+         ноль здесь значит «скидок по этому товару не было», и строка
+         прочерков читается быстрее столбца нулей. */
+      (hasDisc ? '<td>' + (r.discD ? remBare(r.discD) : remDash()) + '</td>' : '') +
+      '</tr>';
   });
   var h = '<div class="remwrap"><table class="remt"><thead><tr>' +
     '<th>' + tr('rem.colProduct') + '</th>' +
@@ -12556,6 +13504,8 @@ function remBodyHTML(d){
     '<th>' + tr('rem.colSell') + '</th>' +
     '<th>' + tr('rem.colRev') + '</th>' +
     '<th>' + tr('rem.colProfit') + '</th>' +
+    (hasDisc ? '<th>' + tr('rem.colDisc') + '<br><small>' +
+      tr('rem.colDiscSub') + '</small></th>' : '') +
     '</tr></thead><tbody>' + body + '</tbody><tfoot><tr>' +
     '<td>' + tr('rem.total') + '</td>' +
     '<td id="remTLeft">' + units(t.leftUnits) + '</td>' +
@@ -12564,10 +13514,13 @@ function remBodyHTML(d){
     '<td id="remTRev">' + remBare(t.revD) + '</td>' +
     '<td id="remTProfit" class="' + remSign(t.profD) + '">' +
       remBare(t.profD) + '</td>' +
+    (hasDisc ? '<td id="remTDisc">' + remBare(t.discD) + '</td>' : '') +
     '</tr></tfoot></table></div>';
-  h += '<div class="note calc remhint">' + tr('rem.hint');
-  if (t.unpriced) h += ' ' + tr('rem.excluded', {n: t.unpriced});
-  return h + '</div>';
+  /* ++++++ INFO ++++++ рассказ ушёл к заголовку листа; строка о товарах
+     без цены осталась — это цифра по текущему документу. */
+  if (t.unpriced) h += '<div class="note calc remhint">' +
+    tr('rem.excluded', {n: t.unpriced}) + '</div>';
+  return h;
 }
 function remSelectHTML(){
   var h = '<select data-r="remProduct" id="remSel"><option value="">' +
@@ -12606,7 +13559,7 @@ function remPaint(){
 function remOpen(){
   ui.remProduct = '';               /* при каждом открытии — «Все товары» */
   dialog({ title: tr('rem.title'), html: remSheetHTML(),
-    cancelLabel: tr('w.close'), buttons: [] });
+    aside: infoBtn('report'), cancelLabel: tr('w.close'), buttons: [] });
   var back = $('modalRoot').lastChild;   /* dialog() добавил его синхронно */
   if (!back || back.className !== 'modal-back') return;
   back.className = 'modal-back remback';
@@ -12919,7 +13872,10 @@ function viewSummary(){
      раз. Вызовов productStats() на этом экране стало меньше, не больше. */
   var ps = productStats();
   var r = computeReport(), g = grandTotals(), d = dcStats(ps), sec = 'summary';
-  var h = head(tr('tab.summary'), tr('sum.inCur', {note: dcStoreNote()}));
+  /* ++++++ INFO ++++++ иконка только в сегменте «Деньги»: у двух других
+     пояснения не было, и обещать его нечем. */
+  var h = head(tr('tab.summary'), tr('sum.inCur', {note: dcStoreNote()}),
+    ui.seg.summary === 'money' ? infoBtn('summary.money') : '');
   h += segbar('summary', [['money', tr('seg.money')], ['stock', tr('seg.stock')], ['people', tr('seg.people')]]);
   h += filterBar();
   h += warnNote(sec);
@@ -12954,7 +13910,14 @@ function viewSummary(){
       row({ k: tr('sum.otherExp'), sub: tr('sum.byExpDate'), v: dcMoney(d.rep.expenseD) }) +
       row({ k: tr('sum.netProfit'), sub: tr('sum.netProfitHint'),
             v: dcMoney(d.rep.netProfitD),
-            vcls: (d.rep.netProfitD !== null && d.rep.netProfitD < 0) ? 'neg' : '' }));
+            vcls: (d.rep.netProfitD !== null && d.rep.netProfitD < 0) ? 'neg' : '' }) +
+      /* ++++++ DISCOUNT ++++++ строка стоит ПОСЛЕ «Чистой прибыли», и это
+         не вкусовщина: «Чистая прибыль» — разность двух чисел НАД ней, и
+         строка между ними читалась бы как третье слагаемое. Скидка ни в
+         одну из них не входит; подпись говорит «справочно», а весь
+         рассказ — за иконкой «i» у заголовка. */
+      row({ k: tr('sum.discGiven'), sub: tr('sum.discGivenHint'),
+            v: dcMoney(d.rep.discountD) }));
 
     var owing = [], hs = personStats();
     actPeople().forEach(function(p){ if (hs[p.id].outstandingCents > 0) owing.push(p.name); });
@@ -12983,10 +13946,13 @@ function viewSummary(){
        предупреждала, что средняя берётся за всё время. Предупреждение о
        датах печатается ТОЛЬКО когда есть повод: без повода оно приучает
        не читать (область 44). */
+    /* ++++++ INFO ++++++ два предложения о том, КАК это считается, ушли
+       за иконку у заголовка. Предупреждение о датах осталось здесь:
+       оно печатается только когда есть повод, и повод этот — в данных,
+       а не в устройстве программы (область 44). */
     var early = earlyUnits(ps);
-    h += '<div class="note calc">' + tr('sum.identities') +
-         '<br>' + tr('sum.byMovingAvg') +
-         (early ? '<br>' + tr('sum.dateOrder', { n: nq(early, 'unit') }) : '') + '</div>';
+    if (early) h += '<div class="note calc">' +
+      tr('sum.dateOrder', { n: nq(early, 'unit') }) + '</div>';
   }
 
   if (ui.seg.summary === 'stock'){
@@ -14003,10 +14969,14 @@ function ledgerEvents(personId){
   actTx().forEach(function(t){
     if (t.personId !== personId) return;
     var p = productById(t.productId);
+    /* ++++++ DISCOUNT ++++++ лента человека читает БАЗОВУЮ валюту —
+       baseOne() строкой выше, — и метка стоит на том же основании, что
+       цена рядом с ней. */
     evts.push({ date:t.date, createdAt:t.createdAt, kind:'take', txId:t.id,
       retN: retQtyOf(t.id), retLeft: retLeftOf(t),
       text: units(t.qty) + ' × ' + esc(p ? p.name : '—'),
-      sub: tr('led.perUnit', {v: baseOne(t.unitPriceCents)}),
+      sub: tr('led.perUnit', {v: baseOne(t.unitPriceCents)}) +
+           discMarkHTML(discTx(t), baseOne),
       delta: t.qty * t.unitPriceCents });
   });
   actPay().forEach(function(y){
@@ -14159,6 +15129,12 @@ function viewPersonCard(){
     contact += row({ k: tr('ppl.phone'), sub: tr('ppl.noPhoneHint'),
       v: '<span class="muted">' + tr('ppl.noPhone') + '</span>' });
   }
+  /* ++++++ DISCOUNT ++++++ строка печатается ТОЛЬКО когда скидка была:
+     строка «0.00» без повода — предупреждение без причины (область 44), и
+     она учит пропускать карточку. Валюта — базовая, как у всей ленты. */
+  var discGot = discPersonCents(p.id);
+  if (discGot > 0) contact += row({ k: tr('ppl.discGot'), sub: tr('ppl.discGotHint'),
+    v: baseOne(discGot) });
   if (p.city) contact += row({ k: tr('ppl.city'), v: esc(p.city) });
   if (p.shop) contact += row({ k: tr('ppl.shop'), v: esc(p.shop) });
   if (p.note) contact += row({ k: tr('w.note'), v: esc(p.note) });
@@ -14350,10 +15326,11 @@ function statusFilterSheet(stKey){
   dialog({ title: tr('flt.title'), html: '<div class="rows">' + rows + '</div>',
     cancelLabel: tr('w.close'), buttons: [] });
 }
+/* ++++++ MONEY TABS ++++++ шапку печатает viewMoney(): экран теперь
+   один на три вкладки, и заголовков на нём должно быть тоже один. */
 function viewTx(){
   var sec = 'transactions';
-  var h = head(tr('tab.transactions'), tr('sum.inCur', {note: secNote(sec) || '—'}));
-  h += segbar('tx', [['list', tr('seg.list')],
+  var h = segbar('tx', [['list', tr('seg.list')],
     ['new', ui.form.tx.editId ? tr('seg.editing') : tr('seg.newTx')]]);
   h += warnNote(sec);
   if (ui.seg.tx === 'list'){
@@ -14377,8 +15354,14 @@ function txListHTML(){
   if (!hits.length) return noHits('txQuery');
   hits.forEach(function(t){
     var p = productById(t.productId), per = personById(t.personId);
+    /* ++++++ DISCOUNT ++++++ метка идёт ВТОРОЙ подписью, а не приклеена
+       к первой через « · »: sub обрезается многоточием, а sub2 переносится
+       (область 26), и на узком экране скидка исчезла бы первой. Строка без
+       скидки печатается байт в байт как прежде — sub2 необязателен.
+       Форматтер — секционный, тот же, которым напечатана сумма рядом. */
     rows += row({ lead: avsq(units(t.qty)), k: esc(p ? p.name : '—'),
       sub: esc(per ? per.name : '—') + ' · ' + fmtDateLong(t.date),
+      sub2: discMarkHTML(discTx(t), function(c){ return secBare(sec, c); }),
       v: secV(sec, t.qty * t.unitPriceCents), act:'tx-open', arg:t.id });
   });
   return listCard('', rows);
@@ -14402,8 +15385,19 @@ function formTx(){
       input({ f:'tx.qty', value:f.qty, mode:'numeric', ph:'12' }) + '</label>' +
     '<label class="f" style="margin:0"><span>' + tr('w.date') + '</span>' +
       input({ f:'tx.date', value:f.date, type:'date' }) + '</label></div></div>';
-  h += field({ label: tr('w.unitPrice'), control: money2('tx.price', f.price, 'tx.cur', f.cur),
-    hintId:'txHint', hint: txHintText() });
+  /* ++++++ DISCOUNT ++++++ два поля в одном ряду, подсказка под ними —
+     та же самая, на том же месте, с тем же id. Ряд переносится на узком
+     экране (.two.wrap): без переноса полю цены достаётся 39 px, и вместо
+     «500.00» видно «00». Поле процента выключено, когда сравнивать не с
+     чем, — у товара нет цены продажи или товар не выбран. */
+  var uCents = txUsualCents();
+  h += '<div class="f"><div class="two wrap">' +
+    '<label class="f" style="margin:0"><span>' + tr('w.unitPrice') + '</span>' +
+      money2('tx.price', f.price, 'tx.cur', f.cur) + '</label>' +
+    '<label class="f" style="margin:0"><span>' + tr('disc.pctField') + '</span>' +
+      input({ d:true, id:'txDiscIn', value: txDiscText(), mode:'decimal', ph:'0',
+              dis: uCents === null }) + '</label></div>' +
+    '<small class="hint" id="txHint">' + txHintText() + '</small></div>';
   h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'tx.record')) +
     (f.editId ? btn(tr('w.cancelEdit'), 'tx-cancel', 'ghost') : '') + '</div>';
   return h + '</form>';
@@ -14420,14 +15414,28 @@ function txHintText(){
     else out.push(tr('tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(f.cur),
       sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
   }
+  /* ++++++ DISCOUNT ++++++ третья часть, через тот же « · ». Прежние две
+     не тронуты. Негодный процент вытесняет рассказ о скидке: пока в поле
+     стоит то, чего не бывает, говорить «скидка 9.1%» было бы неправдой. */
+  if (discErr) out.push(discErr);
+  else {
+    var u = txUsualCents(), c = txPriceCents();
+    if (u !== null && c !== null){
+      var dd = discOf(u, c, q || 1), base = esc(state.settings.baseCurrency);
+      if (dd.kind === DISC_DOWN) out.push(tr('disc.hint',
+        {v: money(dd.unitCents, state.settings.baseCurrency) + ' ' + base, pct: String(dd.pct)}));
+      else if (dd.kind === DISC_UP) out.push(tr('disc.hintUp',
+        {v: money(-dd.unitCents, state.settings.baseCurrency) + ' ' + base, pct: String(-dd.pct)}));
+      else out.push(tr('disc.none'));
+    } else if (u === null && f.productId) out.push(tr('disc.noPrice'));
+  }
   return out.join(' · ');
 }
 
 /* =============================================== ВКЛАДКА «ОПЛАТЫ» == */
 function viewPay(){
   var sec = 'payments';
-  var h = head(tr('tab.payments'), tr('sum.inCur', {note: secNote(sec) || '—'}));
-  h += segbar('pay', [['list', tr('seg.list')],
+  var h = segbar('pay', [['list', tr('seg.list')],
     ['new', ui.form.pay.editId ? tr('seg.editing') : tr('seg.newPay')]]);
   h += warnNote(sec);
   if (ui.seg.pay === 'list'){
@@ -14755,10 +15763,36 @@ function saveRatePair(){
  * значило бы заставлять владельца пересчитывать в уме. Отсюда dcCents()/
  * dcFmt() и плитка выбора валюты в углу «героя» — те же, что на «Сводке».
  * ================================================================== */
+/* ++++++ MONEY TABS ++++++ «Деньги» — ОБЁРТКА, а не новый экран.
+   Она печатает шапку и ряд вкладок, а тело берёт у тех же viewTx(),
+   viewPay() и viewExp(), которые печатали его и вчера. Двух рядов
+   органов управления подряд не пугаемся: верхний — какой вид записей
+   смотрим, нижний — «Список / Новая», и они НАРОЧНО разного вида, иначе
+   читались бы как один. */
+var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses']];
+function moneySub(){
+  if (ui.seg.money === 'exp') return tr('sum.inCur', {note: dcStoreNote()});
+  var sec = ui.seg.money === 'pay' ? 'payments' : 'transactions';
+  return tr('sum.inCur', {note: secNote(sec) || '—'});
+}
+function viewMoney(){
+  /* ++++++ INFO ++++++ иконка только на «Расходах»: у «Выдач» и «Оплат»
+     пояснения не было. */
+  var h = head(tr('tab.money'), moneySub(),
+    ui.seg.money === 'exp' ? infoBtn('exp') : '');
+  h += '<div class="tabs">';
+  MONEY_TABS.forEach(function(t){
+    h += '<button type="button" data-act="money" data-arg="' + t[0] + '"' +
+      (ui.seg.money === t[0] ? ' class="on"' : '') + '>' + tr(t[1]) + '</button>';
+  });
+  h += '</div>';
+  if (ui.seg.money === 'pay') return h + viewPay();
+  if (ui.seg.money === 'exp') return h + viewExp();
+  return h + viewTx();
+}
 function viewExp(){
   var sec = 'expenses';
-  var h = head(tr('tab.expenses'), tr('sum.inCur', {note: dcStoreNote()}));
-  h += segbar('exp', [['list', tr('seg.list')],
+  var h = segbar('exp', [['list', tr('seg.list')],
     ['new', ui.form.exp.editId ? tr('seg.editing') : tr('seg.newExp')]]);
   h += warnNote(sec);
   if (ui.seg.exp === 'list'){
@@ -14815,7 +15849,6 @@ function formExp(){
   h += expSplitHTML();
   h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'exp.record')) +
     (f.editId ? btn(tr('w.cancelEdit'), 'exp-cancel', 'ghost') : '') + '</div>';
-  h += '<div class="note calc">' + tr('exp.hint') + '</div>';
   return h + '</form>';
 }
 /** Подсказка под суммой. Пересчитывается через live(), поэтому курсор в
@@ -15246,7 +16279,8 @@ function viewLotCard(){
   var sec = 'products';
   var sh = lotShareCents(lot), expCents = lotExpCents(lot), buy = lotTotalCents(lot);
   var h = backHead(tr('lot.title', {date: fmtDateLong(lot.date)}),
-    tr('lot.sub', {n: nq(lot.items.length, 'line'), sum: secOne(sec, buy)}));
+    tr('lot.sub', {n: nq(lot.items.length, 'line'), sum: secOne(sec, buy)}),
+    infoBtn('lot'));
   h += warnNote(sec);
   h += hero({ k: tr('lot.expTotal'), v: heroMoney(sec, expCents),
     s: expCents ? tr('lot.expOf', {n: nq(lotExpenses(lot).length, 'expense'),
@@ -15291,7 +16325,6 @@ function viewLotCard(){
   h += listCard(tr('lot.expenses'), er);
 
   h += '<div class="btns">' + btn(tr('lot.join'), 'lot-join', 'ghost') + '</div>';
-  h += '<div class="note calc">' + tr('lot.hint') + '</div>';
   return h;
 }
 
@@ -15589,16 +16622,16 @@ function trashGroupListHTML(g){
 /** Раздел «Ещё → Корзина». Пусто — так и сказано, и очистки тогда нет:
  *  кнопка, которой нечего делать, обещает работу, которой нет. */
 function trashSectionHTML(){
+  /* ++++++ INFO ++++++ оба предложения о сроке ушли за иконку у
+     заголовка раздела — и там стоят ОБА, а не то одно, которое выбрало
+     состояние: рассказ не должен зависеть от того, пуста ли корзина. */
   var groups = trashGroups(state), n = trashCount(state), h = '', i;
-  var days = nq(TRASH_DAYS, 'day');
   if (!n){
     return listCard(tr('trash.title'),
-      '<div class="empty">' + tr('trash.empty') + '</div>') +
-      '<div class="note calc">' + tr('trash.emptyHint', { n: days }) + '</div>';
+      '<div class="empty">' + tr('trash.empty') + '</div>');
   }
   for (i = 0; i < groups.length; i++) h += trashRowHTML(groups[i]);
   return listCard(tr('trash.title') + ' · ' + n, h) +
-    '<div class="note calc">' + tr('trash.note30', { n: days }) + '</div>' +
     listCard('', row({ k: tr('trash.clear'), act: 'trash-clear' }));
 }
 
@@ -15718,12 +16751,194 @@ function trashPurgeBoot(loaded){
   return plan.n;
 }
 
-function viewMore(){
-  var h = head(tr('tab.more'), tr('more.sub'));
-  h += segbar('more', [['cur', tr('seg.cur')], ['data', tr('seg.data')],
-                       ['trash', tr('seg.trash')], ['sync', tr('seg.sync')],
-                       ['look', tr('seg.look')]]);
-  if (ui.seg.more === 'cur'){
+/* ================================================== ++++++ ACCOUNT ++++++
+ * ЭКРАН «АККАУНТ» вместо вкладки «Ещё» с пятью сегментами.
+ *
+ * Ни один раздел не написан заново: тело каждого — та же ветка
+ * прежнего viewMore(), перенесённая целиком. Изменилось только то, как
+ * до неё добираются, и то, что «Данные» разделились по смыслу: копия
+ * данных и версия программы — разные вещи, и жили в одном сегменте
+ * только потому, что сегментов было пять.
+ *
+ * Карточки «Обмен» больше нет: состояние обмена — свойство той же
+ * учётной записи, и стоит строкой внутри её карточки.
+ * ================================================================== */
+function viewAcct(){
+  /* ++++++ INFO ++++++ иконка у заголовка раздела — там же, где на
+     всех остальных экранах. У «О программе» её нет: пояснения там не
+     было, а иконка без текста обещала бы рассказ, которого нет. */
+  if (ui.acct === 'cur')    return backHead(tr('acct.cur'), '', infoBtn('cur')) + acctCur();
+  if (ui.acct === 'backup') return backHead(tr('acct.backup'), '', infoBtn('backup')) + acctBackup();
+  if (ui.acct === 'trash')  return backHead(tr('trash.title'), '', infoBtn('trash')) + acctTrash();
+  if (ui.acct === 'look')   return backHead(tr('acct.look'), '', infoBtn('look')) + acctLook();
+  if (ui.acct === 'about')  return backHead(tr('up.title')) + acctAbout();
+
+  /* Рассказ об обмене — это рассказ об учётной записи, и иконка стоит у
+     заголовка экрана, как на «Резервной копии» (решение владельца
+     2026-09-01). */
+  var h = head(tr('tab.acct'), '', infoBtn('sync'));
+  h += acctCardHTML();
+  h += acctFormHTML();
+  h += acctRowsHTML();
+  h += acctOutHTML();
+  return h;
+}
+
+/** Карточка: кто вошёл, сколько места, когда был обмен. */
+function acctCardHTML(){
+  var b = acctWho(), h = '<section class="card">';
+  if (!b){
+    h += '<div class="acct"><span class="ava anon" style="--s:56px">' + ico('person') + '</span>' +
+         '<div class="who"><b>' +
+           esc(modeIsProduct() ? tr('acct.noSignIn') : tr('acct.noLink')) + '</b>' +
+         '<small>' + esc(tr('acct.onlyHere')) + '</small></div></div>';
+    if (modeIsProduct() && gdBridgeReady() && modeConfigured())
+      h += '<div class="signrow">' + btn(tr('gd.signIn'), 'gd-signin', 'block') + '</div>';
+    return h + '</section>';
+  }
+  var n = acctName(b);
+  h += '<div class="acct">' + avaHTML(56) + '<div class="who"><b>' + esc(n.first) + '</b>' +
+       (n.last ? '<span class="fam">' + esc(n.last) + '</span>' : '') +
+       '<small>' + esc(tr('gd.account')) + '</small></div></div>';
+  h += acctSpaceHTML();
+  h += syncRowHTML();
+  return h + '</section>';
+}
+
+/** Место. Величины те же, что печатала attSpaceLine(): квота той самой
+ *  скрытой папки, куда всё уезжает. Полоса рисуется, только когда
+ *  известны ОБЕ величины — выдумывать свободное нельзя. */
+function acctSpaceHTML(){
+  if (!attSpaceInfo)
+    return '<div class="space"><div class="lab"><span>' + esc(tr('acct.gdrive')) + '</span>' +
+      '</div><div class="sub">' + esc(tr('as.spaceUnknown')) + '</div></div>';
+  var sp = attSpace(attSpaceInfo.used, attSpaceInfo.quota);
+  var h = '<div class="space"><div class="lab"><span>' + esc(tr('acct.gdrive')) + '</span>' +
+          '<b>' + esc(attSpaceLine()) + '</b></div>';
+  if (sp.state === 'known' && sp.used + sp.free > 0){
+    var pct = sp.used / (sp.used + sp.free) * 100;
+    if (pct < 1.5) pct = 1.5;
+    h += '<div class="track"><i style="width:' + pct.toFixed(2) + '%"></i></div>';
+  }
+  return h + '</div>';
+}
+
+/* ++++++ SYNC ROW ++++++ строка обмена и круглая кнопка.
+ *
+ * ДВА состояния, и живут они по-разному. Вид кнопки (syncBtnState)
+ * гаснет через две секунды, и обычный вид тогда означает «повторить».
+ * Отказ (syncStatus.err) держится, пока обмен не пройдёт: внутри
+ * пояснения бывает «Записать мои данные поверх», и на неё надо успеть
+ * нажать. Своего крестика у пояснения нет — второй крестик в одной
+ * карточке спорил бы с кнопкой обмена, а закрыть его есть чем: удачным
+ * обменом.
+ *
+ * Признак «есть неотправленные» не потерян: он был значением строки
+ * («всё отправлено» / «не отправлено: 3») и стал мелкой подписью,
+ * которая печатается ТОЛЬКО когда есть что отправлять. Молчание и
+ * означает «всё отправлено»: строка, которая всегда на экране,
+ * перестаёт читаться.
+ */
+var syncBtnState = '';        /* '' | busy | ok | err — вид КНОПКИ */
+var syncBtnTimer = null;
+
+function syncOn(){
+  var o = syncRead() || {};
+  return modeIsProduct() ? !!gdTokens : !!o.on;
+}
+/* Ключи берутся ПО РЕЖИМУ: у личной сборки и продуктовой свои слова об
+   одном и том же, и они уже написаны. Заводить третий набор значило бы
+   оставить два прежних мёртвыми — ровно то, что ловит dead-weight. */
+function syncKey(a, b){ return modeIsProduct() ? a : b; }
+function syncRowHTML(){
+  if (!syncOn()) return '';
+  var o = syncRead() || {}, err = syncStatus.err;
+  var st = syncBtnState;
+  var when = syncStatus.busy ? tr(syncKey('gd.busy', 'sy.busy'))
+           : (o.at ? bakStamp(o.at) : tr(syncKey('gd.never', 'sy.never')));
+  var sub = '', pend = syncPending();
+  if (err) sub = '<small class="pend bad">' + esc(tr('acct.syncFail')) + '</small>';
+  else if (pend) sub = '<small class="pend">' +
+    esc(tr(syncKey('gd.pending', 'sy.pending'), { n: pend })) + '</small>';
+  return '<div class="syncwrap"><div class="syncrow">' +
+    '<div class="st"><b>' + esc(tr('acct.syncLast')) + '</b>' +
+      '<span class="when">' + esc(when) + '</span>' + sub + '</div>' +
+    syncBtnHTML(st, err) +
+    '</div>' + (err ? syncErrHTML(err) : '') + '</div>';
+}
+function syncBtnHTML(st, err){
+  var lab = st === 'busy' ? tr('gd.busy')
+          : st === 'ok'   ? tr('acct.syncOk')
+          : st === 'err'  ? tr('acct.syncFail')
+          : err           ? tr('acct.syncRetry') : tr(syncKey('gd.now', 'sy.now'));
+  return '<button type="button" class="syncbtn' + (st ? ' is-' + st : '') +
+    '" data-act="sync-now" aria-label="' + esc(lab) + '" title="' + esc(lab) + '">' +
+    '<span class="i arr">' + ico('refresh') + '</span>' +
+    '<span class="i ok">' + ico('check') + '</span>' +
+    '<span class="i err">' + ico('cross') + '</span></button>';
+}
+/** Что случилось и что делать. Текст берётся из словаря БЕЗ правки: он
+ *  там для всех четырнадцати отказов и говорит обе вещи сразу. Тон
+ *  выбирает существующий gdRetryable(): беда, которая пройдёт сама, —
+ *  спокойно; та, что ждёт решения владельца, — предупреждением. */
+function syncErrHTML(err){
+  var key = modeIsProduct() ? gdErrKey(err) : null;
+  var text = key ? tr(key) : syncErrText(err);
+  var h = '<div class="syncerr"><div class="note ' +
+          (gdRetryable(err) ? 'calc' : 'warn') + '">' + esc(text) + '</div>';
+  if (modeIsProduct() && err === 'badremote')
+    h += '<div class="rb"><button type="button" class="danger" data-act="gd-fixremote">' +
+         esc(tr('gd.fixOpen')) + '</button></div>';
+  return h + '</div>';
+}
+/** ОДИН узел, никогда render(): в личной сборке прямо под этой строкой
+ *  стоит форма с пятью полями, и полная перерисовка во время обмена
+ *  вынесла бы каретку из поля, в котором владелец печатает. */
+function syncBtnPaint(){
+  var box = document.querySelector('.syncwrap');
+  if (!box) return;
+  var tmp = document.createElement('div');
+  tmp.innerHTML = syncRowHTML();
+  if (tmp.firstChild) box.parentNode.replaceChild(tmp.firstChild, box);
+}
+/** Вид кнопки после оборота. Отказ не трогаем: он живёт в syncStatus.err
+ *  до следующего оборота и снимается удачным обменом. */
+function syncBtnDone(err){
+  if (syncBtnTimer){ clearTimeout(syncBtnTimer); syncBtnTimer = null; }
+  syncBtnState = err ? 'err' : 'ok';
+  syncBtnPaint();
+  syncBtnTimer = setTimeout(function(){
+    syncBtnState = ''; syncBtnTimer = null; syncBtnPaint();
+  }, 2000);
+}
+
+/** Настройка обмена личной сборки — это НАСТРОЙКА, а не состояние,
+ *  поэтому она осталась карточкой, и стоит ниже. */
+function acctFormHTML(){
+  return modeIsProduct() ? gdCardHTML() : syncCardHTML();
+}
+
+function acctRowsHTML(){
+  var n = trashCount(state);
+  return listCard(tr('acct.sections'),
+    row({ k: tr('acct.cur'),    sub: tr('acct.curSub'),    act:'acct', arg:'cur' }) +
+    row({ k: tr('acct.backup'), sub: tr('acct.backupSub'), act:'acct', arg:'backup' }) +
+    row({ k: tr('trash.title'), sub: tr('acct.trashSub'),
+          cnt: n ? String(n) : '', act:'acct', arg:'trash' }) +
+    row({ k: tr('acct.look'),   sub: tr('acct.lookSub'),   act:'acct', arg:'look' }) +
+    row({ k: tr('up.title'),    sub: tr('acct.aboutSub'),  act:'acct', arg:'about' }));
+}
+function acctOutHTML(){
+  if (!syncOn()) return '';
+  return '<div class="acctout">' +
+    btn(tr(modeIsProduct() ? 'gd.signOut' : 'sy.forget'),
+        modeIsProduct() ? 'gd-signout' : 'sync-forget', 'danger block') + '</div>';
+}
+
+/* ---- пять разделов: тела перенесены из прежнего viewMore() ---- */
+function acctCur(){
+  var h = '';
+  if (1){
     h += '<section class="card"><div class="t">' + tr('hdr.base') + '</div><div class="b">' +
       field({ label: tr('cur.baseIs'), control: select({ f:'', id:'baseCurrencySel',
         value: state.settings.baseCurrency,
@@ -15763,12 +16978,12 @@ function viewMore(){
         act:'cur-edit', arg:c });
     });
     if (others){
-      h += listCard(tr('cur.rates'), rows);
       /* Названо прямо: правка полей двигает и их отношение к доллару,
          потому что их курс задан к БАЗЕ, а не к доллару. Промолчать об
          этом значило бы дать разделу тихо переоценивать то, чего он не
-         показывает. */
-      h += '<div class="note calc">' + tr('rp.others') + '</div>';
+         показывает. ++++++ INFO ++++++ сказано теперь за иконкой самой
+         карточки: текст объясняет её, а не весь раздел. */
+      h += listCard('<span>' + tr('cur.rates') + '</span>' + infoBtn('cur.rates'), rows);
     }
     h += '<form id="fCur" novalidate>' + errNote() + '<div class="f"><div class="two">' +
       '<label class="f" style="margin:0"><span>' + tr('cur.code') + '</span>' +
@@ -15778,19 +16993,20 @@ function viewMore(){
         input({ f:'cur.rate', value:ui.form.cur.rate, mode:'decimal', ph:'4.00' }) + '</label>' +
       '</div></div>' + saveBtn(tr('cur.add')) + '</form>';
     /* ++++++ REPORT SAYS ++++++ R16. Что хранимые суммы от правки курса
-       не меняются, сказано выше. Что показанные — меняются, сказано не
-       было; и «Сводка» здесь исключение, потому что читает курсы,
-       записанные вместе с записью (схема 10). */
-    h += '<div class="note calc">' + tr('cur.sectionNote', {
-      summary: esc(secWanted('summary').join(', ')),
-      tx: esc(secWanted('transactions').join(', ')) }) +
-      '<br>' + tr('cur.rateShows') + '</div>';
+       не меняются и что показанные — меняются, сказано по-прежнему; с
+       2026-09-01 это сказано за иконкой у заголовка раздела, а не
+       абзацем под формой. Ни одно из двух предложений не потеряно и не
+       переписано — см. реестр INFO. */
     /* ++++++ RATELOG FOLD ++++++ последней в разделе и свёрнутой. Карточка
        по-прежнему есть только когда есть что показать — rateLogHTML()
        возвращает '' на пустой истории, и её проверка не тронута. */
     h += rateLogHTML();
   }
-  if (ui.seg.more === 'data'){
+  return h;
+}
+function acctBackup(){
+  var h = '';
+  if (1){
     /* ++++++ BACKUP REMINDER ++++++ раздел не удваивается: строка о
        последней копии встаёт первой в ту же карточку, а «Скачать копию» и
        «Импорт копии» — те же две строки с теми же действиями. */
@@ -15808,32 +17024,31 @@ function viewMore(){
     }
     h += listCard(tr('bak.dangerTitle'),
       row({ k: tr('bak.erase'), sub: tr('bak.eraseHint'), act:'reset' }));
-    h += '<div class="note calc">' + tr('store.where', {key: STORAGE_KEY}) + '<br>' +
-      tr('store.state', {state: lastSaveOk ? tr('store.working') : tr('store.writeFail')}) + '<br>' +
-      /* ++++++ ATTACHMENTS ++++++ where the pictures are, in the same words */
-      (attOn() ? tr('att.storeLine', {db: esc(ATT_DB), n: attCount(), size: fmtBytes(attBytes())})
-               : tr('att.storeOff')) + '</div>';
-    /* Honest, and measured: file:// cannot ask for persistent storage, so the
-       browser may clear these files under disk pressure, and copying the HTML
-       to another machine carries none of them. The backup is the only copy
-       that travels and the only one that is durable. */
-    if (attOn() && attCount()) h += '<div class="note warn">' + tr('att.storeWarn') + '</div>';
-
-    h += '<div class="note warn">' + tr('store.phoneWarn') + '</div>';
-    /* ++++++ SELF UPDATE ++++++ версия и обновление */
-    h += updCardHTML();
+    /* ++++++ INFO ++++++ блок расщеплён, и линия проведена по смыслу:
+       ГДЕ лежат данные и что бывает с файлами — рассказ, он за иконкой;
+       РАБОТАЕТ ли запись прямо сейчас — состояние, и оно остаётся на
+       экране. Предупреждения о переносе файла и о телефоне тоже уехали:
+       одетые в warn, они говорят об устройстве программы, а не о том,
+       что случилось. */
+    h += '<div class="note calc">' +
+      tr('store.state', {state: lastSaveOk ? tr('store.working') : tr('store.writeFail')}) + '</div>';
   }
-  /* ++++++ TRASH ++++++ единственный экран, который читает удалённые
-     записи. Всё остальное приложение их не видит вовсе. */
-  if (ui.seg.more === 'trash'){
-    h += trashSectionHTML();
-  }
-  /* ++++++ SYNC ++++++ раздел обмена: показывает состояние и даёт три
-     действия — подключить, отключить, обменяться сейчас. */
-  if (ui.seg.more === 'sync'){
-    h += syncCardHTML();
-  }
-  if (ui.seg.more === 'look'){
+  return h;
+}
+/* ++++++ SELF UPDATE ++++++ версия и обновление. Прежде они стояли в
+   сегменте «Данные» рядом с резервной копией — двумя несвязанными
+   вещами в одном месте только потому, что сегментов было пять. */
+function acctAbout(){
+  return updCardHTML();
+}
+/* ++++++ TRASH ++++++ единственный экран, который читает удалённые
+   записи. Всё остальное приложение их не видит вовсе. */
+function acctTrash(){
+  return trashSectionHTML();
+}
+function acctLook(){
+  var h = '';
+  if (1){
     h += '<section class="card"><div class="t">' + tr('hdr.lang') + '</div><div class="b">' +
       field({ label: tr('look.language'), control: select({ f:'', id:'langSel', value:getLang(),
         items:[['en', LANG_LABEL.en], ['ru', LANG_LABEL.ru]] }) }) + '</div></section>';
@@ -15842,7 +17057,6 @@ function viewMore(){
         (ui.theme === 'light' ? ' class="on"' : '') + '>' + tr('look.themeLight') + '</button>' +
       '<button type="button" data-act="theme-set" data-arg="dark"' +
         (ui.theme === 'dark' ? ' class="on"' : '') + '>' + tr('look.themeDark') + '</button></div>';
-    h += '<div class="note calc">' + tr('look.themeNote') + '</div>';
   }
   return h;
 }
@@ -15853,14 +17067,15 @@ function render(){
   document.documentElement.setAttribute('lang', getLang());
   document.title = tr(modeTitlePlainKey());
   setStorageBadge();
+  /* ++++++ NAV ++++++ старое имя вкладки переводится в новую пару ЗДЕСЬ
+     и больше нигде: один вход, один обработчик, одна отрисовка. */
+  navNorm();
   renderNav();
   var h;
   if (ui.tab === 'products') h = viewProducts();
   else if (ui.tab === 'people') h = viewPeople();
-  else if (ui.tab === 'tx') h = viewTx();
-  else if (ui.tab === 'pay') h = viewPay();
-  else if (ui.tab === 'exp') h = viewExp();          /* ++++++ EXPENSES ++++++ */
-  else if (ui.tab === 'more') h = viewMore();
+  else if (ui.tab === 'money') h = viewMoney();
+  else if (ui.tab === 'acct') h = viewAcct();
   else h = viewSummary();
   $('app').innerHTML = h;
   /* ++++++ ATTACHMENTS ++++++ the screen is complete without a single
@@ -15885,22 +17100,30 @@ function live(){
   /* ++++++ NAME TWINS ++++++ один узел, не форма: курсор в имени остаётся
      на месте, пока подсказка пересчитывается на каждую букву. */
   if (ui.tab === 'people'){ n = $('personTwin'); if (n) n.innerHTML = personTwinText(); }
-  if (ui.tab === 'tx'){ n = $('txHint'); if (n) n.innerHTML = txHintText(); }
+  if (ui.tab === 'money' && ui.seg.money === 'tx'){
+    /* ++++++ DISCOUNT ++++++ пара «цена ↔ скидка %» пересчитывается на
+       каждую набранную букву. Трогаются ровно два узла — второе поле и
+       подсказка, — и ПОЛЕ, В КОТОРОМ КАРЕТКА, НЕ ПЕРЕПИСЫВАЕТСЯ НИКОГДА.
+       render() звать здесь нельзя (область 12): он пересоздал бы форму
+       под рукой. Порядок важен: пара считает discErr, подсказка его
+       печатает. */
+    discSyncPair(liveDiscSource);
+    n = $('txHint'); if (n) n.innerHTML = txHintText(); }
   /* ++++++ EXPENSES ++++++ два узла, не форма: курсор в поле суммы
      остаётся на месте, пока подсказка и предварительное деление
      пересчитываются на каждую букву. Ни один из них не предок поля. */
-  if (ui.tab === 'exp'){
+  if (ui.tab === 'money' && ui.seg.money === 'exp'){
     n = $('expHint'); if (n) n.innerHTML = expHintText();
     n = $('expSplit'); if (n) n.innerHTML = expSplitBody();
   }
   /* ++++++ RATE PAIR ++++++ таблица курсов пересчитывается на каждую
      набранную букву. Переписываются ДВА узла, и ни один из них не предок
      полей, — поэтому курсор остаётся на месте (хрупкое место 12). */
-  if (ui.tab === 'more' && ui.seg.more === 'cur'){
+  if (ui.tab === 'acct' && ui.acct === 'cur'){
     n = $('rateTable'); if (n) n.innerHTML = ratePairTableHTML();
     n = $('rateNote');  if (n) n.innerHTML = ratePairNoteText();
   }
-  if (ui.tab === 'pay'){
+  if (ui.tab === 'money' && ui.seg.money === 'pay'){
     n = $('payHint'); if (n) n.innerHTML = payHintText();
     /* ++++++ PAY LIVE ++++++ и активность кнопки — она зависит от того же
        остатка. Один узел, не форма: курсор в поле остаётся на месте. */
@@ -15912,6 +17135,10 @@ function showTab(name){
      любую вкладку, поэтому настройки открываются со свёрнутой историей
      каждый раз. В документ это не попадает: ui не сериализуется. */
   ui.tab = name; ui.detail = null; ui.err = ''; ui.rateLogOpen = false;
+  /* ++++++ ACCOUNT ++++++ раздел закрывается вместе с уходом с экрана —
+     по той же причине, по которой закрывается карточка: вернувшись,
+     владелец обязан увидеть сам экран, а не то, что открывал вчера. */
+  ui.acct = '';
   render(); window.scrollTo(0,0);
 }
 
@@ -16079,6 +17306,13 @@ function convText(raw, from, to, path){
   return v === null ? raw : v.toFixed(2);
 }
 
+/* ++++++ DISCOUNT ++++++ какое из двух полей пары ведёт этот пересчёт.
+   Модульная переменная, а не поле ui: это состояние ОДНОГО обработчика,
+   живущее ровно до конца live(), и в документ ему попадать незачем — как
+   moneyAnchor и prodEditAnchor. По умолчанию ведёт цена: любой другой
+   пересчёт (смена валюты, выбор товара, полная отрисовка) обязан
+   пересчитать процент, а не цену. */
+var liveDiscSource = 'price';
 var AMOUNT_OF = { 'tx.cur':'tx.price', 'pay.cur':'pay.amount' };
 
 document.addEventListener('input', function(e){
@@ -16104,6 +17338,11 @@ document.addEventListener('input', function(e){
      набранной букве. */
   var sk = el.getAttribute && el.getAttribute('data-s');
   if (sk){ ui[sk] = el.value; liveSearch(sk); return; }
+  /* ++++++ DISCOUNT ++++++ поле процента помечено data-d, а не data-f:
+     оно пишет не в форму, а в ЦЕНУ, потому что источник истины один и это
+     цена. Ветка стоит после проверки на SELECT (область 50) и до разбора
+     data-f — у поля процента его нет вовсе. */
+  if (el.getAttribute && el.getAttribute('data-d')){ liveDiscSource = 'pct'; live(); liveDiscSource = 'price'; return; }
   var key = el.getAttribute && el.getAttribute('data-f');
   if (!key) return;
   setF(key, el.value);
@@ -16167,6 +17406,23 @@ document.addEventListener('change', function(e){
     render(); return;
   }
   setF(key, el.value);
+  /* ++++++ DISCOUNT ++++++ выбрали товар — его обычная цена подставляется
+     в поле, но ТОЛЬКО в пустое: набранное руками не затирается никогда.
+     Отсюда же берётся якорь R14 — иначе первое переключение валюты
+     пересчитало бы не от того числа. resetTxForm() при этом не тронут:
+     подстановка привязана к ВЫБОРУ ТОВАРА, а не к сбросу формы. */
+  if (key === 'tx.productId'){
+    var uc = txUsualCents();
+    if (uc !== null && !String(ui.form.tx.price || '').trim()){
+      var mv = convertFor(uc, ui.form.tx.cur);
+      if (mv !== null){
+        var mt = mv.toFixed(2);
+        setF('tx.price', mt);
+        moneyAnchorSet('tx.price', mt);
+      }
+    }
+    discErrDrop();
+  }
   if (key.indexOf('report.') === 0){ render(); return; }
   if (el.tagName === 'SELECT'){ render(); return; }
   live();
@@ -16833,14 +18089,38 @@ function handleAct(act, arg, e, srcEl){
     if (a) a.remove();
     return;
   }
+  /* ++++++ INFO ++++++ пояснение раздела. Ветка из одной строки: всё
+     решает реестр. */
+  if (act === 'info'){ infoOpen(arg); return; }
   if (act === 'tab'){ showTab(arg); return; }
+  /* ++++++ MONEY TABS ++++++ */
+  if (act === 'money'){
+    ui.seg.money = arg; ui.detail = null; ui.err = '';
+    render(); window.scrollTo(0,0); return;
+  }
+  /* ++++++ ACCOUNT ++++++ */
+  if (act === 'acct'){
+    ui.tab = 'acct'; ui.acct = arg; ui.detail = null; ui.err = '';
+    render(); window.scrollTo(0,0); return;
+  }
+  /* ++++++ BACKUP MINI ++++++ напоминание ведёт на раздел копии, а не
+     скачивает сразу: скачивание — решение, а не побочный итог нажатия
+     на полосу. */
+  if (act === 'bak-open'){
+    ui.tab = 'acct'; ui.acct = 'backup'; ui.detail = null; ui.err = '';
+    render(); window.scrollTo(0,0); return;
+  }
   if (act === 'seg'){
     var p = arg.split(':');
     ui.tab = p[0]; ui.seg[p[0]] = p[1]; ui.detail = null; ui.err = '';
     render(); window.scrollTo(0,0); return;
   }
   if (act === 'setf'){ var q = arg.split('='); setF(q[0], q[1]); render(); return; }
-  if (act === 'back'){ ui.detail = null; ui.err = ''; render(); window.scrollTo(0,0); return; }
+  if (act === 'back'){
+    /* ++++++ ACCOUNT ++++++ раздел закрывается первым: он стоит НАД
+       карточкой, а не вместо неё. */
+    if (ui.acct) ui.acct = ''; else ui.detail = null;
+    ui.err = ''; render(); window.scrollTo(0,0); return; }
   if (act === 'theme'){ ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; render(); return; }
   if (act === 'theme-set'){ ui.theme = arg; render(); return; }
   if (act === 'period'){
@@ -17464,7 +18744,8 @@ function syncCardHTML(){
   if (modeIsProduct()) return gdCardHTML();
   var o = syncRead() || {}, br = syncBridge();
   var h = '<section class="card"><div class="t">' + tr('sy.title') + '</div><div class="b">';
-  h += '<div class="note">' + tr('sy.what') + '</div>';
+  /* ++++++ INFO ++++++ рассказ ушёл к заголовку экрана «Аккаунт»; здесь
+     остаются поля настройки и отказ. */
   if (!br){
     h += '<div class="note warn">' + tr('sy.browser') + '</div></div></section>';
     return h;
@@ -17476,21 +18757,15 @@ function syncCardHTML(){
                hint: tr('sy.devHint') });
   h += field({ label: tr('sy.token'), control: '<input id="syToken" type="password" value="" autocomplete="off">',
                hint: tr('sy.tokenKept') });
+  /* ++++++ ACCOUNT ++++++ «Обменяться сейчас» и «Отключить» ушли в
+     карточку учётной записи: круглая кнопка и «Выйти». Здесь остаётся
+     только подключение — это настройка, а не состояние. Строка «когда
+     был обмен» и текст отказа тоже наверху, и второго их экземпляра
+     здесь быть не должно. */
   h += '<div class="rb">' +
-       '<button type="button" class="go" data-act="sync-connect">' + esc(tr('sy.connect')) + '</button> ' +
-       (o.on ? '<button type="button" data-act="sync-now">' + esc(tr('sy.now')) + '</button> ' +
-               '<button type="button" data-act="sync-forget">' + esc(tr('sy.forget')) + '</button>' : '') +
+       '<button type="button" class="go" data-act="sync-connect">' + esc(tr('sy.connect')) + '</button>' +
        '</div>';
-  var line;
-  if (!o.on) line = tr('sy.off');
-  else if (syncStatus.busy) line = tr('sy.busy');
-  else {
-    line = o.at ? tr('sy.lastAt', {when: bakStamp(o.at)}) : tr('sy.never');
-    var pend = syncPending();
-    if (pend) line += ' · ' + tr('sy.pending', {n: pend});
-  }
-  h += '<div class="note">' + esc(tr('sy.state')) + ': ' + esc(line) + '</div>';
-  if (syncStatus.err) h += '<div class="note err">' + esc(syncErrText(syncStatus.err)) + '</div>';
+  if (!o.on) h += '<div class="note">' + esc(tr('sy.state')) + ': ' + esc(tr('sy.off')) + '</div>';
   h += '</div></section>';
   return h;
 }
@@ -17597,7 +18872,11 @@ function syncRun(loud){
   if (syncStatus.busy) return;
   syncStatus.busy = true;
   syncStatus.err = '';
-  if (loud) render();
+  /* ++++++ SYNC ROW ++++++ вид кнопки — отдельно от самого отказа:
+     кнопка гаснет через две секунды, а пояснение живёт до удачного
+     оборота (syncStatus.err). */
+  syncBtnState = 'busy';
+  if (loud) render(); else syncBtnPaint();
   syncCycle(syncEnv(), function(r){
     syncStatus.busy = false;
     if (r && r.ok){
@@ -17627,7 +18906,13 @@ function syncRun(loud){
         syncBarPaint();
       }
     }
+    /* ++++++ SYNC ROW ++++++ зелёная галочка или красный крестик, и
+       через две секунды обычный вид: нажатие на него — повторить.
+       Сам отказ этим НЕ снимается: он живёт в syncStatus.err до
+       удачного оборота, иначе на «Записать мои данные поверх» не
+       успеть нажать. */
     render();
+    syncBtnDone(syncStatus.err);
   });
 }
 
@@ -18003,9 +19288,15 @@ function gdFixRemote(){
 /* Карточка                                                           */
 /* ------------------------------------------------------------------ */
 function gdCardHTML(){
-  var o = syncRead() || {}, b = bindOf(o);
+  /* ++++++ INFO ++++++ КАРТОЧКИ БОЛЬШЕ НЕТ ТАМ, ГДЕ ЕЙ НЕЧЕГО СКАЗАТЬ.
+     Кроме пояснения в ней ничего и не было: вход идёт кнопкой в карточке
+     учётной записи выше, полей настройки у Диска нет. После переезда
+     текста остался бы один заголовок, а пустая карточка — это не «мало
+     текста», это обещание, за которым ничего нет.
+     Печатается она теперь только при отказе: браузер без моста и сборка
+     без ключа Google. Оба текста остаются НА ЭКРАНЕ — это отказ, а не
+     рассказ, и он объясняет, почему кнопки нет. */
   var h = '<section class="card"><div class="t">' + tr('gd.title') + '</div><div class="b">';
-  h += '<div class="note">' + tr('gd.what') + '</div>';
 
   if (!gdBridgeReady()){
     h += '<div class="note warn">' + tr('gd.browser') + '</div></div></section>';
@@ -18016,40 +19307,15 @@ function gdCardHTML(){
     return h;
   }
 
-  if (!gdTokens){
-    h += '<div class="rb"><button type="button" class="go" data-act="gd-signin">' +
-         esc(tr('gd.signIn')) + '</button></div>';
-    h += '<div class="note">' + tr('gd.worksWithout') + '</div>';
-  } else {
-    /* ++++++ ATT SYNC ++++++ место — ВТОРОЙ подписью: она переносится,
-       а не обрезается многоточием (хрупкое место 26), и первая уже
-       занята словом «Учётная запись». */
-    h += row({ k: esc(b ? b.name : '—'), sub: esc(tr('gd.account')),
-               sub2: esc(attSpaceLine()) });
-    var line;
-    if (syncStatus.busy) line = tr('gd.busy');
-    else line = o.at ? tr('gd.lastAt', { when: bakStamp(o.at) }) : tr('gd.never');
-    var pend = syncPending();
-    h += row({ k: esc(line), sub: esc(tr('gd.state')),
-               v: pend ? esc(tr('gd.pending', { n: pend })) : esc(tr('gd.allSent')) });
-    h += '<div class="rb">' +
-         '<button type="button" class="go" data-act="sync-now">' + esc(tr('gd.now')) + '</button> ' +
-         '<button type="button" data-act="gd-signout">' + esc(tr('gd.signOut')) + '</button>' +
-         '</div>';
-    /* ++++++ ATT SYNC ++++++ раньше здесь стояло «фотографии не ездят».
-       Теперь ездят, и страница обязана говорить то, что есть. */
-    h += '<div class="note">' + tr('as.filesGo') + '</div>';
-  }
-
-  if (syncStatus.err){
-    h += '<div class="note err">' + esc(tr(gdErrKey(syncStatus.err))) + '</div>';
-    if (syncStatus.err === 'badremote'){
-      h += '<div class="rb"><button type="button" data-act="gd-fixremote">' +
-           esc(tr('gd.fixOpen')) + '</button></div>';
-    }
-  }
-  h += '</div></section>';
-  return h;
+  /* ++++++ ACCOUNT ++++++ кто вошёл, сколько места, когда был обмен,
+     кнопка обмена, «Выйти», текст отказа и выход из него — всё это
+     стоит в карточке учётной записи выше. Здесь остаётся рассказ о
+     том, чем эта возможность является, и одна честная строка о файлах:
+     двух ответов на вопрос «когда был обмен» на одном экране быть не
+     должно. */
+  /* Сюда доходит только сборка, в которой обмен доступен, — и сказать
+     ей на этом месте нечего: и рассказ, и состояние живут выше. */
+  return '';
 }
 
 /* Кнопка «Назад» на Android спрашивает страницу: занялась ли она сама.
@@ -18058,6 +19324,9 @@ function gdCardHTML(){
 window.GTBack = function(){
   var back = document.querySelector('.modal-back');
   if (back){ back.remove(); return 'modal'; }
+  /* ++++++ ACCOUNT ++++++ подчинённый экран уходит первым: из него
+     приложение закрываться не имеет права. */
+  if (ui.acct){ ui.acct = ''; render(); return 'back'; }
   if (ui.detail){ ui.detail = null; render(); return 'back'; }
   if (ui.tab !== 'summary'){ ui.tab = 'summary'; render(); return 'back'; }
   return 'none';
