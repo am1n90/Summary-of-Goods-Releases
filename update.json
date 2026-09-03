@@ -1,12 +1,12 @@
 {
-  "version": "1.4.0",
-  "build": "2026-09-02T08:13:26.770Z",
-  "minShell": "1.2.0",
+  "version": "1.5.0",
+  "build": "2026-09-03T08:41:35.746Z",
+  "minShell": "0.0.0",
   "core": "app/goods-tracker.html",
-  "hash": "9c75f7c6-51af26f5-985127",
-  "size": 985127,
-  "notes": "Обновление для телефона теперь можно скачать прямо из программы — установщик и APK лежат рядом с новой версией",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.4.0",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.4.0/personal-accountant-1.4.0.apk",
-  "apkVersion": "1.4.0"
+  "hash": "3fd7e0-712681e9-1047217",
+  "size": 1047217,
+  "notes": "Программа спрашивает, какими валютами вы пользуетесь, и показывает только их. Основную валюту назначают прямо в списке — одним нажатием, и там же снимают отметку со старой: переход занимает одно посещение раздела. Окно смены основной валюты объясняет выбор на вашей же сумме.",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.5.0",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.5.0/personal-accountant-1.5.0.apk",
+  "apkVersion": "1.5.0"
 }
