@@ -1,12 +1,12 @@
 {
-  "version": "1.5.1",
-  "build": "2026-09-03T09:53:26.483Z",
+  "version": "1.6.0",
+  "build": "2026-09-03T13:07:59.569Z",
   "minShell": "0.0.0",
   "core": "app/goods-tracker.html",
-  "hash": "f5fea8d8-73d0b71e-1051772",
-  "size": 1051772,
-  "notes": "Настройки перестали откатываться после обмена",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.5.1",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.5.1/personal-accountant-1.5.1.apk",
-  "apkVersion": "1.5.1"
+  "hash": "d1491128-74eb56db-1054008",
+  "size": 1054008,
+  "notes": "Суммы показываются в той валюте, в которой вы их вводили",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.6.0",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.6.0/personal-accountant-1.6.0.apk",
+  "apkVersion": "1.6.0"
 }
