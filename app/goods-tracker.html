@@ -4473,8 +4473,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.5.0';
-var APP_BUILD = '2026-09-03T08:41:35.746Z';
+var APP_VERSION = '1.5.1';
+var APP_BUILD = '2026-09-03T09:53:26.483Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -6156,6 +6156,46 @@ function syncRead(){
 function syncWrite(o){
   try{ window.localStorage.setItem(SYNC_KEY, JSON.stringify(o)); return true; }
   catch(e){ return false; }
+}
+
+/* ================================ ++++++ SETTINGS STAMP ++++++ ==
+ * КОГДА НАСТРОЙКИ ИЗМЕНИЛИСЬ — И ТОЛЬКО ТОГДА.
+ *
+ * Обмен решает споры о настройках по метке «новее выигрывает». Метка
+ * жила в записи обмена и обновлялась ПОСЛЕ каждого оборота, то есть
+ * означала «когда я в последний раз выходил на связь». С таким смыслом
+ * правка на устройстве, которое синхронизируется реже, проигрывала
+ * всегда — и владелец видел, как снятая валюта возвращается сама.
+ *
+ * Теперь метку двигает ИЗМЕНЕНИЕ. Признак изменения — подпись тех и
+ * только тех полей, которые вообще ездят (SYNC_SETTINGS): язык, валюта
+ * «Сводки» и запомненные валюты ввода в обмене не участвуют, и двигать
+ * из-за них метку значило бы объявлять правкой то, что никуда не едет.
+ *
+ * Метка живёт в записи обмена, а не в документе, и это то же решение,
+ * что у напоминания о копии: поле внутри `settings` уехало бы вместе с
+ * ними и было бы переписано чужим значением — то есть метка исчезала бы
+ * ровно в тот момент, ради которого заведена. */
+var syncSigLast = null;
+function syncSettingsSig(){
+  var s = state.settings, out = [], i;
+  for (i = 0; i < SYNC_SETTINGS.length; i++)
+    out.push(canonJSON(s ? s[SYNC_SETTINGS[i]] : null));
+  return out.join('|');
+}
+/** Зовётся из save() — единственного писателя документа, поэтому «что
+ *  сохранено» и «что помечено» не могут разойтись. Первый вызов только
+ *  запоминает подпись: загрузка документа — не правка. */
+function syncSettingsTouch(){
+  var sig;
+  try { sig = syncSettingsSig(); } catch(e){ return; }
+  if (syncSigLast === null){ syncSigLast = sig; return; }
+  if (sig === syncSigLast) return;
+  syncSigLast = sig;
+  var cur = syncRead();
+  if (!cur) return;              /* обмен не настроен — помечать нечего */
+  cur.settingsAt = nowISO();
+  syncWrite(cur);
 }
 function syncForget(){
   try{ window.localStorage.removeItem(SYNC_KEY); return true; }
@@ -8767,11 +8807,26 @@ function syncCycle(env, cb, attempt){
       remoteVer = res.version;
     }
 
-    var merged = mergeDocs(localDoc,
+    /* ++++++ SETTINGS STAMP ++++++ МЕТКА ЕСТЬ У ОБЕИХ СТОРОН, И ЭТО ВСЯ
+       ПОЧИНКА. Здесь стояло `mergeDocs(localDoc, …)`: метку приписывали
+       только ЧУЖОМУ документу, а у своего поля `settingsAt` нет вовсе —
+       оно живёт в записи обмена. Значит в mergeSettings() приходило
+       localAt === '', условие «мои настройки новее» не срабатывало
+       НИКОГДА, и настройки с той стороны побеждали при каждом обмене.
+       Владелец видел это так: снял валюту, сохранил, обмен — валюта
+       вернулась. Так же тихо откатывались базовая валюта, курсы, НДС и
+       история правок; их просто меняют реже. */
+    var localAt = (env.meta && env.meta() && env.meta().settingsAt) || '';
+    var merged = mergeDocs(mergeInSettingsAt(localDoc, localAt),
                            remoteDoc ? mergeInSettingsAt(remoteDoc, settingsAt) : null,
                            env.baseHashes(), env.tombs(), remoteTombs,
                            env.meta ? env.meta() && env.meta().map : null,
                            remoteDoc ? remoteDoc.syncMeta : null);
+    /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
+       проверка, что внутри mergeSettings(), и другой она быть не может —
+       иначе конверт уедет с меткой от чужих настроек, а внутри будут
+       свои. */
+    var settingsWon = (settingsAt && (!localAt || settingsAt > localAt)) ? settingsAt : localAt;
 
     /* --- резервная копия ПЕРЕД применением --------------------------- */
     /* Снимается всегда, когда чужой документ вообще был: даже «ничего не
@@ -8786,7 +8841,10 @@ function syncCycle(env, cb, attempt){
         var meta = env.meta() || {};
         var env2 = envelopeOf(merged.doc, merged.tombstones, {
           updatedAt: nowISO(), updatedBy: meta.updatedBy || '',
-          settingsAt: meta.settingsAt || settingsAt,
+          /* ++++++ SETTINGS STAMP ++++++ конверт несёт метку ТЕХ настроек,
+             что в нём лежат. Прежнее `meta.settingsAt || settingsAt` брало
+             метку этого устройства, даже когда победили чужие настройки. */
+          settingsAt: settingsWon,
           map: merged.meta
         });
         var text = envelopeText(env2);
@@ -8807,6 +8865,11 @@ function syncCycle(env, cb, attempt){
             base: baseOf(merged.doc),
             tombs: merged.tombstones,
             meta: merged.meta,
+            /* ++++++ SETTINGS STAMP ++++++ метка настроек едет вместе с
+               остальным: `at` говорит, когда был обмен, а эта — когда
+               настройки в последний раз менялись. Две разные вещи, и
+               путать их и было бедой. */
+            settingsAt: settingsWon,
             at: nowISO()
           });
           cb({ ok: true, conflicts: merged.conflicts, stats: merged.stats,
@@ -8821,10 +8884,19 @@ function syncCycle(env, cb, attempt){
 }
 
 /* Метка времени настроек приезжает рядом с конвертом, а слиянию удобнее
-   видеть её на документе — одна строка вместо лишнего параметра. */
+   видеть её на документе — одна строка вместо лишнего параметра.
+
+   ++++++ SETTINGS STAMP ++++++ КОПИЯ, А НЕ ЗАПИСЬ В ДОКУМЕНТ. Раньше эта
+   функция помечала документ на месте, и это сходило с рук, пока её звали
+   только для ЧУЖОГО документа. Теперь она нужна и для своего — а он и
+   есть `state`, и поле `settingsAt` уехало бы в хранилище и в резервную
+   копию, которым оно ни к чему. Поверхностной копии слиянию довольно:
+   оно читает `settings` и коллекции, а не меняет их. */
 function mergeInSettingsAt(doc, at){
-  doc.settingsAt = at || '';
-  return doc;
+  var out = {}, k;
+  for (k in doc) if (Object.prototype.hasOwnProperty.call(doc, k)) out[k] = doc[k];
+  out.settingsAt = at || '';
+  return out;
 }
 
 function countsOf(doc){
@@ -9009,6 +9081,10 @@ function save(){
   if (rescBlocked()){ setStorageBadge(); return false; }
   try{
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    /* ++++++ SETTINGS STAMP ++++++ ПОСЛЕ записи, а не до: пометить
+       изменение, которого не случилось на диске, значило бы объявить
+       правку, которой нет. */
+    syncSettingsTouch();
     if (!lastSaveOk){ lastSaveOk = true; removeBanner('save-fail'); }
     setStorageBadge();
     return true;
@@ -20094,7 +20170,15 @@ function syncEnv(){
     },
     remember: function(o){
       var cur = syncRead() || {};
-      cur.version = o.version; cur.base = o.base; cur.at = o.at; cur.settingsAt = nowISO();
+      cur.version = o.version; cur.base = o.base; cur.at = o.at;
+      /* ++++++ SETTINGS STAMP ++++++ здесь стояло `nowISO()`, и метка
+         означала «когда синхронизировались», а не «когда меняли
+         настройки». С таким смыслом правка на устройстве, которое
+         синхронизируется реже, проигрывала всегда: у соседа метка
+         свежее просто потому, что он чаще выходил на связь. Теперь
+         сюда приезжает метка победивших настроек, а двигает её только
+         их изменение (syncSettingsTouch). */
+      cur.settingsAt = o.settingsAt || cur.settingsAt || '';
       syncWrite(cur);
       state.syncTombs = o.tombs || {};
       state.syncMeta = o.meta || {};
