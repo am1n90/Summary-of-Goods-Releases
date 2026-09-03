@@ -198,6 +198,45 @@
   .dmark.disc{background:var(--got-soft);color:var(--got-ink)}
   .dmark.up{background:var(--warn-soft);color:var(--warn)}
 
+  /* ++++++ ACTIVE CURRENCIES ++++++ четыре правила и ни одного нового
+     цветового токена. Сброса системного вида у шестерёнки нет: он стоит
+     один раз, на голом button (область 82). */
+  .card > .t.hx{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card > .t .gear{background:none;border:none;cursor:pointer;color:var(--muted);
+    padding:6px;margin:-6px;border-radius:9px;display:inline-flex;min-width:44px;
+    min-height:44px;align-items:center;justify-content:center}
+  .card > .t .gear:hover{background:var(--surface-3);color:var(--ink)}
+  .card > .t .gear svg{width:20px;height:20px}
+  /* Строка окна выбора: кнопка удаления — СОСЕД строки, а не её потомок.
+     <button> внутри <button> браузер перевешивает, и строка съедает
+     нажатие (область 25) — тот же приём, что у .rmdrow/.rmdact. */
+  .currow{display:flex;align-items:stretch;border-bottom:1px solid var(--line-2)}
+  .currow:last-child{border-bottom:none}
+  .currow .row{border-bottom:none;flex:1 1 auto;min-width:0}
+  .currow .curdel{flex:0 0 auto;background:none;border:none;cursor:pointer;color:var(--muted);
+    padding:0 14px;display:inline-flex;align-items:center;min-width:44px;justify-content:center}
+  .currow .curdel:hover{color:var(--bad)}
+  .currow .curdel svg{width:18px;height:18px}
+  /* «Сделать основной» — тоже сосед строки и по той же причине. Текстом, а
+     не значком: значок пришлось бы объяснять, а слов здесь два. */
+  .currow .curbase{flex:0 0 auto;background:none;border:none;cursor:pointer;
+    color:var(--accent);font:inherit;font-size:12px;font-weight:600;white-space:nowrap;
+    padding:0 10px;display:inline-flex;align-items:center;min-height:44px}
+  .currow .curbase:hover{text-decoration:underline}
+  /* Базовая валюта на экране — ФАКТ, а не поле: назначают её в окне. Вид
+     тот же, что у значения поля, чтобы карточка не рассыпалась. */
+  .curbase-is{padding:11px 0;font-weight:600;color:var(--ink)}
+  /* Сетка полей курса: по два в ряд, как было у пары. Нечётное число полей
+     последнее НЕ растягивает — flex-basis фиксирован (требование 3.3). */
+  .ratergrid{display:flex;flex-wrap:wrap;gap:10px}
+  .ratergrid > label{flex:1 1 calc(50% - 5px);max-width:calc(50% - 5px);min-width:168px;margin:0}
+  @media (max-width:386px){ .ratergrid > label{max-width:100%} }
+  /* Валюта, когда она одна: слово вместо селекта с единственным вариантом. */
+  .onecur{display:inline-flex;align-items:center;padding:0 4px;font-weight:600;color:var(--ink-2)}
+  /* Таблица взаимных курсов при большом наборе прокручивается внутри себя:
+     при десяти активных валютах строк девяносто. */
+  .pairbox{max-height:60vh;overflow-y:auto}
+
   .av{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
     display:grid;place-items:center;font-weight:700;font-size:15px;flex:0 0 auto}
   .av.sq{border-radius:11px;background:var(--neutral-soft);color:var(--ink-2)}
@@ -1128,7 +1167,7 @@ var STORAGE_KEY = 'goods-tracker/v1';
        ровно как раньше, а «Чистая прибыль» вычитает расход ОДИН раз —
        целиком, а не по долям. Ссылка на исчезнувшую партию читается как
        «без партии»: запись о потраченных деньгах из-за этого не теряется. */
-var SCHEMA_VERSION = 17;
+var SCHEMA_VERSION = 18;
 
 /* Status keys are the stable identifiers; never compare by label.
    The labels themselves live in the dictionary below, as status.<key>. */
@@ -1181,6 +1220,8 @@ var NOUN = {
   /* ++++++ DATES SAID ++++++ выдача, платёж и партия разом — общего слова
      для них в этой таблице не было */
   record:      { en:['record','records'],           ru:['запись','записи','записей'] },
+  /* ++++++ ACTIVE CURRENCIES ++++++ «сдвинет ещё 2 валюты» */
+  currency:    { en:['currency','currencies'],      ru:['валюта','валюты','валют'] },
   /* ++++++ BACKUP REMINDER ++++++ «7 дней назад» / «21 день назад» */
   day:         { en:['day','days'],                 ru:['день','дня','дней'] },
   /* ++++++ EXPENSES ++++++ «1 расход» / «3 расхода» / «5 расходов» */
@@ -1450,28 +1491,32 @@ var STR = {
 
 /* ---------------- Currency & Backup tab ---------------- */
 'cur.code':       { en:'Code',        ru:'Код' },
-'err.curCode':    { en:'Currency code must be 1–6 letters or digits, e.g. TJS.',
-                    ru:'Код валюты — от 1 до 6 букв или цифр, например TJS.' },
-'err.curBase':    { en:'{cur} is the base currency — its rate is always 1.',
-                    ru:'{cur} — базовая валюта, её курс всегда равен 1.' },
-'err.curRate':    { en:'Rate must be a number greater than 0.', ru:'Курс должен быть числом больше 0.' },
-'msg.rateSaved':  { en:'Rate saved: 1 {cur} = {rate} {base}', ru:'Курс сохранён: 1 {cur} = {rate} {base}' },
-'msg.rateUpdated':{ en:'1 {cur} = {rate} {base} — stored amounts unchanged.',
-                    ru:'1 {cur} = {rate} {base} — сохранённые суммы не изменились.' },
-'msg.curRemoved': { en:'Currency removed.', ru:'Валюта удалена.' },
 
 /* ---- base currency change ---- */
 'dlg.baseTitle':  { en:'Change base currency to {cur}?', ru:'Сменить базовую валюту на {cur}?' },
-'dlg.baseBody':   { en:'<p>All stored amounts are currently held in <b>{old}</b>. Choose what should happen:</p>' +
-                        '<ul><li><b>Convert amounts</b> — every stored price and payment is divided by {rate} ' +
-                        '(1 {new} = {rate} {old}) so the real value stays the same.</li>' +
-                        '<li><b>Re-label only</b> — the numbers stay exactly as they are and are simply read as {new} ' +
-                        'from now on.</li></ul><p>Exchange rates are re-based automatically either way.</p>',
-                    ru:'<p>Сейчас все суммы хранятся в <b>{old}</b>. Выберите, что сделать:</p>' +
-                        '<ul><li><b>Пересчитать суммы</b> — каждая сохранённая цена и платёж делятся на {rate} ' +
-                        '(1 {new} = {rate} {old}), чтобы реальная величина осталась прежней.</li>' +
-                        '<li><b>Только переименовать</b> — числа остаются как есть и просто читаются как {new}.</li></ul>' +
-                        '<p>Курсы в обоих случаях пересчитываются автоматически.</p>' },
+/* ++++++ ACTIVE CURRENCIES ++++++ решение владельца 2026-09-03: объяснять
+   ПРОСТЫМИ СЛОВАМИ и НА ПРИМЕРЕ СУММЫ, а не терминами. Прежний текст
+   говорил «каждая цена делится на 10.93» — это верно и это про механизм;
+   человеку нужно знать, что он увидит завтра. Сам пример печатает
+   baseExHTML() из его собственных сумм; здесь — вопрос и рекомендация.
+   Рекомендация сказана вслух, потому что правильный ответ почти всегда
+   один, а кнопки выглядят равноправными. */
+'dlg.baseBody':   { en:'<p>All money is written in <b>{old}</b> right now. What should happen to what is ' +
+                        'already written?</p>',
+                    ru:'<p>Сейчас все деньги записаны в <b>{old}</b>. Что сделать с тем, что уже записано?</p>' },
+'dlg.baseAdvise': { en:'<p><b>Usually you want “Convert amounts”</b>: the money stays the same, only the ' +
+                        'currency it is written in changes. “Re-label only” is for one case — the amounts ' +
+                        'were in {new} from the start and the wrong currency was set.</p>',
+                    ru:'<p><b>Почти всегда нужно «Пересчитать суммы»</b>: денег остаётся столько же, ' +
+                        'меняется только валюта, в которой они записаны. «Только переименовать» нужно в ' +
+                        'одном случае — если суммы с самого начала были в {new}, а валюта стояла неверно.</p>' },
+'dlg.baseExNow':  { en:'For example, {sum}:',                ru:'Например, {sum}:' },
+'dlg.baseExConv': { en:'Convert amounts → {sum} — the same money',
+                    ru:'Пересчитать суммы → {sum} — столько же денег' },
+'dlg.baseExUp':   { en:'Re-label only → {sum} — {n} times more money',
+                    ru:'Только переименовать → {sum} — в {n} раза больше денег' },
+'dlg.baseExDown': { en:'Re-label only → {sum} — {n} times less money',
+                    ru:'Только переименовать → {sum} — в {n} раза меньше денег' },
 /* ++++++ DIALOGS SAY ++++++ R25 и R32: подтверждения называют всё, что
    сделают. Прежние `dlg.resetBody` и `dlg.baseBody` остаются дословно —
    новые фразы встают РЯДОМ с ними, а не вместо. */
@@ -1930,11 +1975,8 @@ var STR = {
                    ru:'1 {anchor} → {cur} должен быть числом больше нуля. Ничего не сохранено.' },
 'rp.errAnchor':  { en:'There is no {anchor} rate against the base currency {base} — add it below first.',
                    ru:'Нет курса {anchor} к базовой валюте {base} — сначала добавьте его ниже.' },
-'rp.others':     { en:'Other currencies are held against the base currency, so they are not in the table above — and editing the two fields moves how they relate to the dollar.',
-                   ru:'Прочие валюты заданы к базовой, поэтому в таблице выше их нет, — и правка двух полей двигает то, как они относятся к доллару.' },
 'rp.saved':      { en:'Rates saved',                       ru:'Курсы сохранены' },
 'rp.savedSame':  { en:'Saved — no rate moved',             ru:'Сохранено — ни один курс не сдвинулся' },
-'rp.title':      { en:'Rates from the dollar',              ru:'Курсы от доллара' },
 'sum.byBatchDate':{ en:'by shipment date',                  ru:'по датам партий' },
 'sum.handedOutFor':{ en:'Handed out for',                   ru:'Выдал товара на' },
 'sum.costOfHandedOut':{ en:'Cost of goods handed out',      ru:'Себестоимость выданного' },
@@ -2140,18 +2182,121 @@ var STR = {
 'pay.sheetLine': { en:'{person} paid {sum}<br>{date}',      ru:'{person} оплатил {sum}<br>{date}' },
 
 /* ---------------- вкладка «Ещё» ---------------- */
+/* ============================== ++++++ ACTIVE CURRENCIES ++++++ ==
+ * Названия валют: именительный для списка, родительный — для заголовка
+ * «Курсы от дирхама». Два ключа на валюту, а не один: склонять код в коде
+ * значило бы завести вторую грамматику там, где хватает словаря.
+ * Валюты, заведённой владельцем, здесь нет — её код и есть её имя. */
+'cur.n.USD':  { en:'US dollar',      ru:'Доллар США' },
+'cur.of.USD': { en:'the dollar',     ru:'доллара' },
+'cur.n.AED':  { en:'UAE dirham',     ru:'Дирхам ОАЭ' },
+'cur.of.AED': { en:'the dirham',     ru:'дирхама' },
+'cur.n.TJS':  { en:'Somoni',         ru:'Сомони' },
+'cur.of.TJS': { en:'the somoni',     ru:'сомони' },
+'cur.n.RUB':  { en:'Russian ruble',  ru:'Российский рубль' },
+'cur.of.RUB': { en:'the ruble',      ru:'рубля' },
+'cur.n.EUR':  { en:'Euro',           ru:'Евро' },
+'cur.of.EUR': { en:'the euro',       ru:'евро' },
+'cur.n.CNY':  { en:'Yuan',           ru:'Юань' },
+'cur.of.CNY': { en:'the yuan',       ru:'юаня' },
+'cur.n.TRY':  { en:'Turkish lira',   ru:'Турецкая лира' },
+'cur.of.TRY': { en:'the lira',       ru:'лиры' },
+'cur.n.KZT':  { en:'Tenge',          ru:'Тенге' },
+'cur.of.KZT': { en:'the tenge',      ru:'тенге' },
+'cur.n.GBP':  { en:'Pound sterling', ru:'Фунт стерлингов' },
+'cur.of.GBP': { en:'the pound',      ru:'фунта' },
+'cur.n.UZS':  { en:'Uzbek sum',      ru:'Узбекский сум' },
+'cur.of.UZS': { en:'the sum',        ru:'сума' },
+
+/* Окно выбора валют. */
+'cp.title':     { en:'Which currencies to show',
+                  ru:'Какие валюты показывать' },
+'cp.titleFirst':{ en:'Which currencies do you work with?',
+                  ru:'С какими валютами вы работаете' },
+'cp.hint':      { en:'Ticked currencies are the ones the app offers in forms and shows on ' +
+                      'screens. Unticking is not the same as deleting: records made in that ' +
+                      'currency stay readable.',
+                  ru:'Отмеченные валюты программа предлагает в формах и показывает на экранах. ' +
+                      'Снять отметку — не то же, что удалить: записи, сделанные в этой валюте, ' +
+                      'останутся читаемыми.' },
+'cp.hintFirst': { en:'Tick the currencies you use. One of them will be the main one: amounts ' +
+                      'are stored in it and totals are printed in it. All of this can be ' +
+                      'changed later at any time.',
+                  ru:'Отметьте валюты, которыми пользуетесь. Одна из них будет основной: в ней ' +
+                      'хранятся суммы и печатаются итоги. Всё это меняется потом в любой момент.' },
+'cp.start':     { en:'Start',                       ru:'Начать работу' },
+'cp.base':      { en:'the base currency',           ru:'базовая валюта' },
+/* ++++++ ACTIVE CURRENCIES ++++++ базу назначают В СТРОКЕ списка, одним
+   нажатием, поэтому селекта «Основная валюта» в окне больше нет, а вместе
+   с ним ушли cp.baseIs и cp.baseHint. Кнопка стоит у каждой отмеченной,
+   кроме самой базовой: у той в подписи стоит cp.base. */
+'cp.makeBase':  { en:'Make main',                   ru:'Сделать основной' },
+/* Печатается ТОЛЬКО когда база переезжает: сообщение о том, чего не
+   произойдёт, хуже молчания (область 44). */
+'cp.baseWillBe':{ en:'{cur} becomes the main currency.',
+                  ru:'Основной валютой станет {cur}.' },
+/* Почему «Сохранить» недоступно. Сказано РЯДОМ с кнопкой и ДО нажатия. */
+'cp.needOne':   { en:'Tick at least one currency: the app has nothing to count in without one.',
+                  ru:'Отметьте хотя бы одну валюту: без неё программе не в чем считать.' },
+/* Единственный отказ у «Сделать основной»: applyBaseChange() без курса
+   молча не делает ничего, и сказать об этом обязано окно. */
+'cp.baseNoRate':{ en:'Set a rate for {cur} first — without it the amounts cannot be re-expressed.',
+                  ru:'Сначала задайте курс {cur} — без него суммы не в чем пересчитать.' },
+'cp.own':       { en:'your own currency',           ru:'своя валюта' },
+'cp.addTitle':  { en:'Your own currency',           ru:'Своя валюта' },
+'cp.rate':      { en:'1 unit = how many {base}',    ru:'1 единица = сколько {base}' },
+'cp.rateBaseLater': { en:'of the main one',         ru:'основной' },
+'cp.add':       { en:'Add',                         ru:'Добавить' },
+'cp.errCode':   { en:'A currency code is three letters, for example EUR.',
+                  ru:'Код валюты — три буквы, например EUR.' },
+'cp.errDupe':   { en:'{cur} is already in the list.',
+                  ru:'{cur} уже есть в списке.' },
+'cp.errRate':   { en:'The rate must be a number greater than zero.',
+                  ru:'Курс должен быть числом больше нуля.' },
+'cp.delBase':   { en:'{cur} is the base currency — it cannot be deleted.',
+                  ru:'{cur} — базовая валюта, её нельзя удалить.' },
+'cp.delPopular':{ en:'{cur} is a built-in currency — it cannot be deleted. Untick it instead.',
+                  ru:'{cur} — встроенная валюта, её нельзя удалить. Снимите отметку.' },
+'cp.delUsed':   { en:'{cur} cannot be deleted: {where} are already recorded in it. Untick it — ' +
+                      'the currency leaves the forms and the records stay readable.',
+                  ru:'{cur} нельзя удалить: ею уже записаны {where}. Снимите отметку — ' +
+                      'валюта уйдёт из форм, а записи останутся читаемыми.' },
+'cp.where.tx':   { en:'handouts',               ru:'выдачи' },
+'cp.where.pay':  { en:'payments',               ru:'оплаты' },
+'cp.where.exp':  { en:'expenses',               ru:'расходы' },
+'cp.where.inv':  { en:'supplier invoices',      ru:'накладные' },
+'cp.where.base': { en:'the base currency',      ru:'базовая валюта' },
+'cp.where.sumCur': { en:'the Summary currency', ru:'валюта «Сводки»' },
+'cp.where.displayCurrency': { en:'the People tab currency', ru:'валюта вкладки «Люди»' },
+'cp.where.buyCur': { en:'the purchase currency', ru:'валюта покупки' },
+
+/* «Валюта покупки по умолчанию» — настройка вместо правила вкладки. */
+'cur.buyIs':   { en:'Default purchase currency', ru:'Валюта покупки по умолчанию' },
+'cur.buyHint': { en:'Filled into the product form. It can always be changed by hand.',
+                 ru:'Подставляется в форму товара. Её всегда можно поменять вручную.' },
+'cur.buyNone': { en:'Not set — choose by hand',  ru:'Не задана — выбирать вручную' },
+
+/* Заголовок раздела курсов называет ЯКОРЬ, а не доллар. */
+'rp.titleOf':  { en:'Rates from {of}',           ru:'Курсы от {of}' },
+
+/* ++++++ ACTIVE CURRENCIES ++++++ правка поля якоря тянет за собой
+   остальные валюты. Сказать об этом ДО сохранения и пометить в истории
+   ПОСЛЕ — одно требование, и слова у него разные. */
+'rp.alsoMoves':   { en:'Saving will also move {n}: {cur} — they are expressed from the anchor. ',
+                    ru:'Сохранение сдвинет ещё {n}: {cur} — они выражены от якоря. ' },
+'cur.logDerived': { en:'recalculated: {list}',
+                    ru:'пересчитаны: {list}' },
 'cur.baseIs':    { en:'Everything is stored in',            ru:'Всё хранится в' },
-'cur.baseHint':  { en:'Changing it does not change what each tab shows.',
-                   ru:'Смена валюты не меняет то, что показывают вкладки.' },
+/* ++++++ ACTIVE CURRENCIES ++++++ прежний текст объяснял СЕЛЕКТ,
+   которого здесь больше нет. Теперь на экране стоит факт, а меняют его в
+   окне выбора — и подсказка обязана сказать именно это, иначе она
+   объясняет отсутствующий орган управления. */
+'cur.baseHint':  { en:'Set it in the currency picker — the gear above. Changing it does not ' +
+                       'change what each tab shows.',
+                   ru:'Назначается в окне выбора валют — шестерёнка выше. Смена валюты не ' +
+                       'меняет то, что показывают вкладки.' },
 'cur.peopleHint':{ en:'Extra currency next to the base one, on the People tab.',
                    ru:'Дополнительная валюта рядом с базовой — на вкладке «Люди».' },
-'cur.rates':     { en:'Exchange rates',                     ru:'Курсы' },
-'cur.isBase':    { en:'the base currency',                  ru:'базовая валюта' },
-'cur.manual':    { en:'typed by hand',                      ru:'курс вводится вручную' },
-'cur.rateNew':   { en:'1 unit = how many {base}',           ru:'1 единица = сколько {base}' },
-'cur.add':       { en:'Add the currency',                   ru:'Добавить валюту' },
-'cur.rateTitle': { en:'Rate for {cur}',                     ru:'Курс {cur}' },
-'cur.rateLabel2':{ en:'1 {cur} = how many {base}',          ru:'1 {cur} = сколько {base}' },
 /* ++++++ RATE LOG ++++++ R16. Приставка `cur.` — та же, что у остальных
    строк «Ещё → Валюты»; заголовок карточки — `hdr.`, как у соседей. */
 'hdr.rateLog':     { en:'Rate history',                       ru:'История курсов' },
@@ -2173,19 +2318,12 @@ var STR = {
                      ru:'База {from} &rarr; {cur}, переименована и все курсы выражены заново' },
 'cur.logMore':     { en:'{n} in total; the last {shown} are shown',
                      ru:'всего {n}; показаны последние {shown}' },
-'cur.rateNote':  { en:'Stored amounts never change — only the conversion shown on screen.',
-                   ru:'Сохранённые суммы не меняются — меняется только пересчёт на экране.' },
 'cur.sectionNote':{ en:'Which currency each tab shows is decided by one table in the code: ' +
                        'Summary and Products — {summary}; Handouts and Payments — {tx}; ' +
                        'the person card — the base currency and the extra one.',
                     ru:'Какие валюты показывает каждая вкладка, решает одна таблица в коде: ' +
                        'Итог и Товар — {summary}; Выдачи и Оплаты — {tx}; ' +
                        'карточка человека — базовая и дополнительная.' },
-'dlg.delCurTitle':{ en:'Delete the rate for {cur}?',        ru:'Удалить курс {cur}?' },
-'dlg.delCurBody':{ en:'<p>Amounts already stored do not change. Tabs that show this currency ' +
-                      'will show “—” and a warning until the rate is back.</p>',
-                   ru:'<p>Сохранённые суммы не изменятся. Вкладки, которые показывают эту валюту, ' +
-                      'будут показывать «—» и предупреждение, пока курс не вернётся.</p>' },
 'bak.exportHint':{ en:'a .json file with the schema version',ru:'файл .json со схемой' },
 'bak.importHint':{ en:'replaces all data',                  ru:'заменит все данные' },
 'bak.dangerTitle':{ en:'Dangerous',                         ru:'Опасное' },
@@ -3031,42 +3169,444 @@ function rateText(code){
 function trimNum(n){
   return String(Math.round(n * 1e8) / 1e8);
 }
-/* ============================================ ++++++ RATE PAIR ++++++ ==
- * Раздел «Курсы»: два поля от доллара, шесть направлений.
+/* ================================================================== *
+ * Ниже — ЯДРО НАСТРАИВАЕМОГО НАБОРА ВАЛЮТ. Текст читается из
+ * _claude_lab/active-currencies/cur.js и переезжает сюда как есть:
+ * набор задачи гоняет ровно этот текст, а не его копию.
+ * ================================================================== */
+/* ================================================================== *
+ * ++++++ ACTIVE CURRENCIES ++++++   ЯДРО НАСТРАИВАЕМОГО НАБОРА ВАЛЮТ
  *
- * ИСТОЧНИК ИСТИНЫ — ДВА ПОЛЯ. Остальные четыре направления выводятся из
- * них: обратный курс есть единица, делённая на прямой, а перекрёстный —
- * отношение двух прямых. Ни одного нового способа ХРАНИТЬ курс здесь нет:
- * документ по-прежнему держит «1 <код> = r <база>», и читает его rateOf().
- */
-/** Валюты, о которых говорит раздел. Доллар — якорь, остальные две — то,
- *  к чему он приводится. Порядок задан ЗДЕСЬ и только здесь. */
-var RATE_ANCHOR = 'USD';
-var RATE_TO = ['AED', 'TJS'];
-function ratePairAll(){ return [RATE_ANCHOR].concat(RATE_TO); }
-/** Правится ли эта валюта полями раздела. Прочие валюты правятся как и
- *  раньше — своей строкой и своим листом. */
-function ratePairOwns(c){ return ratePairAll().indexOf(c) > -1; }
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   АКТИВНЫЙ НАБОР — ЭТО СПИСОК КОДОВ, А НЕ ВТОРОЙ СПИСОК КУРСОВ.
+ *
+ * Курсы как лежали в settings.rates («1 <код> = r <база>»), так и лежат;
+ * rateOf() не трогается ни на байт. Набор отвечает на другой вопрос —
+ * КАКИЕ валюты программа предлагает и показывает сегодня, — и поэтому
+ * выключение валюты НЕ УДАЛЯЕТ её курс: записи, сделанные в ней, обязаны
+ * читаться дальше (A2).
+ *
+ * Здесь только чистые функции: ни state, ни ui, ни DOM. Ровно этот файл
+ * переезжает в goods-tracker.html одним блоком.
+ *
+ * ES5: var, function, конкатенация строк. Ни let, ни const, ни стрелочных
+ * функций, ни шаблонных строк, ни классов.
+ * ================================================================== */
 
-/** Сколько ДОЛЛАРОВ стоит одна единица валюты — по двум набранным числам.
- *  Доллар стоит доллар; остальное — единица, делённая на свой курс. */
-function ratePairUsd(vals, c){
-  if (c === RATE_ANCHOR) return 1;
+/** Популярные валюты. Порядок задан ЗДЕСЬ и только здесь — он же порядок
+ *  строк в окне выбора, порядок полей курса и порядок в каждом селекте.
+ *  Список из требования 1.3, и он НЕ является списком «разрешённых»:
+ *  собственную валюту заводят формой внизу того же окна. */
+var CUR_POPULAR = ['USD', 'AED', 'TJS', 'RUB', 'EUR', 'CNY', 'TRY', 'KZT', 'GBP', 'UZS'];
+
+/** Код валюты, приведённый к виду хранения, или '' — «это не код».
+ *  Принимает то же, что принимает validate(): 1–6 букв и цифр. Форма
+ *  СОЗДАНИЯ строже (три буквы, curCodeOk), и это намеренно: старые
+ *  документы с четырёхсимвольным кодом обязаны продолжать открываться,
+ *  а новую такую валюту заводить незачем. */
+function curNorm(c){
+  if (typeof c !== 'string') return '';
+  c = c.toUpperCase().replace(/\s/g, '');
+  return /^[A-Z0-9]{1,6}$/.test(c) ? c : '';
+}
+
+/** Годится ли код для НОВОЙ валюты: ровно три буквы (требование 5.2).
+ *  Цифры не берём — ISO 4217 буквенный, а «U2» в списке рядом с USD
+ *  читается как опечатка, а не как валюта. */
+function curCodeOk(c){
+  return typeof c === 'string' && /^[A-Za-z]{3}$/.test(c.replace(/\s/g, ''));
+}
+
+/** Является ли код популярным — то есть встроенным, а не заведённым
+ *  владельцем. Удалять можно только НЕ популярные (требование 5.3):
+ *  встроенную довольно выключить. */
+function curIsPopular(c){ return CUR_POPULAR.indexOf(curNorm(c)) > -1; }
+
+/** Уникализация с сохранением первого вхождения. Своя, потому что
+ *  порядок здесь несущий, а Set в ES5 нет. */
+function curUniq(list){
+  var out = [], i, c;
+  for (i = 0; i < list.length; i++){
+    c = curNorm(list[i]);
+    if (c && out.indexOf(c) === -1) out.push(c);
+  }
+  return out;
+}
+
+/** ФИКСИРОВАННЫЙ ПОРЯДОК ПОКАЗА: сперва популярные в порядке CUR_POPULAR,
+ *  затем всё прочее по алфавиту. Требование 1.3 просит именно этого, и
+ *  порядок обязан быть УСТОЙЧИВЫМ: список, переставляющийся сам собой от
+ *  порядка ключей в объекте, читается как ошибка программы. */
+function curOrder(list){
+  var got = curUniq(list), out = [], rest = [], i;
+  for (i = 0; i < CUR_POPULAR.length; i++)
+    if (got.indexOf(CUR_POPULAR[i]) > -1) out.push(CUR_POPULAR[i]);
+  for (i = 0; i < got.length; i++)
+    if (CUR_POPULAR.indexOf(got[i]) === -1) rest.push(got[i]);
+  rest.sort();
+  return out.concat(rest);
+}
+
+/** Все валюты, о которых документ вообще знает: база, всё с курсом и всё
+ *  объявленное активным. */
+function curKnown(s){
+  var out = [curNorm(s.baseCurrency)], r = s.rates || {}, c;
+  for (c in r) if (Object.prototype.hasOwnProperty.call(r, c)) out.push(c);
+  if (Object.prototype.toString.call(s.curActive) === '[object Array]')
+    out = out.concat(s.curActive);
+  return curOrder(out);
+}
+
+/** Строки окна выбора: популярные ВСЕГДА, плюс всё, что документ знает.
+ *  Валюта, выключенная владельцем, из окна не исчезает — иначе включить
+ *  её обратно было бы нечем (решение владельца 2026-09-02: «только в
+ *  окне выбора»). */
+function curPickCodes(s){
+  return curOrder(CUR_POPULAR.concat(curKnown(s)));
+}
+
+/** ЕДИНСТВЕННЫЙ ОТВЕТ НА ВОПРОС «КАКИЕ ВАЛЮТЫ АКТИВНЫ».
+ *
+ *  Каждый селект, каждое поле курса, каждая строка взаимных курсов и
+ *  каждая плитка читают его ЗДЕСЬ. Фильтровать список по месту — это тот
+ *  же вид ошибки, что второе округление: рано или поздно одна из копий
+ *  отстанет, и ни одна проверка этого не увидит.
+ *
+ *  БАЗОВАЯ ВАЛЮТА В НАБОРЕ ВСЕГДА (требование 1.4). Это не украшение
+ *  галочки: суммы хранятся в ней, итоги печатаются в ней, и набор без неё
+ *  означал бы экран, на котором нельзя прочесть собственные деньги.
+ *
+ *  Ключа нет вовсе — работает миграция (curMigrate). Ключ есть, но пуст
+ *  или испорчен — остаётся одна база: пустой набор невозможен. */
+function curActiveOf(s){
+  var raw = s.curActive, base = curNorm(s.baseCurrency), list;
+  if (Object.prototype.toString.call(raw) !== '[object Array]') list = curMigrate(s);
+  else list = curUniq(raw);
+  if (base && list.indexOf(base) === -1) list = [base].concat(list);
+  list = curOrder(list);
+  return list.length ? list : (base ? [base] : []);
+}
+
+/** МИГРАЦИЯ. Документ без ключа получает то, чем он и так пользовался:
+ *  базу и всё, чему задан курс. У существующего профиля это ровно AED,
+ *  USD и TJS — то самое, чего просит AC11, — а у документа с другим
+ *  набором курсов ответ честнее списка из трёх кодов: ни одна валюта,
+ *  которой владелец пользовался, не исчезает молча.
+ *
+ *  Аддитивна и идемпотентна: записей не трогает, повторный вызов на уже
+ *  мигрированном документе не меняет ничего (ключ есть — сюда не заходим). */
+function curMigrate(s){
+  var out = [curNorm(s.baseCurrency)], r = s.rates || {}, c;
+  for (c in r) if (Object.prototype.hasOwnProperty.call(r, c)) out.push(c);
+  return curOrder(out);
+}
+
+/** Активна ли ровно одна валюта. Отдельная функция, потому что от этого
+ *  ответа зависит, печатаются ли вообще три блока экрана «Курсы»,
+ *  показываются ли селекты валюты в формах и бывает ли вторая строка под
+ *  суммой (требование 6 и пункт 4 решения владельца). */
+function curSingle(s){ return curActiveOf(s).length === 1; }
+
+/** СДЕЛАН ЛИ ВЫБОР ВООБЩЕ. Свежий профиль приходит без базовой валюты и
+ *  с пустым набором — и это не поломка, а состояние «ещё не настроен»
+ *  (решение владельца 2026-09-02, пункт 4: никакой валюты по умолчанию,
+ *  и AED в коде не остаётся).
+ *
+ *  Признак — ПУСТАЯ БАЗА, а не пустой набор: набор без базы невозможен по
+ *  построению curActiveOf(), поэтому спрашивать его бесполезно. Пока
+ *  выбор не сделан, программа не создаёт ни одной записи: суммы негде
+ *  хранить, если не сказано, в чём они. */
+function curSetupDone(s){ return !!curNorm(s.baseCurrency); }
+
+/** КАКАЯ ВАЛЮТА ОБЯЗАНА БЫТЬ БАЗОВОЙ ПРИ ЭТОМ НАБОРЕ ОТМЕТОК.
+ *
+ *  ЕДИНСТВЕННОЕ МЕСТО, ГДЕ ЭТОТ ВОПРОС РЕШАЕТСЯ. Его задают трижды и в
+ *  разных обстоятельствах — строка списка рисует метку «базовая», снятие
+ *  галочки переносит базу, сохранение пишет её в документ, — и три
+ *  ответа на один вопрос разошлись бы при первой же правке ровно так же,
+ *  как расходятся два округления.
+ *
+ *  ПРАВИЛО. Отмечена прежняя база — она и остаётся: снятие галочки с
+ *  соседа не имеет права двигать базу. Прежней среди отмеченных нет —
+ *  базой становится ПЕРВАЯ ПО ПОРЯДКУ curOrder(), то есть по тому же
+ *  порядку, которым напечатан сам список: человек видит, куда она
+ *  переехала, а не угадывает.
+ *
+ *  ПОЧЕМУ ЗАПРЕТ НА СНЯТИЕ БАЗЫ СНЯТ. Он стоял не на том месте:
+ *  защищал от документа без базовой валюты, а мешал обычному
+ *  действию — перейти с доллара на сомони. Защита от пустоты
+ *  остаётся, но там, где ей место: пустой ответ здесь означает, что не
+ *  отмечено ничего, и тогда сохранять нечего — окно не даёт нажать
+ *  «Сохранить». Из этого следует главное свойство: НОВАЯ БАЗА
+ *  НАЗНАЧАЕТСЯ ДО СОХРАНЕНИЯ, в черновике, и документ ни на
+ *  мгновение не остаётся без базовой валюты.
+ *
+ *  Пустая строка — «отмечено ничего», и это ЕДИНСТВЕННЫЙ способ её
+ *  получить. Поэтому «можно ли сохранить» отдельной функции не нужно:
+ *  второй ответ на тот же вопрос — та же ошибка, что второй курс. */
+function curBaseFor(on, prev){
+  var list = curOrder(on || []);
+  if (!list.length) return '';
+  var p = curNorm(prev);
+  return (p && list.indexOf(p) > -1) ? p : list[0];
+}
+
+/** ЧТО ВКЛАДКА РЕАЛЬНО ПОКАЗЫВАЕТ — пересечение её правила с активным
+ *  набором (санкция владельца 2026-09-02, пункт 3).
+ *
+ *  Правила вкладок (SECTION_CUR) в коде НЕ МЕНЯЮТСЯ: «Товары» по-прежнему
+ *  просят AED, «Выдачи» — USD и TJS. Меняется одно: валюта, которую
+ *  владелец выключил, из ответа выпадает. Пересечение пусто — остаётся
+ *  БАЗОВАЯ, потому что экран без единой валюты не показал бы ничего
+ *  вовсе, а прочерк вместо всех сумм хуже, чем цифра в валюте хранения.
+ *
+ *  Снятие правил вкладок с показа целиком — отдельная работа (Часть Б), и
+ *  здесь её нет намеренно. */
+function curSecWanted(s, wanted){
+  var act = curActiveOf(s), out = [], i;
+  for (i = 0; i < (wanted || []).length; i++)
+    if (act.indexOf(curNorm(wanted[i])) > -1) out.push(curNorm(wanted[i]));
+  return out.length ? out : [curNorm(s.baseCurrency)];
+}
+
+/* ------------------------------------------------------------------ *
+ * ЯКОРЬ
+ * ------------------------------------------------------------------ */
+
+/** ЕДИНСТВЕННОЕ МЕСТО, ГДЕ ВЫБИРАЕТСЯ ЯКОРЬ КУРСОВ.
+ *
+ *  Правило (требование 3.1, допущение A1):
+ *
+ *      доллар активен  -> якорь доллар;
+ *      доллар выключен -> якорь БАЗОВАЯ ВАЛЮТА.
+ *
+ *  ПОЧЕМУ ИМЕННО БАЗА, А НЕ «ПЕРВАЯ ПО СПИСКУ» И НЕ ВЫБОР ВЛАДЕЛЬЦА.
+ *  База и так единица хранения: её курс к самой себе равен единице по
+ *  определению, поэтому поля «1 база = … X» читаются прямо из
+ *  settings.rates и записываются туда же без единого промежуточного
+ *  деления. Любой другой якорь потребовал бы делить дважды — на входе и
+ *  на выходе, — и последний бит гулял бы там, где сегодня круг сходится
+ *  бит в бит. Ручного выбора якоря НЕТ намеренно: это второй способ
+ *  сказать то, что уже сказано базовой валютой, а два способа сказать
+ *  одно расходятся при первой же правке.
+ *
+ *  Доллар остаётся исключением потому, что курсы в мире называют от него,
+ *  и это привычка владельца, а не свойство данных. */
+function curAnchor(s){
+  var act = curActiveOf(s);
+  if (act.indexOf('USD') > -1) return 'USD';
+  return curNorm(s.baseCurrency);
+}
+
+/** Валюты, у которых есть СВОЁ поле курса: все активные, кроме якоря.
+ *  Якорю поле не нужно — он и есть единица измерения (требование 3.2). */
+function curRateFields(s){
+  var a = curAnchor(s);
+  return curActiveOf(s).filter(function(c){ return c !== a; });
+}
+
+/** Все направления между активными валютами: n × (n − 1) строк
+ *  (требование 4.2). Порядок строк — порядок curActiveOf(), поэтому он
+ *  устойчив от отрисовки к отрисовке. */
+function curPairs(s){
+  var act = curActiveOf(s), out = [], i, j;
+  for (i = 0; i < act.length; i++)
+    for (j = 0; j < act.length; j++)
+      if (i !== j) out.push([act[i], act[j]]);
+  return out;
+}
+
+/* ------------------------------------------------------------------ *
+ * ВЗАИМНЫЕ КУРСЫ — те же две функции, что были, но от ЛЮБОГО якоря
+ * ------------------------------------------------------------------ */
+
+/** Сколько ЯКОРЕЙ стоит одна единица валюты — по набранным полям.
+ *  Якорь стоит якорь; остальное — единица, делённая на своё поле.
+ *  Обобщение прежней ratePairUsd(): доллар был вписан в неё константой. */
+function curInAnchor(vals, c, anchor){
+  if (c === anchor) return 1;
   var v = vals[c];
   return (typeof v === 'number' && isFinite(v) && v > 0) ? (1 / v) : null;
 }
-/** ЕДИНСТВЕННОЕ место, где считается взаимный курс: «1 from = ? to».
- *  Обе стороны приводятся к доллару, и доллар сокращается — отсюда сразу
- *  все шесть направлений требования 4. Считает по НАБРАННОМУ, а не по
- *  хранимому: таблица обязана пересчитываться до сохранения. */
-function ratePairOf(vals, from, to){
-  var a = ratePairUsd(vals, from), b = ratePairUsd(vals, to);
+
+/** ЕДИНСТВЕННОЕ место, где считается взаимный курс «1 from = ? to».
+ *  Обе стороны приводятся к якорю, и якорь сокращается — отсюда сразу все
+ *  n × (n − 1) направлений. Считает по НАБРАННОМУ, а не по хранимому:
+ *  таблица обязана пересчитываться до сохранения. */
+function curCross(vals, from, to, anchor){
+  var a = curInAnchor(vals, from, anchor), b = curInAnchor(vals, to, anchor);
   if (a === null || b === null || !(b > 0)) return null;
   return a / b;
 }
+
+/** Знаков после запятой: у ВВЕДЁННЫХ направлений два, у расчётных пять
+ *  (требование 4.4 — точность не меняется). Введённое — то, что идёт от
+ *  якоря; это и есть содержимое полей. */
+function curCrossDec(from, anchor){ return from === anchor ? 2 : 5; }
+
+/* ------------------------------------------------------------------ *
+ * КТО ПОЛЬЗУЕТСЯ ВАЛЮТОЙ
+ * ------------------------------------------------------------------ */
+
+/** Где код валюты РЕАЛЬНО встречается в документе. Ответ нужен ровно на
+ *  один вопрос: можно ли удалить валюту насовсем (требование 5.3).
+ *
+ *  Смотрим ПРОВЕНАНС записей (entryCur выдачи, оплаты и расхода, inv.cur
+ *  накладной) и настройки, которые на код ссылаются. Снимки курсов
+ *  (rateSnap) НЕ считаются: снимок содержит ВСЕ курсы того дня, в том
+ *  числе валют, которыми никогда не пользовались, — по нему «в
+ *  использовании» оказалось бы всё сразу, и удалить нельзя было бы
+ *  ничего.
+ *
+ *  Корзина считается наравне с живыми записями: запись из корзины
+ *  возвращают, и вернуться она должна читаемой. */
+function curUsedBy(doc, code){
+  var c = curNorm(code), s = doc.settings || {}, hits = [], i, j;
+  if (!c) return hits;
+  function look(list, what){
+    var k;
+    for (k = 0; k < (list || []).length; k++){
+      var r = list[k];
+      if (r && curNorm(r.entryCur) === c){ hits.push(what); return; }
+    }
+  }
+  look(doc.transactions, 'tx');
+  look(doc.payments, 'pay');
+  look(doc.expenses, 'exp');
+  var prods = doc.products || [], stop = false;
+  for (i = 0; i < prods.length && !stop; i++){
+    var b = (prods[i] || {}).batches || [];
+    for (j = 0; j < b.length; j++)
+      if (b[j] && b[j].inv && curNorm(b[j].inv.cur) === c){ hits.push('inv'); stop = true; break; }
+  }
+  if (curNorm(s.baseCurrency) === c) hits.push('base');
+  if (curNorm(s.sumCur) === c) hits.push('sumCur');
+  if (curNorm(s.displayCurrency) === c) hits.push('displayCurrency');
+  if (curNorm(s.buyCur) === c) hits.push('buyCur');
+  return hits;
+}
+
+/** Можно ли удалить валюту НАСОВСЕМ. Три отказа, и каждый называет
+ *  причину: встроенную не удаляют (её выключают), базовую не удаляют
+ *  никогда, используемую — пока ею пользуются (требование 5.3, 10). */
+function curDeleteCheck(doc, code){
+  var c = curNorm(code), s = doc.settings || {};
+  if (!c) return { ok:false, why:'badcode' };
+  if (curNorm(s.baseCurrency) === c) return { ok:false, why:'base' };
+  if (curIsPopular(c)) return { ok:false, why:'popular' };
+  var used = curUsedBy(doc, c);
+  if (used.length) return { ok:false, why:'used', where: used };
+  return { ok:true, why:'' };
+}
+
+/* ------------------------------------------------------------------ *
+ * ВАЛЮТА ПОКУПКИ ПО УМОЛЧАНИЮ (решение владельца, пункты 2–4)
+ * ------------------------------------------------------------------ */
+
+/** Валюта, которую форма товара подставляет сама, или '' — «не задана,
+ *  выбирается вручную». Код, переставший быть активным, читается как
+ *  «не задана»: подставить его значило бы вернуть на экран валюту,
+ *  которую владелец только что выключил. */
+function curBuyCur(s){
+  var c = curNorm(s.buyCur);
+  if (!c) return '';
+  return curActiveOf(s).indexOf(c) > -1 ? c : '';
+}
+
+/** Что подставить в поле валюты формы. При ОДНОЙ активной валюте — она:
+ *  выбора нет, и спрашивать не о чем (пункт 1 решения владельца). */
+function curBuyDefault(s){
+  var act = curActiveOf(s);
+  if (act.length === 1) return act[0];
+  return curBuyCur(s);
+}
+
+/* ------------------------------------------------------------------ *
+ * ЧТО ПОКАЗЫВАЕТ СУММА (решение владельца о показе, пункты 1–5)
+ * ------------------------------------------------------------------ */
+
+/** Валюта, в которой запись БЫЛА НАБРАНА, и набранное число, — или null.
+ *
+ *  Это ПРОВЕНАНС (entryCur/entryMinor), и он остаётся провенансом: число
+ *  печатается как есть, ни во что не пересчитывается и ни в одно
+ *  вычисление не входит. Домен-правило 7 запрещает кормить им арифметику,
+ *  а не показывать его — показ ровно этой парой и был задуман.
+ *
+ *  Пара читается ПАРОЙ: validate() роняет обе половины разом, поэтому
+ *  одной без другой не бывает, и полагаться на это можно. */
+function recEntry(rec){
+  if (!rec) return null;
+  var c = curNorm(rec.entryCur);
+  if (!c) return null;
+  var m = rec.entryMinor;
+  if (typeof m !== 'number' || !isFinite(m)) return null;
+  return { cur: c, minor: m };
+}
+
+/** СКОЛЬКО ПЕЧАТАТЬ В ГЛАВНОЙ СТРОКЕ — в минорных единицах валюты записи.
+ *
+ *  ЗДЕСЬ ЖИВЁТ РАЗНИЦА, КОТОРУЮ ЛЕГКО НЕ ЗАМЕТИТЬ. У оплаты и у расхода
+ *  провенанс — это СУММА ЦЕЛИКОМ: `savePay()` и `saveExp()` кладут в
+ *  `entryMinor` то, что набрали в поле «сумма». У ВЫДАЧИ там ЦЕНА ЗА
+ *  ЕДИНИЦУ: `saveTx()` кладёт туда поле «цена», а на экране стоит
+ *  `qty × unitPriceCents`. Напечатать `entryMinor` у выдачи как сумму —
+ *  значит показать цену одной штуки под видом всей выдачи; на четырёх
+ *  штуках это вчетверо меньшее число, и никакой ошибки нигде.
+ *
+ *  Поэтому количество передаётся ЯВНО, а не угадывается по полям записи.
+ *
+ *  Умножение на целое количество — НЕ пересчёт: курса здесь нет вовсе,
+ *  округления тоже. Домен-правило 7 запрещает кормить провенансом
+ *  ВЫЧИСЛЕНИЯ денег (конверсии, итоги, долги) — этого не происходит: в
+ *  арифметику документа число не входит, оно только печатается. */
+function recMainMinor(rec, qty){
+  var e = recEntry(rec);
+  if (!e) return null;
+  var n = (typeof qty === 'number' && isFinite(qty) && qty > 0) ? Math.round(qty) : 1;
+  return e.minor * n;
+}
+
+/** НУЖНА ЛИ ВТОРАЯ СТРОКА под суммой. Её нет в трёх случаях, и все три
+ *  об одном: печатать нечего или печаталось бы то же самое.
+ *    · валюта записи неизвестна — печатается только базовая;
+ *    · валюта записи и есть базовая (пункт 3 решения владельца);
+ *    · активна одна валюта — она же базовая (пункт 4). */
+function recTwoLines(s, rec){
+  if (curSingle(s)) return false;
+  var e = recEntry(rec);
+  return !!e && e.cur !== curNorm(s.baseCurrency);
+}
+
+/* ============================================ ++++++ RATE PAIR ++++++ ==
+ * Раздел «Курсы»: поля от ЯКОРЯ, все взаимные направления.
+ *
+ * ИСТОЧНИК ИСТИНЫ — ПОЛЯ. Остальные направления выводятся из них:
+ * обратный курс есть единица, делённая на прямой, а перекрёстный —
+ * отношение двух прямых. Ни одного нового способа ХРАНИТЬ курс здесь нет:
+ * документ по-прежнему держит «1 <код> = r <база>», и читает его rateOf().
+ *
+ * ++++++ ACTIVE CURRENCIES ++++++ Якорь и список полей больше не записаны
+ * константами: их отдаёт curAnchor() / curRateFields() по активному
+ * набору. Арифметика при этом та же до бита — на наборе USD+AED+TJS
+ * функции ниже отвечают ровно то, что отвечали `RATE_ANCHOR = 'USD'` и
+ * `RATE_TO = ['AED','TJS']` (150 направлений сверены набором задачи).
+ */
+/** Валюты, о которых говорит раздел: якорь и всё, что к нему приводится. */
+function ratePairAll(){ return [curAnchor(state.settings)].concat(curRateFields(state.settings)); }
+/** Правится ли эта валюта полями раздела. */
+function ratePairOwns(c){ return ratePairAll().indexOf(c) > -1; }
+
+/** Сколько ЯКОРЕЙ стоит одна единица валюты — по набранным полям. */
+function ratePairUsd(vals, c){ return curInAnchor(vals, c, curAnchor(state.settings)); }
+/** ЕДИНСТВЕННОЕ место, где считается взаимный курс: «1 from = ? to».
+ *  Обе стороны приводятся к якорю, и якорь сокращается — отсюда сразу все
+ *  направления. Считает по НАБРАННОМУ, а не по хранимому: таблица обязана
+ *  пересчитываться до сохранения. */
+function ratePairOf(vals, from, to){ return curCross(vals, from, to, curAnchor(state.settings)); }
 /** Знаков после запятой: у ВВЕДЁННЫХ направлений два, у расчётных пять.
  *  Введённое — то, что идёт от якоря; это и есть содержимое полей. */
-function ratePairDec(from){ return from === RATE_ANCHOR ? 2 : 5; }
+function ratePairDec(from){ return curCrossDec(from, curAnchor(state.settings)); }
 /** Курс как текст. Отдельная функция, потому что trimNum() печатает
  *  столько знаков, сколько осталось после округления к восьмому: «3.67»,
  *  а не «3.67000», и «0.10752688» вместо «0.10753». */
@@ -3085,19 +3625,19 @@ function ratePairField(v){
 }
 /** Пустой черновик полей. null значит «показывать хранимое». */
 function ratePairDraft(){
-  var d = {}, i;
-  for (i = 0; i < RATE_TO.length; i++) d[RATE_TO[i]] = null;
+  var d = {}, to = curRateFields(state.settings), i;
+  for (i = 0; i < to.length; i++) d[to[i]] = null;
   return d;
 }
 /** Что стоит в полях сейчас: набранное, если по полю набирали, иначе
- *  нынешний курс, выраженный от доллара. */
+ *  нынешний курс, выраженный от якоря. */
 function ratePairFieldValue(c){
   var f = ui.form.rate;
   if (f && f[c] !== null && f[c] !== undefined) return f[c];
-  var a = rateOf(RATE_ANCHOR), r = rateOf(c);
+  var a = rateOf(curAnchor(state.settings)), r = rateOf(c);
   return (a === null || r === null) ? '' : ratePairField(a / r);
 }
-/** Значения обоих полей числами; null у того, что не читается.
+/** Значения полей числами; null у того, что не читается.
  *
  *  ПОЛЕ, ПО КОТОРОМУ НЕ НАБИРАЛИ, БЕРЁТСЯ ИЗ ХРАНИМОГО КУРСА, А НЕ ИЗ
  *  СВОЕГО ТЕКСТА, и это не мелочь. Текст поля печатается через trimNum(),
@@ -3111,20 +3651,21 @@ function ratePairFieldValue(c){
  *  добавления валюты: второй разбор числа был бы ошибкой того же рода,
  *  что второе округление. */
 function ratePairVals(){
-  var out = {}, i, c, f = ui.form.rate;
-  for (i = 0; i < RATE_TO.length; i++){
-    c = RATE_TO[i];
+  var out = {}, i, c, f = ui.form.rate, to = curRateFields(state.settings);
+  var anchor = curAnchor(state.settings);
+  for (i = 0; i < to.length; i++){
+    c = to[i];
     if (f && f[c] !== null && f[c] !== undefined){ out[c] = parseRate(f[c]); continue; }
-    var a = rateOf(RATE_ANCHOR), r = rateOf(c);
+    var a = rateOf(anchor), r = rateOf(c);
     out[c] = (a === null || r === null) ? null : a / r;
   }
   return out;
 }
 /** Набирали ли хоть по одному полю. Ничего не набирали — писать нечего. */
 function ratePairTouched(){
-  var f = ui.form.rate, i;
+  var f = ui.form.rate, to = curRateFields(state.settings), i;
   if (!f) return false;
-  for (i = 0; i < RATE_TO.length; i++) if (f[RATE_TO[i]] !== null && f[RATE_TO[i]] !== undefined) return true;
+  for (i = 0; i < to.length; i++) if (f[to[i]] !== null && f[to[i]] !== undefined) return true;
   return false;
 }
 /** Сдвинулся ли курс ПО СУЩЕСТВУ. Сравнение относительное: пересчёт идёт
@@ -3139,34 +3680,35 @@ function rateMoved(had, now){
 }
 /** Какие поля не читаются. Пусто — значит всё в порядке. */
 function ratePairBad(){
-  var vals = ratePairVals(), out = [], i;
-  for (i = 0; i < RATE_TO.length; i++) if (vals[RATE_TO[i]] === null) out.push(RATE_TO[i]);
+  var vals = ratePairVals(), out = [], to = curRateFields(state.settings), i;
+  for (i = 0; i < to.length; i++) if (vals[to[i]] === null) out.push(to[i]);
   return out;
 }
 
-/** Новая таблица ХРАНИМЫХ курсов по двум набранным величинам, или null.
+/** Новая таблица ХРАНИМЫХ курсов по набранным величинам, или null.
  *
- *  Два поля задают только ОТНОШЕНИЯ внутри тройки; единицу измерения
- *  задаёт база, у которой rateOf() равен единице по определению. Отсюда
- *  ровно три случая, и третий — не мелочь:
+ *  Поля задают только ОТНОШЕНИЯ внутри набора; единицу измерения задаёт
+ *  база, у которой rateOf() равен единице по определению. Отсюда ровно
+ *  три случая, и третий — не мелочь:
  *
- *    база — доллар       -> якорь равен 1;
- *    база — одна из двух -> якорь равен её же набранному курсу;
- *    база ВНЕ тройки     -> отношение доллара к базе НЕ ТРОГАЕТСЯ. Иначе
- *                           два поля молча сдвинули бы и четвёртую валюту,
- *                           о которой раздел вообще не говорит.
+ *    база — якорь        -> якорь равен 1;
+ *    база — одна из полей -> якорь равен её же набранному курсу;
+ *    база ВНЕ набора     -> отношение якоря к базе НЕ ТРОГАЕТСЯ. Иначе
+ *                           поля молча сдвинули бы и валюту, о которой
+ *                           раздел вообще не говорит.
  *
  *  Базовая валюта не пишется никогда: строки для неё в settings.rates не
  *  бывает — validate() её выбрасывает, а rateOf() отвечает за неё сам. */
 function ratePairWant(vals){
   var b = state.settings.baseCurrency, want = {}, i, c, anchor;
-  if (b === RATE_ANCHOR) anchor = 1;
+  var an = curAnchor(state.settings), to = curRateFields(state.settings);
+  if (b === an) anchor = 1;
   else if (own(vals, b)) anchor = vals[b];
-  else anchor = rateOf(RATE_ANCHOR);
+  else anchor = rateOf(an);
   if (anchor === null || !isFinite(anchor) || !(anchor > 0)) return null;
-  want[RATE_ANCHOR] = anchor;
-  for (i = 0; i < RATE_TO.length; i++){
-    c = RATE_TO[i];
+  want[an] = anchor;
+  for (i = 0; i < to.length; i++){
+    c = to[i];
     if (!(vals[c] > 0)) return null;
     want[c] = anchor / vals[c];
     if (!isFinite(want[c]) || !(want[c] > 0)) return null;
@@ -3209,8 +3751,23 @@ var SECTION_CUR = {
 /** what a section asks for, whether or not a rate exists (entry selects, warnings) */
 function secWanted(sec){
   var w = SECTION_CUR[sec];
-  if (typeof w === 'function') w = w();          /* ++++++ DISPLAY CURRENCY ++++++ */
-  return (w && w.length) ? w : [];
+  /* ++++++ ACTIVE CURRENCIES ++++++ ЗАПИСЬ-ФУНКЦИЯ НЕ ФИЛЬТРУЕТСЯ, и это
+     не исключение ради удобства.
+     Статический список («Товары» — AED, «Выдачи» — USD и TJS) — это
+     ПРАВИЛО ВКЛАДКИ, и выключенной валюте в нём делать нечего.
+     Запись-функция — это ВЫБОР ВЛАДЕЛЬЦА: «Сводка» и «Расходы» читают
+     settings.sumCur, который он ставит плиткой в углу «героя». Подменить
+     его базовой значило бы молча переключить вкладку на другую валюту —
+     ровно то, что здесь запрещено с самого начала (хрупкое место 11):
+     валюта без курса обязана печатать прочерки и полосу «нет курса», а не
+     исчезать. Найдено не чтением, а прогоном: test-report.mjs требует
+     этой полосы в окне «Полного отчёта». */
+  if (typeof w === 'function') return w();        /* ++++++ DISPLAY CURRENCY ++++++ */
+  /* Валюта, которую владелец выключил, из правила вкладки выпадает;
+     пересечение пусто — остаётся базовая. Сама таблица SECTION_CUR не
+     двигается: правила вкладок — отдельный вопрос, и он решается не здесь
+     (граница санкции владельца от 2026-09-02). */
+  return curSecWanted(state.settings, (w && w.length) ? w : []);
 }
 /** what a section can actually show: the wanted codes that have a usable rate */
 function secCodes(sec){
@@ -3291,7 +3848,14 @@ function payDefaultCur(personId){
   return codes[codes.length-1];
 }
 /** the currency the purchase side is entered in (A2: Products = AED) */
+/** ++++++ ACTIVE CURRENCIES ++++++ валюта, в которой открывается покупка.
+ *  Спрашивается настройка владельца («Валюта покупки по умолчанию»), а не
+ *  правило вкладки: правило говорит, в чём ЧИТАТЬ, а это — в чём ВВОДИТЬ,
+ *  и один ответ на два вопроса разошёлся бы при первой же правке.
+ *  Настройка не задана — остаётся прежний ответ, правило вкладки. */
 function purchaseEntryCur(){
+  var b = curBuyDefault(state.settings);
+  if (b && rateOf(b) !== null) return b;
   var c = secWanted('products')[0];
   return (c && rateOf(c) !== null) ? c : state.settings.baseCurrency;
 }
@@ -3349,12 +3913,12 @@ function dcCur(){
  *  нет (курс удалили) — сама выбранная, чтобы её было видно и с неё можно
  *  было уйти. Ни одного кода валюты в коде не записано. */
 function dcCodes(){
-  var out = [state.settings.baseCurrency], r = state.settings.rates, c;
-  for (c in r){
-    if (!own(r, c)) continue;
-    if (out.indexOf(c) === -1) out.push(c);
-  }
-  c = dcCur();
+  /* ++++++ ACTIVE CURRENCIES ++++++ плитка предлагает то же, что и всё
+     остальное, — активные валюты. Выбранная остаётся в списке, даже если
+     её выключили: иначе с неё нельзя было бы уйти, а экран показывал бы
+     валюту, которой в списке нет (то же правило, по которому здесь
+     оставалась валюта с удалённым курсом). */
+  var out = curActiveOf(state.settings).slice(), c = dcCur();
   if (out.indexOf(c) === -1) out.push(c);
   return out;
 }
@@ -3909,8 +4473,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.4.0';
-var APP_BUILD = '2026-09-02T08:13:26.770Z';
+var APP_VERSION = '1.5.0';
+var APP_BUILD = '2026-09-03T08:41:35.746Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5141,7 +5705,13 @@ var SYNC_COLS = ['products', 'people', 'transactions', 'payments', 'returns', 'e
 /* Поля `settings`, которые ЕДУТ. Всё остальное — предпочтение этого
    устройства и остаётся дома (список и доводы — в README задачи).
    Курсы едут, потому что от них зависят расчёты, а не оформление. */
-var SYNC_SETTINGS = ['baseCurrency', 'rates', 'vatPct', 'vatOn', 'rateLog'];
+var SYNC_SETTINGS = ['baseCurrency', 'rates', 'vatPct', 'vatOn', 'rateLog',
+                     /* ++++++ ACTIVE CURRENCIES ++++++ набор валют — такая же
+                        настройка документа, как курсы: от неё зависит, что
+                        программа предлагает, и на втором устройстве она
+                        обязана быть той же. Движок обмена от этого не
+                        меняется ни строкой. */
+                     'curActive', 'buyCur'];
 
 /* ------------------------------------------------------------------ */
 /* Отпечаток одной записи                                             */
@@ -8326,17 +8896,34 @@ function defaultState(){
   return {
     schemaVersion: SCHEMA_VERSION,
     settings: {
-      baseCurrency: 'AED',                    // goods are bought in dirhams
+      /* ++++++ ACTIVE CURRENCIES ++++++ У СВЕЖЕГО ПРОФИЛЯ ВАЛЮТЫ НЕТ ВОВСЕ.
+         Здесь стояли AED и два курса, и это значило, что программа выбрала
+         за владельца: «Дирхам ОАЭ» на экране у человека, который торгует в
+         сомони. Решение владельца 2026-09-02: спросить — тем же окном
+         выбора, которое открывается само при первом запуске. Пустая база и
+         есть признак «ещё не спросили» (curSetupDone). Существующего
+         документа это не касается: у него база своя и остаётся своей. */
+      baseCurrency: '',                       // спросим в окне выбора
       displayCurrency: '*',                   // '*' = show every currency at once
-      rates: { USD: 3.67, TJS: 3.67 / 9.3 },  // 1 <code> = X base; i.e. 1 USD = 9.3 TJS
+      rates: {},                              // курсы вводятся вместе с валютами
       vatPct: 5, vatOn: true,                 // default invoice VAT
-      lastSellCur: 'USD',                     // remembered selling-price entry currency
-      lastTxCur: 'AED',                       // remembered currency people are charged in
-      lastPayCur: 'TJS',                      // remembered payment entry currency (v6)
+      /* ++++++ ACTIVE CURRENCIES ++++++ запомненной валюты у свежего профиля
+         тоже нет: запоминать ещё нечего. Каждая из трёх читается через
+         функцию, которая падает на базовую, — а база появится из окна. */
+      lastSellCur: '',                        // remembered selling-price entry currency
+      lastTxCur: '',                          // remembered currency people are charged in
+      lastPayCur: '',                         // remembered payment entry currency (v6)
       lang: detectLang(),                     // interface language (v7)
-      sumCur: 'AED',                          // «Сводка» открывается в валюте хранения (v10)
+      sumCur: '',                             // «Сводка» откроется в базовой, когда та появится (v10)
       baseUndo: null,                         // нечего возвращать (v11)
-      rateLog: []                             // курсы ещё не трогали (v12)
+      rateLog: [],                            // курсы ещё не трогали (v12)
+      /* ++++++ ACTIVE CURRENCIES ++++++ v18. Какие валюты программа
+         предлагает и показывает, и какую подставляет в форму товара.
+         Список КОДОВ, а не курсов: курсы лежат в rates и остаются там,
+         даже когда валюта выключена, — иначе запись, сделанная в ней,
+         стала бы нечитаемой. */
+      curActive: [],                          // пусто = валюта ещё не выбрана
+      buyCur: ''                              // «не задана» — выбирать вручную
     },
     products: [], people: [], transactions: [], payments: [], returns: [], expenses: [],
     /* ++++++ SYNC ++++++ v16. Карты рядом с записями, не внутри них. */
@@ -9706,17 +10293,29 @@ function validate(obj){
   function dropRec(e){ dropped.push(e && e.message ? e.message : String(e)); }
   var s = obj.settings;
   if (!s || typeof s !== 'object') return bad(tr('v.noSettings'));
-  if (typeof s.baseCurrency !== 'string' || !/^[A-Za-z0-9]{1,6}$/.test(s.baseCurrency)) return bad(tr('v.badBase'));
+  /* ++++++ ACTIVE CURRENCIES ++++++ пустая база — это состояние «валюту ещё
+     не выбрали», и оно возможно ровно в одном случае: документ пуст. Суммы
+     без валюты бессмысленны, поэтому допуск обвязан проверкой на пустоту
+     ВСЕХ шести коллекций; во всех прочих случаях отказ v.badBase остаётся
+     дословно прежним. */
+  var fresh0 = (s.baseCurrency === '' || s.baseCurrency === undefined) &&
+    ['products','people','transactions','payments','returns','expenses'].every(function(k){
+      return !obj[k] || !obj[k].length;
+    });
+  if (!fresh0 &&
+      (typeof s.baseCurrency !== 'string' || !/^[A-Za-z0-9]{1,6}$/.test(s.baseCurrency))) return bad(tr('v.badBase'));
   var out = {
     schemaVersion: SCHEMA_VERSION,
     settings: {
-      baseCurrency: s.baseCurrency.toUpperCase(),
-      displayCurrency: (typeof s.displayCurrency === 'string' ? s.displayCurrency.toUpperCase() : s.baseCurrency.toUpperCase()),
+      baseCurrency: fresh0 ? '' : s.baseCurrency.toUpperCase(),
+      displayCurrency: (typeof s.displayCurrency === 'string' ? s.displayCurrency.toUpperCase()
+                                                                 : (fresh0 ? '*' : s.baseCurrency.toUpperCase())),
       rates: {},
       vatPct: (typeof s.vatPct === 'number' && isFinite(s.vatPct) && s.vatPct >= 0 && s.vatPct <= 100) ? s.vatPct : 5,
       vatOn: s.vatOn === undefined ? true : !!s.vatOn,
       lastSellCur: (typeof s.lastSellCur === 'string' && /^[A-Za-z0-9]{1,6}$/.test(s.lastSellCur)) ? s.lastSellCur.toUpperCase() : 'USD',
-      lastTxCur: (typeof s.lastTxCur === 'string' && /^[A-Za-z0-9]{1,6}$/.test(s.lastTxCur)) ? s.lastTxCur.toUpperCase() : s.baseCurrency.toUpperCase(),
+      lastTxCur: (typeof s.lastTxCur === 'string' && /^[A-Za-z0-9]{1,6}$/.test(s.lastTxCur))
+                   ? s.lastTxCur.toUpperCase() : (fresh0 ? '' : s.baseCurrency.toUpperCase()),
       /* v6: pre-v6 documents simply have no lastPayCur and take the default. */
       lastPayCur: (typeof s.lastPayCur === 'string' && /^[A-Za-z0-9]{1,6}$/.test(s.lastPayCur)) ? s.lastPayCur.toUpperCase() : 'TJS',
       /* v7: pre-v7 documents simply have no lang and take the default. */
@@ -9728,7 +10327,7 @@ function validate(obj){
          switch itself to another currency behind the owner's back (A4, and
          fragile area 11). dcCur() re-reads it on every render anyway. */
       sumCur: (typeof s.sumCur === 'string' && /^[A-Za-z0-9]{1,6}$/.test(s.sumCur))
-                ? s.sumCur.toUpperCase() : s.baseCurrency.toUpperCase(),
+                ? s.sumCur.toUpperCase() : (fresh0 ? '' : s.baseCurrency.toUpperCase()),
       /* v11: снимок для «вернуть как было». Кривой снимок ОТБРАСЫВАЕТСЯ, а
          не роняет документ, — та же политика, что у rateSnap: из-за отката
          резервная копия не должна перестать открываться. */
@@ -9761,6 +10360,20 @@ function validate(obj){
       !Object.prototype.hasOwnProperty.call(out.settings.rates, out.settings.displayCurrency)){
     out.settings.displayCurrency = out.settings.baseCurrency;
   }
+  /* ++++++ ACTIVE CURRENCIES ++++++ v18: активный набор и валюта покупки.
+     Документ старше v18 ключей не имеет вовсе — curActiveOf() читает это
+     как «мигрировать» и отдаёт базу плюс всё, чему задан курс: ни одна
+     валюта, которой владелец пользовался, не исчезает молча (AC11).
+     Кривое значение не роняет документ, а читается как отсутствующее —
+     та же политика, что у rateSnap, baseUndo и rateLog.
+
+     buyCur хранится КАК ВЫБРАН, а не как отфильтрован: валюту могли
+     временно выключить, и тогда выбор обязан вернуться вместе с ней.
+     Фильтрация — дело чтения (curBuyCur), а не хранения. */
+  out.settings.curActive = curActiveOf({ baseCurrency: out.settings.baseCurrency,
+                                         rates: out.settings.rates,
+                                         curActive: s.curActive });
+  out.settings.buyCur = curNorm(s.buyCur);
 
   function arr(name){
     var a = obj[name];
@@ -11240,7 +11853,15 @@ function dialog(opts){
             : '<h3>' + esc(opts.title || '') + '</h3>') +
         '<div class="body">' + (opts.html || '') + '</div>' +
         (opts.bare ? '' :
-        '<div class="btns"><button type="button" data-key="" class="btn sec">' + esc(opts.cancelLabel || tr('w.cancel')) + '</button>' + btns + '</div>') +
+        /* ++++++ ACTIVE CURRENCIES ++++++ noCancel — четвёртый необязательный
+           признак, рядом с closeX / bare / info. Нужен ровно одному случаю:
+           окну первого запуска, у которого отменять нечего — без валюты
+           программа не может записать ничего. Без признака разметка листа
+           прежняя до байта. */
+        '<div class="btns">' +
+          (opts.noCancel ? '' :
+            '<button type="button" data-key="" class="btn sec">' + esc(opts.cancelLabel || tr('w.cancel')) + '</button>') +
+          btns + '</div>') +
       '</div>';
     /* ================================== ++++++ RATE EDIT ++++++ ==
      * Здесь стояло `back.remove()` ПЕРЕД `resolve(key)`, и из-за этого
@@ -11406,11 +12027,11 @@ var INFO = {
     }
   },
 
-  /* Карточка «Курсы» в том же разделе — свой заголовок, свой текст */
-  'cur.rates': {
-    title: function(){ return tr('cur.rates'); },
-    html: function(){ return infoP(tr('rp.others')); }
-  },
+  /* ++++++ ACTIVE CURRENCIES ++++++ запись «Курсы» стояла здесь и
+     объясняла карточку «Прочие валюты», которой больше нет: валюты
+     заводят и выключают в окне выбора, и объяснять нечего. Пояснение
+     всего раздела («что правка курса двигает, а что нет») осталось на
+     месте — это соседняя запись, и её текст не тронут. */
 
   /* Раздел «Резервная копия». Три блока подряд — один попап, в том же
      порядке. Строка состояния «Хранилище: работает» осталась на экране:
@@ -11675,6 +12296,55 @@ function baseSnapCount(){
 /** Хвост подтверждения смены базовой валюты: что именно перестанет
  *  действовать. Обе фразы печатаются только когда им есть о чём говорить —
  *  предупреждение о том, чего не случится, хуже молчания. */
+/* ++++++ ACTIVE CURRENCIES ++++++ ЧЕМ ЭТИ ДВА РЕЖИМА ОТЛИЧАЮТСЯ НА ДЕЛЕ.
+ *
+ * Решение владельца 2026-09-03: объяснять НЕ ТЕРМИНАМИ, а на его
+ * собственной сумме. «Каждая цена делится на 10.93» — это про механизм;
+ * «4 000.00 TJS станет 365.96 USD, а при переименовании 4 000.00 USD» —
+ * это про то, что он увидит завтра на экране.
+ *
+ * Сумма берётся ИЗ ДОКУМЕНТА и это ОДНА ХРАНИМАЯ СУММА, а не итог. Итог
+ * для примера не годится: пересчёт делит и округляет КАЖДУЮ запись
+ * отдельно, поэтому сумма округлённых расходится с округлением суммы — на
+ * живом документе пример обещал 365.97, а на экране назавтра стояло
+ * 365.96. Мелкая ложь в окне, которое учит доверять себе, дороже удобства.
+ *
+ * Берётся самая крупная из хранимых — её и заметнее сверить. Пример из
+ * головы («например, 100») не объясняет ничего: с ним не сверишься.
+ *
+ * Печатается ТОЛЬКО когда есть что показать (область 44): нет ни одной
+ * суммы — нет и примера, а диалог остаётся прежним. */
+function baseExCents(){
+  var max = 0;
+  function big(v){ if (typeof v === 'number' && isFinite(v) && v > max) max = v; }
+  state.payments.forEach(function(p){ big(p.amountCents); });
+  state.transactions.forEach(function(t){ big(t.unitPriceCents); });
+  state.expenses.forEach(function(x){ big(x.amountCents); });
+  state.products.forEach(function(p){
+    big(p.unitPriceCents);
+    (p.batches || []).forEach(function(b){ big(b.totalCostCents); });
+  });
+  return max;
+}
+function baseExHTML(target, r){
+  var c = baseExCents();
+  if (!c || !(typeof r === 'number') || !isFinite(r) || r <= 0) return '';
+  var old = state.settings.baseCurrency;
+  /* Пересчёт — то же деление и то же одно округление, что сделает
+     applyBaseChange(); второй арифметики здесь нет. */
+  var conv = Math.round(c / r);
+  /* Во сколько раз «переименовать» изменит ДЕНЬГИ. Курс больше единицы —
+     денег станет больше, меньше единицы — меньше; коэффициент один и тот
+     же, только читается с разных сторон. */
+  var k = r >= 1 ? r : 1 / r;
+  return '<div class="note calc"><b>' +
+      tr('dlg.baseExNow', { sum: esc(fmtMinor(c) + ' ' + old) }) + '</b>' +
+    '<div>' + tr('dlg.baseExConv', { sum: esc(fmtMinor(conv) + ' ' + target) }) + '</div>' +
+    '<div>' + tr(r >= 1 ? 'dlg.baseExUp' : 'dlg.baseExDown',
+                 { sum: esc(fmtMinor(c) + ' ' + target), n: esc(trimNum(Math.round(k * 100) / 100)) }) +
+    '</div></div>';
+}
+
 function baseWarnHTML(target){
   var h = '', n = baseSnapCount();
   /* число нужно только чтобы решить, печатать ли фразу: в самой фразе
@@ -12009,8 +12679,21 @@ function rateLogPush(e){
  *  (baseUndoApply), который меняет базу и всю таблицу разом и до 2026-08-24
  *  историю не звал вовсе (находка B4). Он записывается как смена базы в
  *  режиме 'undo'. */
-function rateLogEdit(cur, was, now){ rateLogPush({ k:'edit', cur:cur, was:was, now:now }); }
-function rateLogAdd(cur, now){ rateLogPush({ k:'add', cur:cur, now:now }); }
+/* ++++++ ACTIVE CURRENCIES ++++++ четвёртый аргумент — ПРОИЗВОДНЫЕ
+   сдвиги: курсы, которые пересчитались сами, потому что выражены от
+   якоря. Они живут ВНУТРИ записи о правке, а не рядом с ней: иначе через
+   месяц не отличить, что правили руками, а что посчиталось. Признак
+   необязательный — каждый прежний вызов пишет ту же запись до байта. */
+function rateLogEdit(cur, was, now, derived){
+  var e = { k:'edit', cur:cur, was:was, now:now };
+  if (derived && derived.length) e.derived = derived;
+  rateLogPush(e);
+}
+function rateLogAdd(cur, now, derived){
+  var e = { k:'add', cur:cur, now:now };
+  if (derived && derived.length) e.derived = derived;
+  rateLogPush(e);
+}
 function rateLogDel(cur, was){ rateLogPush({ k:'del', cur:cur, was:was }); }
 /** Смена базовой: `cur` — новая база, `from` — прежняя. Пишется ДО того,
  *  как база сменится, поэтому `base` в записи — ещё прежняя, и это верно:
@@ -12032,13 +12715,32 @@ function rateLogLine(e){
   return tr(e.mode === 'convert' ? 'cur.logBaseConv' : 'cur.logBaseRelab', v);
 }
 /** Карточка на «Ещё → Валюты». Печатается только когда есть что показать. */
+/** ++++++ ACTIVE CURRENCIES ++++++ «пересчитаны: 1 TJS = 0.336 → 0.366
+ *  AED» — производные сдвиги ВНУТРИ записи о правке. Слово «пересчитаны»
+ *  стоит первым и не убирается: оно и отличает их от того, что ввели
+ *  руками. Производных нет — не печатается ничего (область 44). */
+function rateLogDerivedText(e){
+  if (!e || !e.derived || !e.derived.length) return '';
+  var base = esc(e.base || ''), parts = [];
+  e.derived.forEach(function(d){
+    parts.push('1 ' + esc(d.cur) + ' = ' +
+      (d.was === undefined ? '' : esc(trimNum(d.was)) + ' &rarr; ') +
+      esc(trimNum(d.now)) + ' ' + base);
+  });
+  return tr('cur.logDerived', { list: parts.join(' · ') });
+}
+
 function rateLogHTML(){
   var log = Array.isArray(state.settings.rateLog) ? state.settings.rateLog : [];
   if (!log.length) return '';
   var shown = log.slice(-RATE_LOG_SHOWN).reverse();   /* новые сверху */
   var rows = '';
   shown.forEach(function(e){
-    rows += row({ k: rateLogLine(e), sub: esc(bakStamp(e.at)) });
+    /* ++++++ ACTIVE CURRENCIES ++++++ производные — ВТОРОЙ подписью, и она
+       переносится, а не обрезается (row() печатает её как .age). Первая
+       подпись — время, и обрезать её нельзя. */
+    rows += row({ k: rateLogLine(e), sub: esc(bakStamp(e.at)),
+                  sub2: rateLogDerivedText(e) });
   });
   var more = log.length > shown.length
     ? '<div class="body">' + tr('cur.logMore', { n: nq(log.length, 'record'),
@@ -12091,6 +12793,20 @@ function rateLogOf(v){
                               o.mode = (e.mode === 'convert' || e.mode === 'undo')
                                        ? e.mode : 'relabel'; }
     else return;
+    /* ++++++ ACTIVE CURRENCIES ++++++ производные сдвиги. Кривой элемент
+       отбрасывается, САМА запись — нет: это список независимых фактов
+       внутри факта, и политика та же, что у всей истории (R16). */
+    if (Object.prototype.toString.call(e.derived) === '[object Array]'){
+      var dv = [];
+      e.derived.forEach(function(x){
+        if (!x || typeof x !== 'object') return;
+        if (!code(x.cur) || !num(x.now)) return;
+        var one = { cur: x.cur.toUpperCase(), now: x.now };
+        if (num(x.was)) one.was = x.was;
+        dv.push(one);
+      });
+      if (dv.length) o.derived = dv;
+    }
     out.push(o);
   });
   return out;
@@ -13147,13 +13863,31 @@ function select(o){
 function curSelect(fPath, value, codes){
   var items = [];
   (codes || currencyCodes()).forEach(function(c){ items.push([c, c]); });
+  /* ++++++ ACTIVE CURRENCIES ++++++ активна одна валюта — выбирать не из
+     чего, и селект с единственным вариантом обещает выбор, которого нет
+     (область 44). Печатается код словом; в ui.form нужное значение уже
+     лежит, потому что окно выбора сбрасывает формы (curPickApply). */
+  if (items.length === 1)
+    return '<span class="onecur">' + esc(items[0][0]) + '</span>';
   return select({ f:fPath, value:value, items:items });
 }
+/** ++++++ ACTIVE CURRENCIES ++++++ ГОРЛЫШКО: отсюда активный набор
+ *  получают все селекты валюты — форма товара, цена продажи, выдача,
+ *  расход — и оба селекта раздела «Валюты и курсы». Фильтровать список по
+ *  месту нельзя: одна из копий однажды отстанет, и ни одна проверка этого
+ *  не увидит.
+ *
+ *  ПОРЯДОК ОСТАЁТСЯ ПРЕЖНИМ — база первой, остальные по алфавиту, — и это
+ *  не лень. Порядок окна выбора (популярные в объявленном порядке) верен
+ *  ДЛЯ ОКНА: там список из десяти валют, и алфавит в нём читается хуже.
+ *  В селекте формы валют две-три, и менять их местами значило бы двигать
+ *  каждый экран ввода ради ничего — а «ни один экран не сдвинулся» и есть
+ *  то, чем этот подшаг доказывает свою безопасность. Найдено прогоном:
+ *  три набора покраснели ровно на порядке опций. */
 function currencyCodes(){
-  var out = [state.settings.baseCurrency];
-  Object.keys(state.settings.rates).sort().forEach(function(c){
-    if (c !== state.settings.baseCurrency) out.push(c);
-  });
+  var act = curActiveOf(state.settings), base = state.settings.baseCurrency;
+  var out = act.indexOf(base) > -1 ? [base] : [];
+  act.filter(function(c){ return c !== base; }).sort().forEach(function(c){ out.push(c); });
   return out;
 }
 function money2(fPath, value, curPath, curValue, codes){
@@ -13194,7 +13928,12 @@ var ICON = {
   check:   '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   cross:   '<path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/>',
   search:  '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
-  filter:  '<path d="M4 5.5h16l-6.3 7.4v5.2l-3.4 1.7v-6.9z"/>'
+  filter:  '<path d="M4 5.5h16l-6.3 7.4v5.2l-3.4 1.7v-6.9z"/>',
+  /* ++++++ ACTIVE CURRENCIES ++++++ шестерёнка настроек набора валют.
+     Тот же inline-SVG, что и всё остальное: ни одного внешнего файла. */
+  gear:    '<circle cx="12" cy="12" r="3.1"/>' +
+           '<path d="M12 2.8l1.1 2.4 2.6-.5.6 2.6 2.4 1.1-1.3 2.3 1.3 2.3-2.4 1.1-.6 2.6-2.6-.5L12 21.2' +
+           'l-1.1-2.4-2.6.5-.6-2.6-2.4-1.1 1.3-2.3-1.3-2.3 2.4-1.1.6-2.6 2.6.5z"/>'
 };
 function ico(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"' +
@@ -15734,6 +16473,66 @@ function payHintText(){
  * убивает курсор, ради сохранения которого всё и делается. Тот же приём,
  * что у подсказки формы оплаты.
  */
+/* ======================================== ++++++ RATE PLAN ++++++ ==
+ * ЧТО ИМЕННО ИЗМЕНИТСЯ, КОГДА НАЖМУТ «СОХРАНИТЬ КУРСЫ».
+ *
+ * Поля выражены ОТ ЯКОРЯ, поэтому правка поля базовой валюты («1 USD =
+ * 3.70 AED») меняет курс якоря — а вместе с ним и все остальные, ведь они
+ * заданы через него. Это арифметически верно и принято владельцем
+ * 2026-09-02, но молчать об этом нельзя: человек правил доллар, а
+ * сдвинулись ещё две валюты.
+ *
+ * ОДНА ФУНКЦИЯ НА ДВА ОТВЕТА. Подсказка под полями и запись в историю
+ * обязаны говорить одно и то же — значит и считать должны в одном месте.
+ * Два ответа на вопрос «что изменится» разошлись бы при первой же правке,
+ * и разошлись бы молча: подсказка живёт на экране, запись — в документе.
+ */
+
+/** Правится ли курс валюты `c` РУКАМИ, то есть тронуто ли поле, которое
+ *  его задаёт.
+ *
+ *  Поле базы задаёт курс ЯКОРЯ (в `ratePairWant()` это `want[anchor]`), а
+ *  поле любой другой валюты — её собственный. Отсюда простое правило:
+ *  курс якоря ручной, когда тронуто поле базы; курс всякой прочей — когда
+ *  тронуто её собственное поле. */
+function ratePairManual(c){
+  var f = ui.form.rate, an = curAnchor(state.settings), b = state.settings.baseCurrency;
+  var key = (c === an) ? b : c;
+  return !!(f && f[key] !== null && f[key] !== undefined);
+}
+
+/** ЕДИНСТВЕННЫЙ ответ на вопрос «что изменится». Возвращает
+ *  `{ manual: [...], derived: [...] }`, где каждый элемент —
+ *  `{ cur, was, now }`; `was` равен null у валюты, которой курса ещё не
+ *  было. Ничего не пишет и ничего не меняет: и подсказка, и сохранение
+ *  читают её одинаково. */
+function ratePairPlan(){
+  var out = { manual: [], derived: [] };
+  var vals = ratePairVals();
+  var bad = ratePairBad();
+  if (bad.length) return out;                 /* нечего планировать */
+  var want = ratePairWant(vals);
+  if (!want) return out;
+  var b = state.settings.baseCurrency, c;
+  for (c in want){
+    if (!own(want, c) || c === b) continue;
+    var had = own(state.settings.rates, c) ? state.settings.rates[c] : null;
+    if (!rateMoved(had, want[c])) continue;
+    (ratePairManual(c) ? out.manual : out.derived).push({ cur: c, was: had, now: want[c] });
+  }
+  return out;
+}
+
+/** Предупреждение под полями: сколько валют потянет за собой правка и
+ *  какие именно. Печатается ТОЛЬКО когда производные есть, — сообщение о
+ *  том, чего не произойдёт, хуже молчания (область 44). */
+function ratePairSideText(){
+  var plan = ratePairPlan();
+  if (!plan.derived.length) return '';
+  var names = plan.derived.map(function(d){ return esc(d.cur); }).join(tr('w.and'));
+  return tr('rp.alsoMoves', { n: nq(plan.derived.length, 'currency'), cur: names });
+}
+/* ++++++ /RATE PLAN ++++++ */
 /** Шесть строк таблицы. Считает по НАБРАННОМУ: до сохранения тоже. */
 function ratePairTableHTML(){
   var vals = ratePairVals(), all = ratePairAll(), h = '', i, j;
@@ -15742,7 +16541,7 @@ function ratePairTableHTML(){
       if (i === j) continue;
       var from = all[i], to = all[j], v = ratePairFmt(ratePairOf(vals, from, to), from);
       h += row({ k: '1 ' + esc(from) + ' &rarr; ' + esc(to),
-        sub: tr(from === RATE_ANCHOR ? 'rp.entered' : 'rp.derived'),
+        sub: tr(from === curAnchor(state.settings) ? 'rp.entered' : 'rp.derived'),
         v: v === null ? '&mdash;' : esc(v) + ' ' + esc(to) });
     }
   }
@@ -15752,17 +16551,27 @@ function ratePairTableHTML(){
  *  Один узел, два состояния — как подсказка формы оплаты. */
 function ratePairNoteText(){
   var bad = ratePairBad();
-  if (bad.length) return tr('rp.errRate', { anchor: esc(RATE_ANCHOR), cur: esc(bad.join(', ')) });
-  return tr('rp.hint');
+  if (bad.length) return tr('rp.errRate', { anchor: esc(curAnchor(state.settings)),
+                                            cur: esc(bad.join(', ')) });
+  /* ++++++ ACTIVE CURRENCIES ++++++ правка поля якоря тянет за собой
+     остальные валюты — и владелец обязан увидеть это ДО сохранения, а не
+     обнаружить в истории после. Печатается, только когда есть что
+     сказать (область 44). */
+  var side = ratePairSideText();
+  return (side ? side + ' ' : '') + tr('rp.hint');
 }
 /** Карточка с двумя полями. Свой заголовок, потому что прежний — «Курсы» —
  *  остаётся у карточки, где живут базовая валюта и прочие курсы. */
 function ratePairCardHTML(){
-  var h = '<section class="card"><div class="t">' + tr('rp.title') + '</div><div class="b">' +
-    '<form id="fRate" novalidate><div class="f"><div class="two">';
-  RATE_TO.forEach(function(c){
+  /* ++++++ ACTIVE CURRENCIES ++++++ заголовок называет ЯКОРЬ, а не доллар:
+     при выключенном долларе им становится базовая валюта, и «Курсы от
+     доллара» над полями «1 AED = … TJS» были бы прямой неправдой. */
+  var h = '<section class="card"><div class="t">' +
+    tr('rp.titleOf', { of: esc(curOfName(curAnchor(state.settings))) }) + '</div><div class="b">' +
+    '<form id="fRate" novalidate><div class="f"><div class="ratergrid">';
+  curRateFields(state.settings).forEach(function(c){
     h += '<label class="f" style="margin:0"><span>' +
-      tr('rp.field', { anchor: esc(RATE_ANCHOR), cur: esc(c) }) + '</span>' +
+      tr('rp.field', { anchor: esc(curAnchor(state.settings)), cur: esc(c) }) + '</span>' +
       input({ f:'rate.' + c, value: ratePairFieldValue(c), mode:'decimal',
               id:'rate' + c, ph:'0.00' }) + '</label>';
   });
@@ -15773,7 +16582,7 @@ function ratePairCardHTML(){
 /** Карточка таблицы. Узел с id — тот, что переписывает live(). */
 function ratePairTableCardHTML(){
   return '<section class="card"><div class="t">' + tr('rp.tableTitle') + '</div>' +
-    '<div id="rateTable">' + ratePairTableHTML() + '</div></section>';
+    '<div class="pairbox" id="rateTable">' + ratePairTableHTML() + '</div></section>';
 }
 
 /** Сохранить курсы. ЕДИНСТВЕННОЕ место, где раздел пишет settings.rates —
@@ -15784,23 +16593,44 @@ function ratePairTableCardHTML(){
 function saveRatePair(){
   var bad = ratePairBad();
   if (bad.length){
-    ui.err = tr('rp.errRate', { anchor: RATE_ANCHOR, cur: bad.join(', ') });
+    ui.err = tr('rp.errRate', { anchor: curAnchor(state.settings), cur: bad.join(', ') });
     render(); return;
   }
   var want = ratePairWant(ratePairVals());
   if (!want){
-    ui.err = tr('rp.errAnchor', { anchor: RATE_ANCHOR, base: state.settings.baseCurrency });
+    ui.err = tr('rp.errAnchor', { anchor: curAnchor(state.settings),
+                                  base: state.settings.baseCurrency });
     render(); return;
   }
-  var b = state.settings.baseCurrency, moved = [], c;
+  /* ++++++ ACTIVE CURRENCIES ++++++ ОДНА ЗАПИСЬ НА ОДНУ ПРАВКУ.
+     Поля выражены от якоря, поэтому правка поля базы двигает курс якоря,
+     а с ним и все прочие. Писать это тремя записями значило бы через
+     месяц не отличить сделанное руками от посчитанного самим — а история
+     существует ровно ради этого различия (R16). Поэтому в неё идёт то,
+     что человек ПРАВИЛ, а производные едут внутри той же записи.
+
+     Несколько тронутых полей — несколько записей, и производные
+     приписываются ПЕРВОЙ: они следствие всей правки разом, и делить их
+     между полями было бы выдумкой. */
+  var b = state.settings.baseCurrency, moved = [], c, i;
+  var plan = ratePairPlan();
+  var writeOne = function(m, extra){
+    if (m.was === null) rateLogAdd(m.cur, m.now, extra);
+    else rateLogEdit(m.cur, m.was, m.now, extra);
+  };
+  for (i = 0; i < plan.manual.length; i++)
+    writeOne(plan.manual[i], i === 0 ? plan.derived : null);
+  /* Сдвиг без единой ручной правки при нажатии «Сохранить» не случается,
+     но если случится — он не должен пропасть из истории. */
+  if (!plan.manual.length)
+    for (i = 0; i < plan.derived.length; i++) writeOne(plan.derived[i], null);
   for (c in want){
     if (!own(want, c) || c === b) continue;
     var had = own(state.settings.rates, c) ? state.settings.rates[c] : null;
     if (!rateMoved(had, want[c])) continue;      /* не сдвинулось — не трогаем */
-    if (had === null) rateLogAdd(c, want[c]); else rateLogEdit(c, had, want[c]);
     moved.push(c);
   }
-  for (var i = 0; i < moved.length; i++){ c = moved[i]; state.settings.rates[c] = want[c]; }
+  for (i = 0; i < moved.length; i++){ c = moved[i]; state.settings.rates[c] = want[c]; }
   ui.form.rate = ratePairDraft();
   ui.err = '';
   toast(tr(moved.length ? 'rp.saved' : 'rp.savedSame'), 'ok');
@@ -16991,73 +17821,446 @@ function acctOutHTML(){
         modeIsProduct() ? 'gd-signout' : 'sync-forget', 'danger block') + '</div>';
 }
 
+/* =========================================== ++++++ CUR PICKER ++++++ ==
+ * ОКНО «Какие валюты показывать».
+ *
+ * Тот же dialog(), что у всех листов, поэтому Escape, нажатие мимо окна и
+ * «Назад» на Android работают без единой новой строки. Черновик —
+ * МОДУЛЬНАЯ переменная, как expPickDraft и prodEditAnchor: наполовину
+ * заполненному окну нечего делать в резервной копии, а «Отмена» обязана
+ * не оставить следа.
+ *
+ * Окно — ЕДИНСТВЕННОЕ место, где заводят валюту, удаляют её и назначают
+ * ОСНОВНУЮ. Прежняя форма внизу раздела, лист правки курса и селект
+ * базовой валюты убраны: два способа сделать одно и то же на одном экране
+ * расходятся при первой же правке.
+ */
+var curPickDraft = null;
+
+/** Название валюты. Своей валюты в словаре нет — тогда её код и есть её
+ *  имя, и это честнее выдуманного названия. */
+function curName(c){ return has('cur.n.' + c) ? tr('cur.n.' + c) : c; }
+/** Родительный падеж для заголовка «Курсы от …». Для своей валюты —
+ *  «Курсы от XYZ»: склонять незнакомый код не по чему. */
+function curOfName(c){ return has('cur.of.' + c) ? tr('cur.of.' + c) : c; }
+
+/** Флажок. Своего знака не заводим: выбор в этом файле уже помечает `.av`
+ *  с галочкой, а невыбранное — его нейтральный двойник `.av.sq` (окно
+ *  выбора товаров у расходов). */
+function curPickBox(on){
+  return on ? '<span class="av">&#10003;</span>' : '<span class="av sq"></span>';
+}
+
+/** Строки окна. КАЖДАЯ снимается, включая основную. Метка «базовая
+ *  валюта» и кнопка «Сделать основной» читают ЧЕРНОВИК, а не документ:
+ *  база переезжает в тот же миг, когда сняли галочку, и человек видит это
+ *  сразу — до сохранения, а не после.
+ *
+ *  Обе кнопки — СОСЕДИ строки, а не её потомки: <button> внутри <button>
+ *  браузер перевешивает, и строка проглотила бы нажатие (область 25). */
+function curPickRowsHTML(){
+  var d = curPickDraft, h = '';
+  d.codes.forEach(function(c){
+    var on = own(d.on, c), isBase = on && c === d.base;
+    var sub = isBase ? tr('cp.base') : (curIsPopular(c) ? esc(curName(c)) : tr('cp.own'));
+    var canDel = !curIsPopular(c) && !isBase;
+    h += '<div class="currow">' +
+      row({ lead: curPickBox(on), k: esc(c), sub: sub,
+            act: 'cp-toggle', arg: c, noChev: true }) +
+      (on && !isBase
+        ? '<button type="button" class="curbase" data-act="cp-base" data-arg="' + esc(c) +
+          '">' + tr('cp.makeBase') + '</button>'
+        : '') +
+      (canDel
+        ? '<button type="button" class="curdel" data-act="cp-del" data-arg="' + esc(c) +
+          '" aria-label="' + esc(tr('w.delete')) + '">' + ico('cross') + '</button>'
+        : '') +
+      '</div>';
+  });
+  return h;
+}
+
+/** Отмеченное — списком и в порядке показа. Один ответ на вопрос «что
+ *  отмечено», и его читают и строки, и база, и сохранение. */
+function curPickOn(){
+  var out = [], c;
+  for (c in curPickDraft.on) if (own(curPickDraft.on, c)) out.push(c);
+  return curOrder(out);
+}
+
+/** Курс валюты С УЧЁТОМ ЧЕРНОВИКА: набранный в этом же окне считается
+ *  заданным, хотя в документ ещё не попал. Без этого валюта, заведённая
+ *  здесь же, не могла бы стать базовой — курса у неё «нет» до сохранения,
+ *  а сохранение и есть то, что мы собираемся сделать. */
+function curPickRateOf(c){
+  if (own(curPickDraft.rates, c)) return curPickDraft.rates[c];
+  return rateOf(c);
+}
+
+/** Что окно говорит под списком. Два сообщения, и каждое печатается
+ *  только когда ему есть что сказать (область 44):
+ *    · не отмечено ничего — почему «Сохранить» недоступно;
+ *    · база переехала — какой она станет.
+ *  Второе и есть требование «показывать сразу»: метка в строке говорит
+ *  то же самое, но её надо найти глазами в списке из десяти строк. */
+function curPickBaseReady(){
+  var d = curPickDraft;
+  if (!d.base) return 'empty';
+  if (!d.setup && d.base !== curNorm(state.settings.baseCurrency) &&
+      !curPickRateOf(d.base)) return 'norate';
+  return '';
+}
+
+function curPickNoteHTML(){
+  var d = curPickDraft, why = curPickBaseReady();
+  if (why) return '<div class="note warn" style="margin-top:12px">' +
+    (why === 'empty' ? tr('cp.needOne') : tr('cp.baseNoRate', { cur: esc(d.base) })) +
+    '</div>';
+  if (d.setup || d.base === curNorm(state.settings.baseCurrency)) return '';
+  return '<div class="note" style="margin-top:12px">' +
+    tr('cp.baseWillBe', { cur: esc(d.base) }) + '</div>';
+}
+
+/** Форма своей валюты. Проверка та же, что была у прежней формы внизу
+ *  раздела: код, отсутствие повтора, курс больше нуля. Строже прежней
+ *  ровно в одном — код ровно из трёх букв (требование 5.2). */
+function curPickAddHTML(){
+  return '<div class="f" style="margin-top:16px"><span>' + tr('cp.addTitle') + '</span>' +
+    '<div class="two">' +
+      '<label class="f" style="margin:0"><span>' + tr('cur.code') + '</span>' +
+        input({ f:'cp.code', value: curPickDraft.code, ph:'EUR', id:'cpCode' }) + '</label>' +
+      '<label class="f" style="margin:0"><span>' +
+        tr('cp.rate', { base: esc(curPickDraft.setup ? tr('cp.rateBaseLater')
+                                                     : state.settings.baseCurrency) }) + '</span>' +
+        input({ f:'cp.rate', value: curPickDraft.rate, mode:'decimal', ph:'4.00', id:'cpRate' }) +
+      '</label>' +
+    '</div>' +
+    '<div class="btns" style="margin-top:10px">' +
+      '<button type="button" class="btn sec sm" data-act="cp-add">' + tr('cp.add') + '</button>' +
+    '</div>' +
+    (curPickDraft.err ? '<div class="note err" style="margin-top:10px">' +
+                        esc(curPickDraft.err) + '</div>' : '') +
+    '</div>';
+}
+function curPickHTML(){
+  return '<div class="body" style="margin-bottom:12px">' +
+    tr(curPickDraft.setup ? 'cp.hintFirst' : 'cp.hint') + '</div>' +
+    '<div id="cpBody">' + listCard('', curPickRowsHTML()) +
+    curPickNoteHTML() + curPickAddHTML() + '</div>';
+}
+
+/** Перерисовка ОДНОГО окна, без render(): лист не часть render() вовсе
+ *  (область 14), а полная отрисовка сняла бы фокус с поля кода и
+ *  прокрутила бы список к началу. Одиннадцатый частичный перерисовщик. */
+function curPickPaint(){
+  var b = $('cpBody');
+  if (b) b.innerHTML = listCard('', curPickRowsHTML()) + curPickNoteHTML() + curPickAddHTML();
+  curPickSaveBtn();
+}
+
+/** ДОСТУПНОСТЬ «Сохранить». Сказать «так нельзя» надо ДО нажатия: ошибка
+ *  после нажатия означает, что кнопка обещала действие, которого не будет.
+ *
+ *  Кнопка ищется в СВОЁМ листе, от #cpBody вверх, а не первым `.modal-back`
+ *  в документе: поверх окна выбора открывается вопрос о смене базы, и
+ *  «первый попавшийся лист» перестал бы быть этим.
+ *
+ *  Спрашивается curPickBaseReady() — тот же ответ, который печатает
+ *  причину под списком. Своей проверки здесь нет намеренно: кнопка и
+ *  объяснение под ней обязаны говорить одно и то же. */
+function curPickSaveBtn(){
+  var b = $('cpBody'), m = b && b.closest ? b.closest('.modal-back') : null;
+  var btn = m ? m.querySelector('.btns [data-key="ok"]') : null;
+  if (btn) btn.disabled = !!curPickBaseReady();
+}
+/** Снять или поставить галочку — С ЛЮБОЙ валюты, включая базовую.
+ *
+ *  Прежде здесь стоял ранний выход для базы, и он был одним из ТРЁХ мест
+ *  одного запрета: не рисовать действие у строки, не пускать сюда,
+ *  подмешать базу при сохранении. Три места на один запрет — и обход
+ *  любого из них оставлял два других молча работать; поэтому убраны все
+ *  три, а защита от пустого набора сведена в одно место (curBaseFor).
+ *
+ *  База пересчитывается СРАЗУ, в том же нажатии: между снятием галочки и
+ *  сохранением черновик не бывает без базы ни на мгновение. */
+function curPickToggle(code){
+  if (!curPickDraft) return;
+  var c = curNorm(code);
+  if (!c) return;
+  if (own(curPickDraft.on, c)) delete curPickDraft.on[c];
+  else curPickDraft.on[c] = true;
+  curPickDraft.base = curBaseFor(curPickOn(), curPickDraft.base);
+  curPickDraft.err = '';
+  curPickPaint();
+}
+
+/** Сделать валюту базовой — ОДНИМ действием, прямо в строке списка.
+ *
+ *  Своего отказа здесь нет намеренно. Валюту без курса основной назначить
+ *  МОЖНО, а сказать, что так не сохранить, — дело curPickBaseReady(): она
+ *  гасит «Сохранить» и печатает причину под списком. Так ответ на вопрос
+ *  «можно ли сохранить» остаётся ОДИН, и назначение не спорит с кнопкой. */
+function curPickMakeBase(code){
+  if (!curPickDraft) return;
+  var c = curNorm(code);
+  if (!c || !own(curPickDraft.on, c)) return;
+  curPickDraft.base = c;
+  curPickDraft.err = '';
+  curPickPaint();
+}
+function curPickAdd(){
+  if (!curPickDraft) return;
+  var code = String(curPickDraft.code || '').replace(/\s/g, '').toUpperCase();
+  if (!curCodeOk(code)){ curPickDraft.err = tr('cp.errCode'); curPickPaint(); return; }
+  /* ++++++ ACTIVE CURRENCIES ++++++ «уже есть» — это про ОТМЕЧЕННУЮ
+     валюту, а не про строку в списке. Популярные стоят в окне всегда, и
+     отказывать по ним значило бы, что валюте из списка нельзя задать
+     курс вовсе: галочку поставить можно, а курс ввести негде. Поэтому
+     код, который в списке есть, но не отмечен, форма ОТМЕЧАЕТ и задаёт
+     ему курс — то самое, чего от неё и ждут. Найдено прогоном. */
+  if (own(curPickDraft.on, code)){
+    curPickDraft.err = tr('cp.errDupe', { cur: code }); curPickPaint(); return;
+  }
+  var rate = parseRate(curPickDraft.rate);
+  if (rate === null){ curPickDraft.err = tr('cp.errRate'); curPickPaint(); return; }
+  if (curPickDraft.codes.indexOf(code) < 0)
+    curPickDraft.codes = curOrder(curPickDraft.codes.concat([code]));
+  curPickDraft.on[code] = true;             /* добавленная сразу активна */
+  curPickDraft.rates[code] = rate;
+  curPickDraft.code = ''; curPickDraft.rate = ''; curPickDraft.err = '';
+  curPickPaint();
+}
+/** Удаление НАСОВСЕМ. Три отказа, и каждый называет причину: встроенную
+ *  не удаляют (её выключают), базовую не удаляют никогда, используемую —
+ *  пока ею пользуются. Решение принимает ядро, окно только печатает. */
+function curPickDelete(code){
+  if (!curPickDraft) return;
+  var chk = curDeleteCheck(state, code);
+  if (!chk.ok){
+    curPickDraft.err = chk.why === 'base' ? tr('cp.delBase', { cur: esc(code) })
+      : chk.why === 'popular' ? tr('cp.delPopular', { cur: esc(code) })
+      : tr('cp.delUsed', { cur: esc(code),
+            where: chk.where.map(function(w){ return tr('cp.where.' + w); }).join(tr('w.and')) });
+    curPickPaint(); return;
+  }
+  curPickDraft.codes = curPickDraft.codes.filter(function(c){ return c !== code; });
+  delete curPickDraft.on[code];
+  delete curPickDraft.rates[code];
+  curPickDraft.del[code] = true;
+  curPickDraft.err = '';
+  curPickPaint();
+}
+
+/** Меняется ли этим сохранением базовая валюта, и на какую. null — нет.
+ *  Первый запуск базу не МЕНЯЕТ, а задаёт: менять там нечего, и суммы,
+ *  которые пришлось бы пересчитывать, ещё не существуют. */
+function curPickBaseChange(){
+  var d = curPickDraft, old = curNorm(state.settings.baseCurrency);
+  if (d.setup || !d.base || d.base === old) return null;
+  return { from: old, to: d.base };
+}
+
+/** Применить выбор. ШЕСТОЕ место в файле, где пишется settings.rates, —
+ *  и оно, как остальные пять, записывает в историю ДО присваивания:
+ *  «каким было» перестаёт быть таким в момент присваивания (хрупкое
+ *  место 55).
+ *
+ *  ПОРЯДОК ЗДЕСЬ НЕСУЩИЙ, и вот почему именно такой:
+ *    1. курсы и удаления — они набраны в СТАРОЙ базе и выражены в ней;
+ *    2. набор — новая база уже в нём, потому что базой становится только
+ *       отмеченная валюта;
+ *    3. смена базы — последней, существующим applyBaseChange(), который
+ *       перевыразит в новой базе и только что записанные курсы тоже.
+ *  Поменяй 1 и 3 местами — набранное «1 XYZ = 4.00 AED» осталось бы
+ *  числом 4.00 и прочиталось бы как TJS.
+ *
+ *  Возвращает: '' — сохранять нечего; 'base' — применено И база сменилась
+ *  (applyBaseChange сам сделал commit); 'ok' — применено, коммит на
+ *  вызывающем. */
+function curPickApply(convert){
+  var d = curPickDraft, list = curPickOn(), c;
+  var base = curBaseFor(list, d.base);
+  if (!base) return '';                    /* пустой набор не сохраняется */
+  if (curPickBaseReady()) return '';       /* и основная без курса — тоже */
+  var old = curNorm(state.settings.baseCurrency);
+  if (d.setup){
+    state.settings.baseCurrency = base;
+    state.settings.sumCur = base;
+    state.settings.lastTxCur = base;
+  }
+  for (c in d.rates) if (own(d.rates, c) && c !== state.settings.baseCurrency){
+    var had = own(state.settings.rates, c) ? state.settings.rates[c] : null;
+    if (had === null) rateLogAdd(c, d.rates[c]); else rateLogEdit(c, had, d.rates[c]);
+    state.settings.rates[c] = d.rates[c];
+  }
+  for (c in d.del) if (own(d.del, c) && own(state.settings.rates, c)){
+    rateLogDel(c, state.settings.rates[c]);
+    delete state.settings.rates[c];
+  }
+  /* Набор — ровно отмеченное. Базу сюда БОЛЬШЕ НЕ ПОДМЕШИВАЕМ: она и так
+     одна из отмеченных, а прежняя подмешка была третьим местом запрета —
+     она возвращала в набор валюту, галочку с которой только что сняли. */
+  state.settings.curActive = list;
+  /* Выбор, переставший быть активным, сбрасывается на безопасное
+     умолчание: мёртвая ссылка на экране обещает валюту, которой в списке
+     уже нет (требование 2.3, допущение A5). Спрашиваем БУДУЩИЙ набор
+     (list), а не curActiveOf(): база в документе ещё прежняя. */
+  if (state.settings.displayCurrency !== '*' &&
+      list.indexOf(curNorm(state.settings.displayCurrency)) < 0)
+    state.settings.displayCurrency = '*';
+  if (list.indexOf(curNorm(state.settings.sumCur)) < 0)
+    state.settings.sumCur = base;
+  ui.form.rate = ratePairDraft();   /* набор изменился — поля перечитываются */
+  /* Формы перечитывают валюту оттуда же, откуда читали всегда, — из своих
+     *DefaultCur(). Без сброса в открытой форме осталась бы валюта, которую
+     только что выключили, и сохранение записало бы её. */
+  resetForms();
+  if (!d.setup && base !== old){
+    /* ++++++ ACTIVE CURRENCIES ++++++ смену базы делает ТА ЖЕ функция, что
+       делала её всегда: пересчёт сумм, перевыражение курсов, перевод
+       снимков и запись в историю живут внутри неё, и второго такого места
+       быть не должно. Окно — новая дверь к ней, а не второй механизм. */
+    applyBaseChange(base, !!convert);
+    return 'base';
+  }
+  return 'ok';
+}
+
+/** Довести сохранение до конца — спросив о судьбе сумм, если база
+ *  меняется. Вопрос ТОТ ЖЕ, что задаёт смена базы всегда: «пересчитать»
+ *  сохраняет величину, «переименовать» оставляет числа. Молча выбрать за
+ *  владельца нельзя — оба ответа честны, и выбор его.
+ *
+ *  Спрашиваем ДО применения, а применяем одним куском после ответа: иначе
+ *  «Отмена» в вопросе оставила бы набор сохранённым, а базу прежней —
+ *  состояние, которого окно не обещало. */
+function curPickFinish(){
+  var ch = curPickBaseChange();
+  var money = ch && (actProducts().length || actTx().length || actPay().length);
+  if (!money){ curPickDone(curPickApply(false)); return; }
+  /* Курс берётся С УЧЁТОМ ЧЕРНОВИКА: валюта могла быть заведена в этом же
+     окне, и тогда rateOf() её ещё не знает — вопрос напечатал бы «= 0». */
+  var r = curPickRateOf(ch.to);
+  dialog({
+    title: tr('dlg.baseTitle', { cur: ch.to }),
+    /* ++++++ ACTIVE CURRENCIES ++++++ порядок здесь и есть объяснение:
+       вопрос → пример на своей сумме → что выбрать → цена выбора
+       (baseWarnHTML: округление и снимки курсов). Предупреждения остаются
+       последними и не тронуты ни словом. */
+    html:  tr('dlg.baseBody', { old: esc(ch.from), 'new': esc(ch.to),
+                                rate: esc(trimNum(r)) }) +
+           baseExHTML(ch.to, r) +
+           tr('dlg.baseAdvise', { 'new': esc(ch.to) }) +
+           baseWarnHTML(ch.to),
+    buttons: [{ key:'relabel', label: tr('dlg.baseRelabel') },
+              { key:'convert', label: tr('dlg.baseConvert'), variant:'primary' }]
+  }).then(function(k){
+    if (!k){ curPickDraft = null; render(); return; }   /* не применяем НИЧЕГО */
+    curPickDone(curPickApply(k === 'convert'));
+  });
+}
+
+/** Что делать после применения. Отдельной функцией, потому что зовётся из
+ *  двух мест — с вопросом о базе и без него, — а «кто коммитит» решается
+ *  один раз: при смене базы это уже сделал applyBaseChange. */
+function curPickDone(res){
+  var again = curPickDraft && curPickDraft.setup && !res;
+  curPickDraft = null;
+  if (res === 'ok') commit();
+  else if (res !== 'base') render();
+  if (again) curPickSheet();
+}
+
+/** Окно. На первом запуске у него нет «Отмены» и оно открывается заново,
+ *  пока валюта не выбрана: закрыть его без выбора значило бы остаться без
+ *  валюты, то есть без возможности записать хоть что-нибудь. */
+function curPickSheet(){
+  var setup = !curSetupDone(state.settings);
+  curPickDraft = { codes: curPickCodes(state.settings), on: {}, rates: {}, del: {},
+                   code:'', rate:'', err:'', setup: setup, base:'' };
+  curActiveOf(state.settings).forEach(function(c){ curPickDraft.on[c] = true; });
+  curPickDraft.base = curBaseFor(curPickOn(), state.settings.baseCurrency);
+  dialog({ title: tr(setup ? 'cp.titleFirst' : 'cp.title'), html: curPickHTML(),
+    noCancel: setup, cancelLabel: tr('w.cancel'),
+    buttons: [{ key:'ok', label: tr(setup ? 'cp.start' : 'w.save'), variant:'primary' }] })
+    .then(function(k){
+      if (k === 'ok'){ curPickFinish(); return; }
+      curPickDraft = null;
+      render();
+      if (setup) curPickSheet();
+    });
+  /* Кнопка может быть недоступна с самого начала — на первом запуске не
+     отмечено ничего. Ставится ПОСЛЕ dialog(): раньше листа нет в дереве. */
+  curPickSaveBtn();
+}
+/* ++++++ /CUR PICKER ++++++ */
 /* ---- пять разделов: тела перенесены из прежнего viewMore() ---- */
 function acctCur(){
   var h = '';
-  if (1){
-    h += '<section class="card"><div class="t">' + tr('hdr.base') + '</div><div class="b">' +
-      field({ label: tr('cur.baseIs'), control: select({ f:'', id:'baseCurrencySel',
-        value: state.settings.baseCurrency,
-        items: currencyCodes().map(function(c){ return [c, c]; }) }),
-        hint: tr('cur.baseHint') }) +
-      field({ label: tr('hdr.peopleExtra'), control: select({ f:'', id:'displayCurrencySel',
-        value: state.settings.displayCurrency,
-        items: [['*', tr('sel.allCurrencies')]].concat(currencyCodes().map(function(c){ return [c, c]; })) }),
-        hint: tr('cur.peopleHint') }) +
-      '</div></section>';
-    /* ++++++ BASE UNDO ++++++ строка есть только пока возврат точен */
-    h += baseUndoHTML();
-    /* ++++++ RATELOG FOLD ++++++ история курсов стояла здесь и занимала
-       экран постоянно, хотя нужна редко. Она ушла в самый низ раздела —
-       см. конец этой ветки. */
-    /* ++++++ RATE PAIR ++++++ два поля от доллара и шесть направлений.
-       Строки USD и TJS с их листом правки отсюда ушли: два способа править
-       одно и то же число на одном экране расходятся при первой же правке
-       (та же причина, по которой у напоминаний нет своего списка). */
+  var act = curActiveOf(state.settings), many = act.length > 1;
+  /* Порядок в СЕЛЕКТАХ — тот же, что во всех формах приложения: база
+     первой, остальные по алфавиту (currencyCodes). Порядок окна выбора
+     другой и верен ДЛЯ ОКНА: там десять валют, и алфавит читается хуже.
+     Два порядка на одном экране были бы ошибкой; здесь их нет — окно это
+     отдельный экран, а поля курса идут порядком набора, потому что их
+     порядок задаёт якорь, а не алфавит. */
+  var sel = currencyCodes();
+  /* ++++++ ACTIVE CURRENCIES ++++++ ОШИБКА РАЗДЕЛА ПЕЧАТАЕТСЯ ЗДЕСЬ.
+     Раньше её печатала форма «Добавить валюту» внизу — единственное место
+     на экране, где стоял errNote(). Форма ушла, и вместе с ней ушло бы
+     сообщение «курс должен быть числом больше нуля» после неудачного
+     «Сохранить курсы»: ui.err выставлялся, а показать его было негде.
+     Найдено прогоном (test-ratepair, требование 8), а не чтением. */
+  h += errNote();
+  /* ++++++ ACTIVE CURRENCIES ++++++ шестерёнка стоит В ЗАГОЛОВКЕ карточки,
+     справа, и заголовок становится строкой только из-за неё — тот же
+     приём, которым `<h3>` листа стал строкой ради крестика: без кнопки
+     разметка прежняя до байта. */
+  h += '<section class="card"><div class="t hx"><span>' + tr('hdr.base') + '</span>' +
+    '<button type="button" class="gear" data-act="cur-pick" aria-label="' +
+      esc(tr('cp.title')) + '" title="' + esc(tr('cp.title')) + '">' +
+      ico('gear') + '</button></div><div class="b">' +
+    /* ++++++ ACTIVE CURRENCIES ++++++ БАЗУ НАЗНАЧАЮТ В ОКНЕ ВЫБОРА, и
+       селекта здесь больше нет. Он был вторым способом сделать то же
+       самое, и стоил четырёх шагов там, где хватает одного: чтобы уйти с
+       доллара на сомони, приходилось отметить обе валюты, сохранить,
+       сменить базу селектом, вернуться в окно и снять доллар. Теперь всё
+       это — одно посещение окна, а экран печатает ФАКТ. */
+    '<div class="f"><span>' + tr('cur.baseIs') + '</span>' +
+      '<div class="curbase-is">' + esc(state.settings.baseCurrency) +
+        ' — ' + esc(curName(state.settings.baseCurrency)) + '</div>' +
+      '<small class="hint">' + tr('cur.baseHint') + '</small></div>';
+  /* Полей, которых при ОДНОЙ валюте нет вовсе: выбирать не из чего, а
+     карточка с единственным вариантом обещает выбор, которого нет
+     (область 44). */
+  if (many){
+    h += field({ label: tr('cur.buyIs'), control: select({ f:'', id:'buyCurSel',
+      value: curBuyCur(state.settings),
+      items: [['', tr('cur.buyNone')]].concat(sel.map(function(c){ return [c, c]; })) }),
+      hint: tr('cur.buyHint') });
+    h += field({ label: tr('hdr.peopleExtra'), control: select({ f:'', id:'displayCurrencySel',
+      value: state.settings.displayCurrency,
+      items: [['*', tr('sel.allCurrencies')]].concat(sel.map(function(c){ return [c, c]; })) }),
+      hint: tr('cur.peopleHint') });
+  }
+  h += '</div></section>';
+  /* ++++++ BASE UNDO ++++++ строка есть только пока возврат точен */
+  h += baseUndoHTML();
+  /* ++++++ ACTIVE CURRENCIES ++++++ ТРИ БЛОКА ПОЯВЛЯЮТСЯ ВМЕСТЕ И
+     ИСЧЕЗАЮТ ВМЕСТЕ. Условие одно — активна больше чем одна валюта:
+     курс одной валюты к самой себе равен единице, и говорить тут не о
+     чем (требование 6, AC5).
+
+     Карточка «Прочие валюты» и форма «Добавить валюту» отсюда УБРАНЫ:
+     заводят и удаляют валюту теперь в окне выбора, и второго способа
+     сделать это на одном экране быть не должно. */
+  if (many){
     h += ratePairCardHTML();
     h += ratePairTableCardHTML();
-    /* Прочие валюты правятся как и правились, и строка базовой валюты
-       остаётся с ними — она и стояла в этой карточке. Карточка печатается
-       ТОЛЬКО когда прочие валюты есть: одна строка «1 AED = 1 AED» рядом с
-       таблицей из шести — рассказ о пустоте (область 44), а базу и без неё
-       называет карточка выше. */
-    var rows = '', others = 0;
-    currencyCodes().forEach(function(c){
-      if (c === state.settings.baseCurrency){
-        rows += row({ k: '1 ' + esc(c), sub: tr('cur.isBase'), v: '= 1 ' + esc(c) });
-        return;
-      }
-      if (ratePairOwns(c)) return;
-      others++;
-      rows += row({ k: '1 ' + esc(c), sub: tr('cur.manual'),
-        v: '= ' + esc(trimNum(state.settings.rates[c])) + ' ' + esc(state.settings.baseCurrency),
-        act:'cur-edit', arg:c });
-    });
-    if (others){
-      /* Названо прямо: правка полей двигает и их отношение к доллару,
-         потому что их курс задан к БАЗЕ, а не к доллару. Промолчать об
-         этом значило бы дать разделу тихо переоценивать то, чего он не
-         показывает. ++++++ INFO ++++++ сказано теперь за иконкой самой
-         карточки: текст объясняет её, а не весь раздел. */
-      h += listCard('<span>' + tr('cur.rates') + '</span>' + infoBtn('cur.rates'), rows);
-    }
-    h += '<form id="fCur" novalidate>' + errNote() + '<div class="f"><div class="two">' +
-      '<label class="f" style="margin:0"><span>' + tr('cur.code') + '</span>' +
-        input({ f:'cur.code', value:ui.form.cur.code, ph:'EUR' }) + '</label>' +
-      '<label class="f" style="margin:0"><span>' +
-        tr('cur.rateNew', {base: esc(state.settings.baseCurrency)}) + '</span>' +
-        input({ f:'cur.rate', value:ui.form.cur.rate, mode:'decimal', ph:'4.00' }) + '</label>' +
-      '</div></div>' + saveBtn(tr('cur.add')) + '</form>';
-    /* ++++++ REPORT SAYS ++++++ R16. Что хранимые суммы от правки курса
-       не меняются и что показанные — меняются, сказано по-прежнему; с
-       2026-09-01 это сказано за иконкой у заголовка раздела, а не
-       абзацем под формой. Ни одно из двух предложений не потеряно и не
-       переписано — см. реестр INFO. */
-    /* ++++++ RATELOG FOLD ++++++ последней в разделе и свёрнутой. Карточка
-       по-прежнему есть только когда есть что показать — rateLogHTML()
-       возвращает '' на пустой истории, и её проверка не тронута. */
-    h += rateLogHTML();
   }
+  /* ++++++ RATELOG FOLD ++++++ последней в разделе и свёрнутой. Карточка
+     по-прежнему есть только когда есть что показать. */
+  h += rateLogHTML();
   return h;
 }
 function acctBackup(){
@@ -17394,6 +18597,16 @@ document.addEventListener('input', function(e){
      набранной букве. */
   var sk = el.getAttribute && el.getAttribute('data-s');
   if (sk){ ui[sk] = el.value; liveSearch(sk); return; }
+  /* ++++++ ACTIVE CURRENCIES ++++++ поля окна выбора помечены data-f вида
+     «cp.…» и пишут в ЧЕРНОВИК окна, а не в ui.form: наполовину заполненному
+     окну нечего делать в документе, и «Отмена» обязана не оставить следа.
+     Перерисовки здесь нет вовсе — окно перерисовывается только по нажатию,
+     иначе курсор уезжал бы с каждой буквой. */
+  var cf = el.getAttribute && el.getAttribute('data-f');
+  if (cf && cf.indexOf('cp.') === 0){
+    if (curPickDraft) curPickDraft[cf.slice(3)] = el.value;
+    return;
+  }
   /* ++++++ DISCOUNT ++++++ поле процента помечено data-d, а не data-f:
      оно пишет не в форму, а в ЦЕНУ, потому что источник истины один и это
      цена. Ветка стоит после проверки на SELECT (область 50) и до разбора
@@ -17429,6 +18642,25 @@ document.addEventListener('change', function(e){
      тот же приём, что у liveSearch() с полем поиска. */
   var rk = el.getAttribute && el.getAttribute('data-r');
   if (rk){ ui[rk] = el.value; remPaint(); return; }
+  /* ++++++ ACTIVE CURRENCIES ++++++ СЕЛЕКТ внутри окна выбора
+     перерисовывает ОКНО, а не страницу: render() не трогает #modalRoot
+     вовсе (область 14), зато снёс бы экран под ним.
+     ТЕКСТОВОЕ ПОЛЕ ОКНА НЕ ПЕРЕРИСОВЫВАЕТ НИЧЕГО, и это не мелочь: браузер
+     шлёт change при потере фокуса, то есть ровно в тот миг, когда человек
+     переходит из «Кода» в «Курс». Перерисовка там пересоздаёт оба поля, и
+     набранное в следующем пропадает — курс оказывался пустым, а окно
+     говорило «курс должен быть числом больше нуля». Найдено прогоном, и
+     это то же правило, по которому live() никогда не трогает поле под
+     кареткой (область 12).
+     СЕЛЕКТОВ В ОКНЕ НЕТ ВОВСЕ: основную валюту назначают нажатием в
+     строке. Ветка «это select — перерисовать окно» стояла здесь ради
+     прежнего селекта базы и вместе с ним убрана, чтобы не остаться
+     мёртвым кодом, который читается как «где-то тут есть селект». */
+  var cf0 = el.getAttribute && el.getAttribute('data-f');
+  if (cf0 && cf0.indexOf('cp.') === 0){
+    if (curPickDraft) curPickDraft[cf0.slice(3)] = el.value;
+    return;
+  }
   var key = el.getAttribute && el.getAttribute('data-f');
   if (!key) return;
   if (key === 'product.cur'){ reexpressInvoice(el.value); render(); return; }
@@ -17500,7 +18732,6 @@ document.addEventListener('submit', function(e){
   else if (id === 'fPay') savePay();
   else if (id === 'fRet') saveRet();
   else if (id === 'fExp') saveExp();         /* ++++++ EXPENSES ++++++ */
-  else if (id === 'fCur') addCurrency();
   else if (id === 'fRate') saveRatePair();   /* ++++++ RATE PAIR ++++++ */
 });
 
@@ -17796,22 +19027,12 @@ function savePay(){
   commit();
 }
 
-function addCurrency(){
-  ui.err = '';
-  var code = String(ui.form.cur.code || '').toUpperCase().replace(/\s/g,'');
-  var rate = parseRate(ui.form.cur.rate);
-  if (!/^[A-Z0-9]{1,6}$/.test(code)){ ui.err = tr('err.curCode'); render(); return; }
-  if (code === state.settings.baseCurrency){ ui.err = tr('err.curBase', {cur: code}); render(); return; }
-  if (rate === null){ ui.err = tr('err.curRate'); render(); return; }
-  /* ++++++ RATE LOG ++++++ прежнее значение читается ДО присваивания:
-     форма добавления служит и правкой, если код уже есть. */
-  var had = own(state.settings.rates, code) ? state.settings.rates[code] : null;
-  if (had === null) rateLogAdd(code, rate); else rateLogEdit(code, had, rate);
-  state.settings.rates[code] = rate;
-  ui.form.cur = { code:'', rate:'' };
-  toast(tr('msg.rateSaved', {cur: code, rate: trimNum(rate), base: state.settings.baseCurrency}), 'ok');
-  commit();
-}
+/* ++++++ ACTIVE CURRENCIES ++++++ addCurrency() стояла здесь и печаталась
+   формой внизу раздела «Валюты и курсы». Валюту теперь заводят в окне
+   выбора — там же, где её включают и удаляют: два способа сделать одно и
+   то же на одном экране расходятся при первой же правке. Проверка кода и
+   курса не потеряна, она переехала в curPickAdd() и стала строже на одно
+   условие (код ровно из трёх букв). */
 
 /* ================================================== СВЯЗЬ И ЛИСТЫ == */
 var ICO_PHONE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"' +
@@ -17897,42 +19118,12 @@ function paySheet(y){
       if (k === 'del') deletePay(y.id);
     });
 }
-function rateSheet(code){
-  dialog({ title: tr('cur.rateTitle', {cur: esc(code)}),
-    html: '<div class="f"><span>' + tr('cur.rateLabel2', {cur: esc(code),
-            base: esc(state.settings.baseCurrency)}) + '</span>' +
-          '<input id="rateIn" type="text" inputmode="decimal" value="' +
-            esc(trimNum(state.settings.rates[code])) + '"></div>' +
-          '<div class="body">' + tr('cur.rateNote') + '</div>',
-    cancelLabel: tr('w.cancel'),
-    buttons: [{key:'del', label: tr('w.delete'), variant:'danger'},
-              {key:'ok', label: tr('w.save'), variant:'primary'}],
-    onOpen: null })
-    .then(function(k){
-      if (k === 'del'){ deleteCurrency(code); return; }
-      if (k !== 'ok') return;
-      var n = $('rateIn');
-      var v = n ? parseRate(n.value) : null;
-      if (v === null){ toast(tr('err.curRate'), 'warn'); return; }
-      /* ++++++ RATE LOG ++++++ было — до того, как стало */
-      rateLogEdit(code, state.settings.rates[code], v);
-      state.settings.rates[code] = v;
-      toast(tr('msg.rateUpdated', {cur: code, rate: trimNum(v), base: state.settings.baseCurrency}), 'ok');
-      commit();
-    });
-}
-function deleteCurrency(code){
-  confirmBox(tr('dlg.delCurTitle', {cur: esc(code)}), tr('dlg.delCurBody'), tr('w.delete'), true)
-    .then(function(okd){
-      if (!okd) return;
-      /* ++++++ RATE LOG ++++++ было — до того, как исчезло */
-      rateLogDel(code, state.settings.rates[code]);
-      delete state.settings.rates[code];
-      if (state.settings.displayCurrency === code) state.settings.displayCurrency = '*';
-      toast(tr('msg.curRemoved', {cur: code}), 'ok');
-      commit();
-    });
-}
+/* ++++++ ACTIVE CURRENCIES ++++++ rateSheet() и deleteCurrency() стояли
+   здесь и открывались по строке карточки «Прочие валюты», которой больше
+   нет. Курс правится полями раздела, валюта удаляется в окне выбора — и
+   удаляется только та, которой ничего не записано (curDeleteCheck).
+   Прежнее удаление спрашивало подтверждение и не спрашивало, пользуются
+   ли валютой: запись, сделанная в ней, теряла вторую строку молча. */
 
 /* ==================================================== РЕДАКТИРОВАНИЕ == */
 function startProductEdit(id){
@@ -18438,7 +19629,13 @@ function handleAct(act, arg, e, srcEl){
   }
   /* ++++++ RATELOG FOLD ++++++ ничего не сохраняет и ничего не считает */
   if (act === 'ratelog'){ rateLogToggle(); return; }
-  if (act === 'cur-edit'){ rateSheet(arg); return; }
+  /* ++++++ ACTIVE CURRENCIES ++++++ окно выбора валют. Четыре действия
+     вместо прежнего cur-edit: открыть, отметить, завести, удалить. */
+  if (act === 'cur-pick'){ curPickSheet(); return; }
+  if (act === 'cp-toggle'){ curPickToggle(arg); return; }
+  if (act === 'cp-base'){ e.stopPropagation(); curPickMakeBase(arg); return; }
+  if (act === 'cp-del'){ e.stopPropagation(); curPickDelete(arg); return; }
+  if (act === 'cp-add'){ curPickAdd(); return; }
   if (act === 'export'){ exportBackup(); return; }
   if (act === 'import-click'){ $('importInput').click(); return; }
   if (act === 'reset'){ eraseAll(); return; }
@@ -18539,28 +19736,12 @@ document.addEventListener('change', function(e){
     commit();
     return;
   }
-  if (el.id === 'baseCurrencySel'){
-    var target = el.value, old = state.settings.baseCurrency;
-    if (target === old) return;
-    var r = rateOf(target);
-    if (!r){ el.value = old; return; }
-    var hasMoney = actProducts().length || actTx().length || actPay().length;
-    if (!hasMoney){ applyBaseChange(target, false); return; }
-    dialog({
-      title: tr('dlg.baseTitle', {cur: target}),
-      /* ++++++ DIALOGS SAY ++++++ R32. rateSnap помнит базу, при которой
-         снят, поэтому смена базы обесценивает все снимки разом, а
-         settings.sumCur за базой не следует. Обе вещи остаются как были —
-         меняется только то, что о них сказано. */
-      html:  tr('dlg.baseBody', {old: esc(old), 'new': esc(target), rate: esc(trimNum(r))}) +
-             baseWarnHTML(target),
-      buttons:[{key:'relabel', label: tr('dlg.baseRelabel')},
-               {key:'convert', label: tr('dlg.baseConvert'), variant:'primary'}]
-    }).then(function(k){
-      if (!k){ render(); return; }
-      applyBaseChange(target, k === 'convert');
-    });
-  }
+  /* ++++++ ACTIVE CURRENCIES ++++++ СЕЛЕКТА БАЗОВОЙ ВАЛЮТЫ БОЛЬШЕ НЕТ, и
+     этот обработчик ушёл вместе с ним: оставленный, он читался бы как
+     «где-то есть такой селект» и пережил бы следующую правку экрана.
+     Всё, что он делал, делает curPickFinish() — тот же вопрос теми же
+     ключами словаря, та же проверка «есть ли деньги», тот же
+     applyBaseChange(). Функция смены базы одна, и дверь к ней одна. */
 }, false);
 $('importInput').addEventListener('change', function(){
   if (this.files && this.files[0]) importBackup(this.files[0]);
@@ -19398,6 +20579,26 @@ function boot(){
   /* ++++++ COST HISTORY ++++++ после первой отрисовки: banner() кладёт
      узел в #alerts, а render() его не переписывает. */
   loadNotePaint();
+  /* ++++++ ACTIVE CURRENCIES ++++++ валюта не выбрана — открываем окно
+     выбора СРАЗУ после первой отрисовки, там же и по той же причине, что
+     loadNotePaint() и xtabWatch(): до неё #modalRoot пуст. Закрыть окно
+     нечем, пока выбор не сделан: без валюты записать нельзя ничего.
+
+     УСЛОВИЕ — «loaded», И ЭТО НЕ ПЕДАНТИЗМ. Документ, который лежит в
+     хранилище, но НЕ ПРОЧИТАН, тоже оставляет базу пустой: state остаётся
+     умолчанием. Без этой проверки поверх полосы «данные повреждены»
+     вставало бы окно первого запуска, и первое же «Начать работу»
+     записало бы новый документ ПОВЕРХ нечитаемого — то самое, что R6
+     запретил делать молча. Найдено прогоном: test-alerts.mjs портит
+     документ нарочно и ждёт полосу, а получал окно.
+
+     Условие поэтому не «loaded», а «не было ОТКАЗА ЧТЕНИЯ»:
+     loadFromStorage() отвечает false и когда документа нет вовсе — то есть
+     при настоящем первом запуске, — и когда документ есть, но не читается.
+     Различает их только сам ключ в хранилище. */
+  var curHadDoc = false;
+  try { curHadDoc = !!window.localStorage.getItem(STORAGE_KEY); } catch(e){}
+  if (!curSetupDone(state.settings) && !(curHadDoc && !loaded)) curPickSheet();
   /* ++++++ TWO WINDOWS ++++++ подписка ПОСЛЕ первой отрисовки, по той же
      причине, что и загрузочная полоса выше: banner() кладёт узел в #alerts. */
   xtabWatch();
@@ -19486,7 +20687,22 @@ window.GoodsTracker = {
   /* ++++++ RATE PAIR ++++++ набор проверок спрашивает арифметику напрямую */
   ratePair: { of: ratePairOf, want: ratePairWant, vals: ratePairVals,
               field: ratePairField, fmt: ratePairFmt, owns: ratePairOwns,
-              ANCHOR: RATE_ANCHOR, TO: RATE_TO },
+              /* ++++++ ACTIVE CURRENCIES ++++++ якорь и список полей теперь
+                 вычисляются, поэтому и здесь они ФУНКЦИИ: константа
+                 отвечала бы значением на момент загрузки страницы, а набор
+                 меняется в работе. */
+              get ANCHOR(){ return curAnchor(state.settings); },
+              get TO(){ return curRateFields(state.settings); } },
+  /* ++++++ ACTIVE CURRENCIES ++++++ набор проверок спрашивает набор валют
+     напрямую — теми же функциями, которыми его читает экран. */
+  cur: { active: curActiveOf, migrate: curMigrate, anchor: curAnchor,
+         fields: curRateFields, pairs: curPairs, cross: curCross,
+         single: curSingle, setupDone: curSetupDone, secWanted: curSecWanted,
+         buyCur: curBuyCur, buyDefault: curBuyDefault,
+         usedBy: curUsedBy, deleteCheck: curDeleteCheck,
+         pickCodes: curPickCodes, order: curOrder, codeOk: curCodeOk,
+         mainMinor: recMainMinor, twoLines: recTwoLines,
+         POPULAR: CUR_POPULAR },
   /* ++++++ PRODUCT SNAPS ++++++ набор проверок спрашивает «чей снимок» напрямую */
   prodSnaps: { prod: prodSnapOf, batch: batchSnapOf, live: snapLive,
                each: snapEach, line: ratesLine },
