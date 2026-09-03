@@ -3737,9 +3737,18 @@ var SECTION_CUR = {
      settings.sumCur. Это по-прежнему ЕДИНСТВЕННОЕ место, где решается, чем
      печатает вкладка, — просто теперь оно спрашивает документ, а не себя. */
   summary:      function(){ return [dcCur()]; },
-  products:     ['AED'],          /* purchase side: cost/unit, shipment totals, stock value      */
-  transactions: ['USD','TJS'],    /* first = main figure, rest = secondary lines                 */
-  payments:     ['USD','TJS'],
+  /* ++++++ MONEY BY RECORD ++++++ ЖЁСТКИХ ПРАВИЛ ВКЛАДОК БОЛЬШЕ НЕТ.
+     Здесь стояло «Товары — AED, Выдачи и Оплаты — USD и TJS»: три
+     валюты, вписанные в код в тот день, когда база была AED. Они
+     означали пересчёт ПО СЕГОДНЯШНЕМУ КУРСУ на каждой отрисовке —
+     то есть одна и та же выдача печаталась на вкладке одним числом,
+     а на «Сводке», которая читает ЗАМОРОЖЕННЫЙ курс записи, другим.
+     Пустой список читается как «правила вкладки нет»: curSecWanted()
+     отдаёт на нём базовую валюту, и это её единственный смысл —
+     второго способа сказать «базовая» здесь заводить нельзя. */
+  products:     [],
+  transactions: [],
+  payments:     [],
   /* ++++++ EXPENSES ++++++ расходы читаются в валюте «Сводки»: строка
      «Прочие расходы» и итог секции — одно и то же число, и в разных
      валютах их читать нельзя. Запись здесь нужна ради полосы «нет курса»
@@ -3828,8 +3837,14 @@ function secWarnHTML(sec){
 /* ---- entry currencies (A3: the Payments form offers USD and TJS only) ---- */
 /** the currencies the payment form accepts, rate or no rate (no rate is blocked at save) */
 function payEntryCodes(){
-  var w = secWanted('payments');
-  return w.length ? w : [state.settings.baseCurrency];
+  /* ++++++ MONEY BY RECORD ++++++ ВВОД спрашивает набор, а не показ.
+     Здесь стояло secWanted('payments') — правило ПОКАЗА вкладки; пока
+     оно перечисляло USD и TJS, ввод работал по совпадению. Теперь показ
+     у вкладок базовый, и то же выражение оставило бы владельца с одной
+     валютой в форме оплаты. Набор валют — единственный ответ на вопрос
+     «чем можно пользоваться», и он уже есть. */
+  var act = curActiveOf(state.settings);
+  return act.length ? act : [state.settings.baseCurrency];
 }
 function payAllows(code){ return payEntryCodes().indexOf(code) > -1; }
 /** the currency this person normally settles in, limited to what the form accepts */
@@ -4473,8 +4488,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.5.1';
-var APP_BUILD = '2026-09-03T09:53:26.483Z';
+var APP_VERSION = '1.6.0';
+var APP_BUILD = '2026-09-03T13:07:59.569Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -13372,6 +13387,31 @@ function lastTxCurFor(personId){
    «Люди» остаётся на старом пути bothMoney() (база + доп. валюта),
    все остальные — на валютах секции. Это единственные два пути в файле. */
 function secV(sec, cents){ return sec === 'people' ? bothMoney(cents) : secMoney(sec, cents); }
+/* ++++++ MONEY BY RECORD ++++++ КАК ПЕЧАТАЕТСЯ СУММА ЗАПИСИ.
+
+   Главная строка — валюта, в которой запись НАБРАНА, и числом, которое
+   тогда набрали: entryMinor (у выдачи — умноженное на количество).
+   Пересчёта по курсу здесь нет ВОВСЕ, поэтому правка курса не двигает её
+   ни на копейку, и «замороженный курс» тут не обещание, а свойство.
+
+   Под ней — та же сумма в БАЗОВОЙ валюте, то есть хранимое число.
+   Максимум две строки; третьей валюты не бывает (решение владельца).
+
+   Отсюда же следует то, ради чего Часть Б и затевалась: на вкладке не
+   осталось ни одного курса, поэтому разойтись с «Сводкой», которая
+   читает замороженный курс записи, ей больше нечем.
+
+   qty передаётся ЯВНО: у выдачи провенанс — цена ЗА ШТУКУ, у оплаты и
+   расхода — сумма целиком. Напечатать entryMinor выдачи как сумму —
+   значит показать цену одной штуки под видом всей выдачи, и никакой
+   ошибки нигде. Угадывать по полям записи нельзя. */
+function recV(cents, rec, qty){
+  var base = state.settings.baseCurrency, m = recMainMinor(rec, qty);
+  if (m === null || !recTwoLines(state.settings, rec))
+    return money(cents, base) + ' ' + esc(base);
+  return fmtMinor(m) + ' ' + esc(recEntry(rec).cur) +
+    '<div class="conv">' + money(cents, base) + ' ' + esc(base) + '</div>';
+}
 function secOne(sec, cents){
   if (sec !== 'people') return secInline(sec, cents);
   var b = state.settings.baseCurrency, out = [money(cents, b) + ' ' + esc(b)];
@@ -15078,7 +15118,7 @@ function viewProductCard(){
     var per = personById(t.personId);
     who += row({ lead: av(per ? per.name : '?'), k: esc(per ? per.name : '—'),
       sub: fmtDateLong(t.date) + ' · ' + nq(t.qty, 'unit'),
-      v: secV('transactions', t.qty * t.unitPriceCents) });
+      v: recV(t.qty * t.unitPriceCents, t, t.qty) });
   });
   h += listCard(tr('prod.card.whoTook') + ' · ' + tr('sum.inCur', {note: secNote('transactions') || '—'}), who);
   h += '<div class="btns">' + btn(tr('prod.editProduct'), 'product-edit', 'ghost', p.id) +
@@ -16233,7 +16273,7 @@ function txListHTML(){
     rows += row({ lead: avsq(units(t.qty)), k: esc(p ? p.name : '—'),
       sub: esc(per ? per.name : '—') + ' · ' + fmtDateLong(t.date),
       sub2: discMarkHTML(discTx(t), function(c){ return secBare(sec, c); }),
-      v: secV(sec, t.qty * t.unitPriceCents), act:'tx-open', arg:t.id });
+      v: recV(t.qty * t.unitPriceCents, t, t.qty), act:'tx-open', arg:t.id });
   });
   return listCard('', rows);
 }
@@ -16331,9 +16371,11 @@ function payListHTML(){
   hits.forEach(function(y){
     var per = personById(y.personId);
     var sub = fmtDateLong(y.date) + (y.note ? ' · ' + esc(y.note) : '');
-    if (hasEntry(y)) sub += ' · ' + entryInline(y);
+    /* ++++++ MONEY BY RECORD ++++++ набранная сумма УШЛА В ГЛАВНУЮ СТРОКУ,
+       поэтому «· 50.00 USD» в подписи стало бы вторым тем же числом на
+       той же строке. Провенанс печатается один раз и крупно. */
     rows += row({ lead: av(per ? per.name : '?'), k: esc(per ? per.name : '—'), sub: sub,
-      v: secV(sec, y.amountCents), act:'pay-open', arg:y.id });
+      v: recV(y.amountCents, y), act:'pay-open', arg:y.id });
   });
   return listCard('', rows);
 }
@@ -16777,13 +16819,13 @@ function expListHTML(){
   var hits = expHits(), rows = '';
   hits.forEach(function(x){
     var sub = fmtDateLong(x.date) + (x.note ? ' · ' + esc(x.note) : '');
-    if (hasEntry(x)) sub += ' · ' + entryInline(x);
+    /* ++++++ MONEY BY RECORD ++++++ провенанс теперь в главной строке. */
     /* ++++++ EXPENSE LOT ++++++ на что отнесена запись — краткой пометкой
        рядом с курсом, ВТОРОЙ подписью: она переносится, а не обрезается,
        и длинное описание сверху её не съедает. */
     rows += row({ k: esc(tr('exp.cat.' + x.cat)), sub: sub,
       sub2: [expRateText(x), expPickText(x)].filter(function(t){ return !!t; }).join(' · '),
-      v: dcMoney(dcCents(x.amountCents, x.rateSnap)), act:'exp-open', arg:x.id });
+      v: recV(x.amountCents, x), act:'exp-open', arg:x.id });
   });
   return listCard(tr('tab.expenses'), rows);
 }
@@ -17279,10 +17321,9 @@ function viewLotCard(){
   var er = '';
   lotExpenses(lot).forEach(function(x){
     er += row({ k: esc(tr('exp.cat.' + x.cat)),
-      sub: fmtDateLong(x.date) + (x.note ? ' · ' + esc(x.note) : '') +
-           (hasEntry(x) ? ' · ' + entryInline(x) : ''),
+      sub: fmtDateLong(x.date) + (x.note ? ' · ' + esc(x.note) : ''),
       sub2: expSplitText(x),
-      v: secV(sec, x.amountCents), act:'exp-open', arg:x.id });
+      v: recV(x.amountCents, x), act:'exp-open', arg:x.id });
   });
   h += listCard(tr('lot.expenses'), er);
 
