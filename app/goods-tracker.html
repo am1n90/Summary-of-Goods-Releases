@@ -24,6 +24,7 @@
     --line:#e6e8ec; --line-2:#eef0f3;
     --ink:#0e1620; --ink-2:#48546a; --muted:#8a94a6;
     --accent:#2f5de0; --accent-ink:#fff; --accent-soft:#eaf0ff;
+    --field-in-card:#fff;
     /* Статусы. Два оттенка на смысл: --got/--owed для графики (нужно 3:1),
        --got-ink/--owed-ink для текста (нужно 4,5:1). Пара «бирюза/оранжевый»
        различима при дальтонизме (ΔE 58 протанопия, 77 дейтеранопия), и цветом
@@ -42,6 +43,7 @@
     --line:#232c37; --line-2:#1c242e;
     --ink:#e9eef5; --ink-2:#a9b5c5; --muted:#7b8698;
     --accent:#6d94ff; --accent-ink:#0b0f15; --accent-soft:#1a2440;
+    --field-in-card:#0b0f15;
     --got:#14b8a6;  --got-ink:#14b8a6;  --got-soft:#10302d;
     --owed:#f97316; --owed-ink:#f97316; --owed-soft:#3a2413;
     --neutral:#8b95a6; --neutral-soft:#222b35;
@@ -225,9 +227,124 @@
   .currow .curbase:hover{text-decoration:underline}
   /* Базовая валюта на экране — ФАКТ, а не поле: назначают её в окне. Вид
      тот же, что у значения поля, чтобы карточка не рассыпалась. */
-  .curbase-is{padding:11px 0;font-weight:600;color:var(--ink)}
+  /* ++++++ CURRENCY VAT ++++++ СТРОКА ОКНА ВЫБОРА ВАЛЮТ — ДВЕ СТРОКИ
+     ВМЕСТО ТРЁХ (решение владельца 2026-09-04).
+
+     Код и название стоят в ОДНУ строку — «TJS (Сомони)», — а «Сделать
+     основной» уходит под неё, с отступом под текст. На 320 px это
+     освобождает всю ширину карточки под название: раньше кнопка справа
+     съедала 124 px из 286, и «Российский рубль» обрывался многоточием.
+
+     КОД ОСТАЁТСЯ В <b>, а название — в <small>, и это не косметика:
+     пять наборов ищут строку валюты по `.row .k b`, сравнивая текст с
+     КОДОМ. Склей я их в одну подпись — сравнение молча перестало бы
+     находить строку, и сломалась бы смена базовой валюты. В одну
+     строку их сводит СТИЛЬ, а не разметка. */
+  /* ++++++ VAT IN PICKER ++++++ ВЫСОТА СТРОКИ ПОСТОЯННАЯ И ЗАДАНА ЧИСЛОМ.
+     Прежде её складывало содержимое, и отметка галочки добавляла 30 px —
+     список дёргался под пальцем. Гнездо .curslot есть у каждой строки,
+     даже пустое, а 64 px держит их вровень: без этого строка с полем
+     ставки выходила на 1 px выше соседней, и «постоянная» держалась на
+     округлении. Замерено, а не на глаз. */
+  .currow{flex-wrap:wrap;align-items:center;min-height:64px}
+  /* Высоту держал min-height:56px базового .row — отступы её не трогали
+     вовсе, поэтому она задаётся здесь заново. */
+  .currow > .row{padding-top:2px;padding-bottom:0;min-height:38px}
+  /* ++++++ VAT IN PICKER ++++++ ПОЛЕ СТАВКИ — ТО ЖЕ, ЧТО У ОСТАЛЬНОГО
+     ПРИЛОЖЕНИЯ. Своего оформления у него нет вовсе: класс .vatpct
+     уже описан выше (фон --surface, граница --line, скругление, фокус
+     акцентом, приглушённый суффикс) — тот самый, которым поле рисовала
+     карточка. Второй набор похожих свойств разошёлся бы с первым при
+     первой правке, как разошлись бы два поля для одной ставки.
+
+     Здесь только то, чего у карточки не было: знак «%» уезжает ВНУТРЬ
+     поля единицей измерения, а не отдельным символом снаружи. */
+  .currow .vatpct{position:relative;padding-right:8px}
+  /* Ниже общего поля на шесть пикселей — и это НЕ второй стиль, а тот же
+     с другой высотой: строка окна держит ровно 64 px, а поле в 40 px
+     выталкивало её до 70. Всё остальное — фон, граница, скругление,
+     фокус — приходит из .vatpct и НЕ повторяется здесь. */
+  /* РАЗМЕР ШРИФТА — ТОТ ЖЕ, ЧТО У НАЗВАНИЯ В СКОБКАХ (12.5px). Это не
+     подобранное значение: им набрано .row .k small — «(Доллар США)»,
+     «(Сомони)» — то есть ровно тот текст, рядом с которым поле стоит.
+     Переменной шрифта в проекте нет ни одной (есть только --r и --pad),
+     поэтому берётся значение, а не токен.
+
+     Ширина и отступы уменьшены ВСЛЕД за шрифтом и заданы здесь же:
+     иначе их берёт медиазапрос старой карточки, и текст обрезается.
+
+     ВЫСОТА НАМЕРЕННО НЕ УМЕНЬШЕНА ДО ВЫСОТЫ ТЕКСТА. Под 12.5px хватило
+     бы 30 px, но поле стоит внутри строки-кнопки: промах мимо него
+     переключает галочку валюты. 34 px — компромисс между «мельче» и
+     «попадает палец»; ниже начинается чужое действие, а не пустое
+     место. */
+  .currow .vatpct input{width:64px;min-height:34px;padding:6px 20px 6px 8px;
+    font-size:12.5px;background:var(--field-in-card);color:var(--ink)}
+  .currow .vatpct .sfx{font-size:12.5px}
+  @media (max-width:340px){ .currow .vatpct input{width:60px;padding:6px 18px 6px 7px} }
+  /* Плейсхолдер брался БРАУЗЕРНЫЙ (#757575) — он не из темы вовсе и в
+     тёмной теме тускл. Значение — основным цветом, подсказка и знак —
+     приглушённым: у пустого и заполненного поля разный смысл, а не
+     разный вес. */
+  /* Цвет плейсхолдера — --ink-2, а не --muted: --muted даёт на белом
+     3.06:1, то есть ХУЖЕ браузерного серого, который тут был (4.61).
+     Приглушённость нужна относительно значения, а не ценой читаемости;
+     --ink-2 даёт 7.63 в светлой и 9.24 в тёмной. Померено, а не на глаз. */
+  .currow .vatpct input::placeholder{color:var(--ink-2);opacity:1}
+  .currow .vatpct .sfx{position:absolute;right:14px;top:50%;
+    transform:translateY(-50%);pointer-events:none}
+  /* Гнездо ТОЧНОЙ высоты, а не «не меньше»: с min-height строка со
+     ссылкой вырастала под текст (71.4 px против 64 у соседней), и
+     «постоянная высота» держалась только там, где ссылки нет. Замерено. */
+  .currow .curslot{flex:1 0 100%;height:22px;
+    padding:0 var(--pad) 4px calc(var(--pad) + 26px + 13px);
+    display:flex;align-items:center}
+  /* Строке нужна ГИБКАЯ ширина, а не 100%: базовое правило .row задаёт
+     width:100%, и без переноса flex его ужимал. С переносом та же сотня
+     процентов выталкивала крестик удаления на отдельную строку — ряд
+     своей валюты вырастал до 148 px вместо 105. Поймано замером. */
+  .currow > .row{flex:1 1 0;width:auto}
+  .currow .row .k{display:flex;align-items:baseline;gap:5px;min-width:0}
+  .currow .row .k b{flex:0 0 auto}
+  .currow .row .k small{margin-top:0;flex:1 1 auto;min-width:0}
+  /* Крестик удаления ОСТАЁТСЯ ВО ВСЮ ВЫСОТУ ПЕРВОЙ СТРОКИ. Раньше его
+     растягивал `align-items:stretch` родителя; с переносом строк это
+     перестало работать, и кнопка сжалась до высоты значка — 46×18 px,
+     мимо которых промахивается палец (минимум 44). Поймано прогоном:
+     набор истории курсов не смог по ней кликнуть — «element is not
+     stable». Высота задаётся явно, а не надеждой на растяжение. */
+  .currow .curdel{align-self:center;min-height:0}
+  /* «Сделать основной» — во всю ширину под названием, отступом ровно под
+     текст: 16 (поле строки) + 26 (галочка) + 13 (зазор). */
+  .currow .curbase{min-height:0;padding:0;font-size:12.5px;line-height:20px;
+    align-items:center}  .curbase-is{padding:11px 0;font-weight:600;color:var(--ink)}
   /* Сетка полей курса: по два в ряд, как было у пары. Нечётное число полей
      последнее НЕ растягивает — flex-basis фиксирован (требование 3.3). */
+  /* ++++++ CURRENCY VAT ++++++ ряд «галочка + код + ставка».
+     Раскладку делит с рядом окна выбора валют — ОДНИМ правилом, а не
+     копией: два одинаковых набора свойств разошлись бы при первой правке.
+     А вот КЛАСС у ряда свой: помощник наборов ищет `.currow` по всему
+     документу, и карточка НДС под тем же классом ломала смену базовой
+     валюты (поймано прогоном).
+
+     Поле ставки — СОСЕД строки, а не её потомок: <input> внутри <button>
+     браузер перевешивает. Оформление у него своё, как у `.sfield input`:
+     оно живёт вне `.f`, а `.f input` даёт width:100% и нижний отступ,
+     которые в ряду не нужны. Размер шрифта 16px — тот же, что у всех
+     полей файла: меньше, и Safari зумит страницу при фокусе.
+
+     320 px: .row внутри ряда ужимается (у него min-width:0 и многоточие
+     на имени), поле 72 + «%» 14 + зазор 6 + правый отступ 12 — ряд не
+     переполняется и ничего не наезжает. Проверено снимком. */
+  .vatpct{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-right:12px}
+  .vatpct input{width:72px;text-align:right;background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:9px 10px;
+    font-size:16px;min-height:40px;-webkit-appearance:none;appearance:none}
+  .vatpct input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .vatpct input:disabled{opacity:.45}
+  .vatpct .sfx{color:var(--muted);font-size:13px}
+  .vatpct.bad input{border-color:var(--bad)}
+  @media (max-width:340px){ .vatpct input{width:62px;padding:9px 7px} .vatpct{padding-right:9px} }
   .ratergrid{display:flex;flex-wrap:wrap;gap:10px}
   .ratergrid > label{flex:1 1 calc(50% - 5px);max-width:calc(50% - 5px);min-width:168px;margin:0}
   @media (max-width:386px){ .ratergrid > label{max-width:100%} }
@@ -1005,6 +1122,19 @@
     background:var(--surface-3);color:var(--ink);padding:12px 13px;
     font:inherit;font-size:13.5px;line-height:1.55;resize:none;white-space:pre-wrap}
 
+/* ++++++ ERASE SPLIT ++++++ Числа в окне удаления — ПАРЫ «название —
+   число», а не строки списка: .row дал бы 56 пикселей высоты на каждую,
+   и восемь строк не поместились бы рядом с полем и кнопками. Свой цвет
+   не нужен — блок живёт внутри .note.calc. */
+.wnums{display:grid;grid-template-columns:1fr auto;gap:2px 14px;font-size:13.5px}
+.wnums dt{color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wnums dd{margin:0;text-align:right;font-weight:600;color:var(--ink)}
+.wnums .sum{border-top:1px solid var(--line);margin-top:4px;padding-top:5px}
+.wnums dt.sum{font-weight:600;color:var(--ink)}
+/* Кнопка ВНУТРИ тела листа: ряд ответов внизу отвечает на вопрос
+   заголовка, а «Сначала скачать копию» ответом не является — и три
+   кнопки в ряд на 430 px не помещаются, подпись обрезается. */
+.modal .body > .btn.block{margin-bottom:13px}
   @media (max-width:359px){
     .rmdact{padding-left:calc(var(--pad) + 6px)}
   }
@@ -1167,7 +1297,41 @@ var STORAGE_KEY = 'goods-tracker/v1';
        ровно как раньше, а «Чистая прибыль» вычитает расход ОДИН раз —
        целиком, а не по долям. Ссылка на исчезнувшую партию читается как
        «без партии»: запись о потраченных деньгах из-за этого не теряется. */
-var SCHEMA_VERSION = 18;
+/* v18: settings.curActive / settings.buyCur — какие валюты программа
+       предлагает и показывает, и какую подставляет в форму товара.
+       Список КОДОВ, а не второй список курсов: settings.rates хранит то
+       же, что хранил, и rateOf() не двигается ни на байт. Отсюда прямо
+       следует, что ВЫКЛЮЧИТЬ ≠ УДАЛИТЬ: курс снятой валюты остаётся, и
+       запись, сделанная в ней, читается дальше. Документ старее v18
+       ключей не имеет — curActiveOf() читает это как «мигрировать» и
+       отдаёт базу плюс всё, чему задан курс.
+       (Запись восстановлена задачей v19: сама v18 её не написала.) */
+/* v19: settings.curVat — НДС ПО ВАЛЮТАМ: карта «код -> {on, pct}».
+       Налог принадлежит СТРАНЕ ПОКУПКИ, а страну называет валюта: в ОАЭ
+       он есть, в Таджикистане покупок нет вовсе. До v19 ставка была ОДНА
+       на всю программу (settings.vatPct/vatOn) и предлагалась в любом
+       приходе, какой бы валютой он ни вводился.
+
+       В ЗАПИСЬ ЭТО НЕ ДОБАВЛЯЕТ НИЧЕГО, и добавлять нечего: ставка, с
+       которой посчитан приход, лежит в batch.inv.vatPct с версии v3,
+       пишется один раз при сохранении и не пересчитывается никогда.
+       Второе число о той же ставке разошлось бы с первым в тот день,
+       когда reconcileBatches() обнулит inv у изменённой партии.
+
+       Документ старее v19 ключа не имеет — vatMapOf() читает это как
+       «мигрировать» и кладёт ПРЕЖНЮЮ глобальную настройку на AED, чтобы
+       сегодняшнее поведение приходов в дирхамах не двинулось ни на
+       копейку. Прочие валюты остаются без налога: глобальные 5% у них и
+       были тем дефектом, ради которого версия поднята. Ветки по версии
+       нет нигде, как в v8…v18.
+
+       settings.vatPct / settings.vatOn ОСТАЮТСЯ в документе и читаются
+       ровно одним местом — этой миграцией. Убрать их значило бы, что
+       устройство со старым ядром, получив документ обменом, потеряет
+       свою ставку: ядро обновляется само, а установленная оболочка — не
+       всегда, и пока это так, старая половина обязана продолжать
+       работать. Ни одна считающая функция их больше не читает. */
+var SCHEMA_VERSION = 19;
 
 /* Status keys are the stable identifiers; never compare by label.
    The labels themselves live in the dictionary below, as status.<key>. */
@@ -1220,6 +1384,8 @@ var NOUN = {
   /* ++++++ DATES SAID ++++++ выдача, платёж и партия разом — общего слова
      для них в этой таблице не было */
   record:      { en:['record','records'],           ru:['запись','записи','записей'] },
+  /* ++++++ ERASE SPLIT ++++++ «Не отправлено изменений: 7» */
+  change:      { en:['change','changes'],           ru:['изменение','изменения','изменений'] },
   /* ++++++ ACTIVE CURRENCIES ++++++ «сдвинет ещё 2 валюты» */
   currency:    { en:['currency','currencies'],      ru:['валюта','валюты','валют'] },
   /* ++++++ BACKUP REMINDER ++++++ «7 дней назад» / «21 день назад» */
@@ -1568,7 +1734,6 @@ var STR = {
 'bak.title':   { en:'Backup &amp; data', ru:'Резервная копия и данные' },
 'bak.export':  { en:'Download backup (.json)', ru:'Скачать копию' },
 'bak.import':  { en:'Import backup',         ru:'Импорт копии' },
-'bak.erase':   { en:'Erase all data',        ru:'Стереть все данные' },
 'msg.exported':{ en:'Backup downloaded.', ru:'Копия скачана.' },
 'imp.readFail':{ en:'Could not read that file. Current data is unchanged.',
                  ru:'Не удалось прочитать файл. Текущие данные не изменены.' },
@@ -1632,18 +1797,78 @@ var STR = {
                           '<p>Their status may move back to {partial} or {unpaid}.</p>',
                       ru:'<p><b>{person}</b> &mdash; {amount}, {date}</p>' +
                           '<p>Статус может вернуться к «{partial}» или «{unpaid}».</p>' },
-'dlg.resetTitle':   { en:'Erase all data?', ru:'Стереть все данные?' },
 /* ++++++ ATTACHMENTS ++++++ photos and invoices are erased with everything
    else, so the dialog says so. A confirmation that under-states what it
    destroys is worse than no confirmation. */
-'dlg.resetBody':    { en:'<p>Every product, person, transaction and payment stored in this browser will be deleted, ' +
-                          'and with them every product photo and every attached supplier invoice.</p>' +
-                          '<p>Export a backup first if you may need this data again. This cannot be undone.</p>',
-                      ru:'<p>Все товары, люди, выдачи и платежи, сохранённые в этом браузере, будут удалены, ' +
-                          'а вместе с ними все фотографии товаров и все прикреплённые накладные.</p>' +
-                          '<p>Если данные могут ещё понадобиться, сначала сделайте экспорт копии. Отменить это нельзя.</p>' },
-'dlg.resetOk':      { en:'Erase everything', ru:'Стереть всё' },
 'msg.erased':       { en:'All data erased.', ru:'Все данные стёрты.' },
+/* ++++++ ERASE SPLIT ++++++ Приставка `wipe.` — своя: `dlg.reset*`
+   описывали ОДНО действие, которого больше нет, а `bak.erase` был именем
+   его ряда. Пять таких ключей убраны вместе с ним; `dlg.resetAlso`
+   остался и зовётся обоими окнами — фраза про сохранённые настройки
+   верна для каждого из них и не изменилась ни на букву. */
+'wipe.rowDevice':    { en:'Clear this device', ru:'Очистить это устройство' },
+'wipe.rowDeviceSub': { en:'records leave this device, Drive keeps them',
+                       ru:'записи уйдут отсюда, на Диске останутся' },
+'wipe.rowAll':       { en:'Delete data everywhere', ru:'Удалить данные везде' },
+'wipe.rowAllSub':    { en:'every device and Drive · cannot be undone',
+                       ru:'на всех устройствах и на Диске · отменить нельзя' },
+
+'wipe.deviceTitle':  { en:'Clear this device?', ru:'Очистить это устройство?' },
+'wipe.deviceKeep':   { en:'<b>Your data stays on Google Drive and on your other devices.</b> Records, photos and invoices leave this one.',
+                       ru:'<b>Данные останутся на Google Диске и на других устройствах.</b> Здесь исчезнут записи, фотографии и накладные.' },
+'wipe.deviceSignout':{ en:'You will be signed out of Google — otherwise the records come back on the first sync.',
+                       ru:'Вход в Google будет отменён — иначе записи вернутся при первом же обмене.' },
+'wipe.deviceBack':   { en:'To get them back, sign in with the same account.',
+                       ru:'Чтобы вернуть их, войдите той же учётной записью.' },
+'wipe.devicePending':{ en:'Unsent changes: <b>{n}</b>. They will be lost.',
+                       ru:'Не отправлено изменений: <b>{n}</b>. Они будут потеряны.' },
+'wipe.deviceOk':     { en:'Clear', ru:'Очистить' },
+
+'wipe.allTitle':     { en:'Delete data everywhere?', ru:'Удалить данные везде?' },
+'wipe.allBody':      { en:'Records disappear <b>on this device, on Google Drive and on every device</b> signed in with this account. This cannot be undone.',
+                       ru:'Записи исчезнут <b>на этом устройстве, на Google Диске и на всех устройствах</b>, где вы вошли этой учётной записью. Отменить это нельзя.' },
+'wipe.allBackup':    { en:'Download a backup first', ru:'Сначала скачать копию' },
+'wipe.allWordAsk':   { en:'Type <b>{word}</b> to confirm',
+                       ru:'Напечатайте <b>{word}</b>, чтобы подтвердить' },
+'wipe.allWordHint':  { en:'Case and stray spaces do not matter.',
+                       ru:'Регистр и лишние пробелы значения не имеют.' },
+'wipe.allOk':        { en:'Delete everywhere', ru:'Удалить везде' },
+/* Слово живёт в СЛОВАРЕ, а не в коде: интерфейс двуязычный, и человеку
+   с английским экраном пришлось бы печатать русское слово. */
+'wipe.word':         { en:'DELETE', ru:'УДАЛИТЬ' },
+
+'wipe.nProducts':    { en:'products',   ru:'товары' },
+'wipe.nPeople':      { en:'people',     ru:'люди' },
+'wipe.nTx':          { en:'handouts',   ru:'выдачи' },
+'wipe.nPay':         { en:'payments',   ru:'оплаты' },
+'wipe.nRet':         { en:'returns',    ru:'возвраты' },
+'wipe.nExp':         { en:'expenses',   ru:'расходы' },
+'wipe.nTotal':       { en:'records in total', ru:'всего записей' },
+'wipe.nTrash':       { en:'of them in the bin', ru:'из них в корзине' },
+'wipe.files':        { en:'files in the hidden folder', ru:'файлы в скрытой папке' },
+'wipe.filesWait':    { en:'counting…', ru:'считаю…' },
+'wipe.nothing':      { en:'No records — nothing to delete.',
+                       ru:'Записей нет — удалять нечего.' },
+
+'wipe.doneRecs':     { en:'Deleted: {n}.', ru:'Удалено: {n}.' },
+'wipe.doneAll':      { en:'The deletion has travelled: this device, Drive and every other device.',
+                       ru:'Удаление уехало: это устройство, Диск и все остальные.' },
+'wipe.donePending':  { en:'Deleted here. The deletion is waiting for the network and will travel on the next sync.',
+                       ru:'Удалено здесь. Отправка ждёт сети — удаление уедет при следующем обмене.' },
+
+'wipe.peerBar':      { en:'Deletion arrived: <b>{n}</b>. Deleted on another device.',
+                       ru:'Пришло удаление: <b>{n}</b>. Удалено на другом устройстве.' },
+'wipe.delHere':      { en:'Delete here too', ru:'Удалить и здесь' },
+'wipe.cDelTitle':    { en:'This record was deleted on another device',
+                       ru:'Эту запись удалили на другом устройстве' },
+'wipe.cDelBody':     { en:'It was edited here <b>after</b> the deletion, so it stayed. Your call.',
+                       ru:'Здесь её изменили <b>после</b> удаления, поэтому она осталась. Решать вам.' },
+
+'wipe.impAsk':       { en:'The backup holds <b>{n}</b> deleted earlier. Restore them on every device?',
+                       ru:'В копии <b>{n}</b>, удалённых ранее. Вернуть их на всех устройствах?' },
+'wipe.impYes':       { en:'Restore', ru:'Вернуть' },
+'wipe.impNo':        { en:'Leave deleted', ru:'Не возвращать' },
+
 
 /* ---------------- storage / banners ---------------- */
 'store.working':   { en:'working',        ru:'работает' },
@@ -1965,6 +2190,20 @@ var STR = {
                    ru:'Правка курса не меняет <b>хранимого</b>: суммы всегда лежат в базовой валюте. Она меняет <b>показанное</b> — каждая пересчитанная величина читается по текущему курсу. Исключение — «Сводка»: она берёт курсы, записанные вместе с самой записью, если они там есть.' },
 /* ++++++ RATE PAIR ++++++ раздел «Курсы»: два поля и шесть направлений */
 'rp.field':      { en:'1 {anchor} = … {cur}',              ru:'1 {anchor} = … {cur}' },
+/* ++++++ CURRENCY VAT ++++++ НДС по валютам. Восемь ключей, оба языка.
+   `prod.vatOn` / `prod.vatOff` ушли вместе с чипом: ключ, который код
+   больше не зовёт, — мёртвый вес (B6), и test-dupes требует, чтобы
+   словарь и код называли одно и то же множество. */
+'vat.errEmpty':  { en:'VAT rate for {cur} must be a number from 0 to {max}, or empty.',
+                   ru:'Задайте ставку НДС для {cur} или снимите галочку: число от 0 до {max}.' },
+'vat.rowRate':   { en:'VAT {pct}%',                        ru:'НДС {pct}%' },
+'vat.rowNone':   { en:'no VAT',                           ru:'без НДС' },
+'vat.field':     { en:'VAT, %',                           ru:'НДС, %' },
+'vat.short':     { en:'VAT',                               ru:'НДС' },
+'vat.formHint':  { en:'From the settings for {cur}. Changing it here applies to this arrival only.',
+                   ru:'Подставлена из настроек {cur}. Правка здесь — только для этого прихода.' },
+'err.vatPct':    { en:'VAT must be a number from 0 to {max}, e.g. 5 or 7.5.',
+                   ru:'НДС должен быть числом от 0 до {max}, например 5 или 7.5.' },
 'rp.save':       { en:'Save rates',                        ru:'Сохранить курсы' },
 'rp.tableTitle': { en:'Every rate between them',           ru:'Все взаимные курсы' },
 'rp.entered':    { en:'set in the field above',            ru:'задаётся полем выше' },
@@ -2030,8 +2269,6 @@ var STR = {
 'prod.modeInvoice':{ en:'From the invoice',                 ru:'Считать по инвойсу' },
 'prod.modeManual':{ en:'By hand',                           ru:'Ввести вручную' },
 'prod.batchDate':{ en:'Shipment date',                      ru:'Дата партии' },
-'prod.vatOn':    { en:'VAT {pct}% on',                      ru:'НДС {pct}% включён' },
-'prod.vatOff':   { en:'VAT {pct}% off',                     ru:'НДС {pct}% выключен' },
 'prod.mergeIdle':{ en:'If this product already exists, the shipment is added to it.',
                    ru:'Если такой товар уже есть, новая партия прибавится к нему.' },
 'prod.mergeNew': { en:'A new product.',                     ru:'Новый товар.' },
@@ -2064,7 +2301,6 @@ var STR = {
 'inv.notFilled': { en:'{n} more item(s) not filled in yet', ru:'ещё не заполнено позиций: {n}' },
 'inv.breakdown': { en:'{boxes} &times; {per} pcs at {price} {cur}{vat}',
                    ru:'{boxes} &times; {per} шт по {price} {cur}{vat}' },
-'inv.plusVat':   { en:' + VAT {pct}%',                      ru:' + НДС {pct}%' },
 'ac.item':       { en:'{left} left &middot; {price}',       ru:'{left} шт &middot; {price}' },
 
 /* ---------------- вкладка «Люди» ---------------- */
@@ -2225,7 +2461,7 @@ var STR = {
                   ru:'Отметьте валюты, которыми пользуетесь. Одна из них будет основной: в ней ' +
                       'хранятся суммы и печатаются итоги. Всё это меняется потом в любой момент.' },
 'cp.start':     { en:'Start',                       ru:'Начать работу' },
-'cp.base':      { en:'the base currency',           ru:'базовая валюта' },
+'cp.base':      { en:'main',                        ru:'основная' },
 /* ++++++ ACTIVE CURRENCIES ++++++ базу назначают В СТРОКЕ списка, одним
    нажатием, поэтому селекта «Основная валюта» в окне больше нет, а вместе
    с ним ушли cp.baseIs и cp.baseHint. Кнопка стоит у каждой отмеченной,
@@ -2327,7 +2563,6 @@ var STR = {
 'bak.exportHint':{ en:'a .json file with the schema version',ru:'файл .json со схемой' },
 'bak.importHint':{ en:'replaces all data',                  ru:'заменит все данные' },
 'bak.dangerTitle':{ en:'Dangerous',                         ru:'Опасное' },
-'bak.eraseHint': { en:'products, people, handouts, payments',ru:'товары, люди, выдачи, оплаты' },
 /* ++++++ BACKUP REMINDER ++++++ напоминание о резервной копии.
    Префикс `bk.`, а НЕ `bak.` — `bak.*` уже занят разделом «Резервная
    копия и данные» (bak.title, bak.export, bak.erase и ещё семь). STR —
@@ -3578,6 +3813,228 @@ function recTwoLines(s, rec){
   return !!e && e.cur !== curNorm(s.baseCurrency);
 }
 
+/* ==================================================================
+ * ++++++ CURRENCY VAT ++++++   НДС ПРИНАДЛЕЖИТ ВАЛЮТЕ, А НЕ ПРОГРАММЕ
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   НДС — свойство СТРАНЫ ПОКУПКИ, а страну называет валюта. В ОАЭ он
+ *   есть, в Таджикистане покупок нет вовсе, и предлагать одну и ту же
+ *   ставку всем — значит звать к неверному вводу.
+ *
+ * Отсюда прямо:
+ *   · включённость и ставка живут РЯДОМ С ВАЛЮТОЙ, в settings.curVat;
+ *   · vatOf() — ЕДИНСТВЕННЫЙ ответ на вопрос «применяется ли НДС к этой
+ *     валюте и по какой ставке», и его читают настройки, форма прихода
+ *     и проверка. Второго источника нет и быть не должно: разойдутся;
+ *   · СТАВКА В ЗАПИСИ УЖЕ ЗАМОРОЖЕНА — batch.inv.vatPct пишется один
+ *     раз в saveProduct() и не пересчитывается никогда. Второе поле о
+ *     той же ставке разошлось бы с первым при первой же правке
+ *     количества, когда reconcileBatches() обнуляет inv.
+ *
+ * ЧЕГО ЗДЕСЬ НЕТ НАМЕРЕННО. Начисления НДС: Math.round(subtotal * pct /
+ * 100) остаётся ровно там, где стоял, — в readLine(). Арифметика
+ * инвойса защищена (AGENTS.md), и задача меняет ИСТОЧНИК ставки, а не
+ * счёт. Разбора числа тоже нет: строку разбирает существующая
+ * parsePct(), и второй разбор был бы ошибкой того же рода, что второе
+ * округление.
+ * ================================================================== */
+
+/** Потолок ставки. Выше — это не налог, а опечатка; parsePct() режет по
+ *  той же границе, и два разных потолка на одно число разошлись бы. */
+var VAT_MAX = 100;
+
+/** Код валюты как ключ. Тот же вид, что у curNorm(): верхний регистр,
+ *  обрезанные пробелы, ничего больше. */
+function vatNorm(c){
+  return (typeof c === 'string') ? c.trim().toUpperCase() : '';
+}
+
+/** Годная ли ставка. Ноль ГОДЕН и означает «НДС не начисляется»: ровно
+ *  это записывает сегодня выключенный чип (vatPct: 0), и заводить для
+ *  того же состояния второе представление было бы ошибкой. */
+function vatPctOk(v){
+  return typeof v === 'number' && isFinite(v) && v >= 0 && v <= VAT_MAX;
+}
+
+/** Одна запись карты, приведённая к виду {on, pct}. Кривое читается как
+ *  отсутствующее — та же политика, что у rateSnap, baseUndo и rateLog:
+ *  из-за настройки НДС документ не должен перестать открываться. */
+function vatEntryOf(raw){
+  if (!raw || typeof raw !== 'object') return null;
+  var pct = raw.pct;
+  if (!vatPctOk(pct)) return null;
+  return { on: !!raw.on, pct: pct };
+}
+
+/** МИГРАЦИЯ. Документ без ключа получает то, чем он и так пользовался:
+ *  ОДНУ глобальную настройку, положенную на AED.
+ *
+ *  Почему именно AED: глобальная ставка применялась ко всем валютам
+ *  разом, и это ровно тот дефект, ради которого задача написана. Из трёх
+ *  валют владельца НДС есть только у ОАЭ — так он и сказал. Класть её на
+ *  все три значило бы перенести дефект в новый формат.
+ *
+ *  Почему on берётся из vatOn, а не ставится в true: цель A4 —
+ *  «сегодняшнее поведение AED сохранено». Владелец, выключивший чип,
+ *  завтра увидит его выключенным, а не включённым за него. У свежего
+ *  документа vatOn === true, так что для умолчаний это буква A4 слово в
+ *  слово.
+ *
+ *  Аддитивна и идемпотентна: записей не трогает, повторный вызов на уже
+ *  мигрированном документе сюда не заходит вовсе (ключ есть). */
+function vatMigrate(s){
+  var out = {};
+  var pct = vatPctOk(s.vatPct) ? s.vatPct : 5;
+  out.AED = { on: s.vatOn !== false, pct: pct };
+  return out;
+}
+
+/** КАРТА ЦЕЛИКОМ — то, что validate() кладёт в документ.
+ *
+ *  Ключа нет вовсе -> миграция. Ключ есть, но не объект -> тоже миграция:
+ *  «испорчено» и «не было» здесь одно и то же, потому что второго
+ *  источника, из которого можно достать правду, не существует. Отдельная
+ *  запись, которая не читается, ВЫБРАСЫВАЕТ СЕБЯ и не уносит карту. */
+function vatMapOf(s){
+  var raw = s.curVat, out = {}, c, e;
+  if (!raw || typeof raw !== 'object' ||
+      Object.prototype.toString.call(raw) === '[object Array]') return vatMigrate(s);
+  for (c in raw){
+    if (!Object.prototype.hasOwnProperty.call(raw, c)) continue;
+    if (!/^[A-Za-z0-9]{1,6}$/.test(c)) continue;
+    e = vatEntryOf(raw[c]);
+    if (e) out[vatNorm(c)] = e;
+  }
+  return out;
+}
+
+/** СЫРАЯ запись карты, или null — «про эту валюту не сказано ничего».
+ *  ЕДИНСТВЕННОЕ чтение карты во всём файле: и vatOf(), и черновик
+ *  настроек ходят сюда. Различие «записи нет» / «запись есть, ставка 0»
+ *  видно только здесь, и оно нужно ровно одному месту — полю настроек,
+ *  которое при отсутствии записи обязано быть ПУСТЫМ, а не показывать
+ *  ноль, которого никто не набирал. */
+function vatRawOf(s, code){
+  var m = (s && s.curVat && typeof s.curVat === 'object') ? s.curVat : null;
+  var c = vatNorm(code);
+  if (!m || !Object.prototype.hasOwnProperty.call(m, c)) return null;
+  return vatEntryOf(m[c]);
+}
+/** ЕДИНСТВЕННЫЙ ОТВЕТ: применяется ли НДС к этой валюте и по какой ставке.
+ *
+ *  Его читают строка настроек, форма прихода, расчёт позиции и сохранение.
+ *  Спрашивать settings.curVat напрямую нельзя нигде: фильтровать и
+ *  подставлять умолчание по месту — тот же вид ошибки, что второе
+ *  округление, и однажды одна из копий отстанет молча.
+ *
+ *  Валюта не названа в карте — НДС нет. Это не потеря: карту заполняет
+ *  миграция, а новая валюта заводится без налога, пока владелец не сказал
+ *  обратного. Ставка при выключенном НДС ОТДАЁТСЯ как есть — её показывает
+ *  поле, чтобы галочку можно было вернуть, не набирая заново (требование 3). */
+function vatOf(s, code){
+  var e = vatRawOf(s, code);
+  return e ? { on: e.on, pct: e.pct } : { on: false, pct: 0 };
+}
+
+/** Ставка, которую форма ПРЕДЛАГАЕТ для этой валюты. Выключен НДС —
+ *  предлагать нечего, и поля не будет вовсе (требование 5). */
+/** ++++++ VAT IN PICKER ++++++ ЯЧЕЙКА ПОЛЯ СТАВКИ.
+ *    ''        → null  — поля не трогали или стёрли: налога нет;
+ *    годное    → число — 0 тоже годное и тоже значит «нет»;
+ *    негодное  → NaN   — набрано, но не читается: это ОШИБКА, и молчать
+ *                        о ней нельзя.
+ *  Ядро дальше отличает null от NaN само (vatDraftBad). */
+function vatCellOf(raw){
+  var s = (raw === null || raw === undefined) ? '' : String(raw).trim();
+  if (s === '') return null;
+  var v = parsePct(s);
+  return v === null ? NaN : v;
+}
+function vatDefaultPct(s, code){
+  var v = vatOf(s, code);
+  return v.on ? v.pct : null;
+}
+
+/** ЧТО НЕ ТАК С ЧЕРНОВИКОМ. Список кодов, у которых В ПОЛЕ НАБРАНО
+ *  НЕЧТО, что не читается как ставка.
+ *
+ *  Черновик приходит УЖЕ РАЗОБРАННЫМ: { pct:{CODE: число | null | NaN} },
+ *  где null значит «поле пустое», а NaN — «набрано, но не число».
+ *  Различать их обязано приложение: parsePct() возвращает null и на то, и
+ *  на другое, а смысл у них противоположный — пустое поле есть обычный
+ *  способ сказать «налога нет», набранный мусор есть опечатка, и молча
+ *  прочесть её как «налога нет» значило бы выключить налог за владельца.
+ *
+ *  ГАЛОЧЕК ЗДЕСЬ БОЛЬШЕ НЕТ. Раньше ставку спрашивали только у отмеченных;
+ *  теперь «есть ли налог» говорит само число, и спрашивать нечего.
+ *
+ *  Порядок ответа — порядок переданных кодов, а не обхода объекта: список
+ *  валют печатается в известном порядке, и сообщение обязано называть их
+ *  так же, иначе оно читается как про другие валюты. */
+function vatDraftBad(draft, codes){
+  var out = [], i, c, pct;
+  for (i = 0; i < codes.length; i++){
+    c = vatNorm(codes[i]);
+    pct = (draft.pct && draft.pct[c] !== undefined) ? draft.pct[c] : null;
+    if (pct === null) continue;              /* пусто — это ответ, а не ошибка */
+    if (!vatPctOk(pct)) out.push(c);
+  }
+  return out;
+}
+
+/** НОВАЯ КАРТА ПО ЧЕРНОВИКУ, или null — когда сохранять нельзя.
+ *
+ *  «ЕСТЬ ЛИ НАЛОГ» ГОВОРИТ САМО ЧИСЛО (решение владельца 2026-09-04):
+ *  больше нуля — есть, ноль — нет, пустое поле — нет. Отдельной галочки
+ *  не осталось, и это не упрощение ради краткости: два способа сказать
+ *  одно расходятся при первой же правке, и пустое поле рядом со стоящей
+ *  галочкой означало бы «ставка есть, но какая — не скажу».
+ *
+ *  ПУСТОЕ ПОЛЕ УБИРАЕТ ЗАПИСЬ, и вместе с нею прежнюю ставку. Прежде
+ *  снятая галочка ставку берегла — «выключить на день» не значило
+ *  «забыть навсегда». Теперь беречь её негде: поле и есть всё, что
+ *  владелец видит, и хранить за ним число, которого на экране нет, значит
+ *  показывать одно, а записывать другое. Цена названа в README.
+ *
+ *  Валюты, которых в черновике нет вовсе, ПЕРЕНОСЯТСЯ КАК БЫЛИ: строки
+ *  выключенной валюты в окне нет, и молча терять её настройку значило бы,
+ *  что снятая на день галочка стирает налог насовсем. */
+function vatApplyDraft(prev, draft, codes){
+  if (vatDraftBad(draft, codes).length) return null;
+  var out = {}, c, i, e, pct;
+  for (c in prev){
+    if (!Object.prototype.hasOwnProperty.call(prev, c)) continue;
+    e = vatEntryOf(prev[c]);
+    if (e) out[vatNorm(c)] = { on: e.on, pct: e.pct };
+  }
+  for (i = 0; i < codes.length; i++){
+    c = vatNorm(codes[i]);
+    pct = (draft.pct && draft.pct[c] !== undefined) ? draft.pct[c] : null;
+    if (pct === null){ delete out[c]; continue; }
+    if (!vatPctOk(pct)) continue;            /* сюда не дойдёт: см. vatDraftBad */
+    out[c] = { on: pct > 0, pct: pct };
+  }
+  return out;
+}
+
+/** Сдвинулась ли настройка ПО СУЩЕСТВУ. Сохранение, ничего не менявшее,
+ *  не должно говорить «сохранено»: сообщение о том, чего не было,
+ *  приучает не читать сообщения (область 44). */
+function vatMapSame(a, b){
+  var ka = [], kb = [], c, i, x, y;
+  for (c in a) if (Object.prototype.hasOwnProperty.call(a, c)) ka.push(c);
+  for (c in b) if (Object.prototype.hasOwnProperty.call(b, c)) kb.push(c);
+  if (ka.length !== kb.length) return false;
+  ka.sort(); kb.sort();
+  for (i = 0; i < ka.length; i++){
+    if (ka[i] !== kb[i]) return false;
+    x = a[ka[i]]; y = b[kb[i]];
+    if (!!x.on !== !!y.on || x.pct !== y.pct) return false;
+  }
+  return true;
+}
+
 /* ============================================ ++++++ RATE PAIR ++++++ ==
  * Раздел «Курсы»: поля от ЯКОРЯ, все взаимные направления.
  *
@@ -4488,8 +4945,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.6.0';
-var APP_BUILD = '2026-09-03T13:07:59.569Z';
+var APP_VERSION = '1.7.0';
+var APP_BUILD = '2026-09-04T21:02:03.615Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5726,7 +6183,12 @@ var SYNC_SETTINGS = ['baseCurrency', 'rates', 'vatPct', 'vatOn', 'rateLog',
                         программа предлагает, и на втором устройстве она
                         обязана быть той же. Движок обмена от этого не
                         меняется ни строкой. */
-                     'curActive', 'buyCur'];
+                     'curActive', 'buyCur',
+                     /* ++++++ CURRENCY VAT ++++++ налог страны покупки —
+                        такая же настройка документа, как курс: приход,
+                        заведённый на телефоне, обязан считаться той же
+                        ставкой, что на компьютере. */
+                     'curVat'];
 
 /* ------------------------------------------------------------------ */
 /* Отпечаток одной записи                                             */
@@ -9010,7 +9472,13 @@ function defaultState(){
          даже когда валюта выключена, — иначе запись, сделанная в ней,
          стала бы нечитаемой. */
       curActive: [],                          // пусто = валюта ещё не выбрана
-      buyCur: ''                              // «не задана» — выбирать вручную
+      buyCur: '',                             // «не задана» — выбирать вручную
+      /* ++++++ CURRENCY VAT ++++++ v19. НДС по валютам: у какой валюты он
+         есть и по какой ставке. ПУСТО, а не AED: свежий профиль приходит
+         без базовой валюты вовсе, и вписать сюда налог одной страны
+         значило бы снова выбрать за владельца. Существующий документ
+         ключа не имеет и получает его миграцией — см. vatMigrate(). */
+      curVat: {}
     },
     products: [], people: [], transactions: [], payments: [], returns: [], expenses: [],
     /* ++++++ SYNC ++++++ v16. Карты рядом с записями, не внутри них. */
@@ -10465,6 +10933,19 @@ function validate(obj){
                                          rates: out.settings.rates,
                                          curActive: s.curActive });
   out.settings.buyCur = curNorm(s.buyCur);
+  /* ++++++ CURRENCY VAT ++++++ v19: НДС по валютам. Документ старше v19
+     ключа не имеет — vatMapOf() читает это как «мигрировать» и кладёт
+     ПРЕЖНЮЮ глобальную настройку на AED, чтобы сегодняшнее поведение
+     приходов в дирхамах не двинулось (AC9). Кривая запись выбрасывает
+     СЕБЯ и не уносит карту — та же политика, что у rateSnap, baseUndo и
+     rateLog.
+
+     Читаются УЖЕ ПРОВЕРЕННЫЕ out.settings.vatPct/vatOn, а не сырые: у
+     миграции не должно быть своего мнения о том, годится ли старое
+     число. */
+  out.settings.curVat = vatMapOf({ curVat: s.curVat,
+                                   vatPct: out.settings.vatPct,
+                                   vatOn: out.settings.vatOn });
 
   function arr(name){
     var a = obj[name];
@@ -13092,7 +13573,7 @@ function exportWrite(list){
    and sweeping last makes the worst case "a few unreferenced blobs", which the
    sweep collects. Nothing is ever deleted before the document that stopped
    naming it is safely on disk. */
-function finishImport(d, atts, res){
+function finishImport(d, atts, res, revive){
   /* ++++++ RESCUE ++++++ владелец сам подал документ — это и есть
      решение о судьбе прежнего, и запись больше не нужно держать. */
   rescAllow();
@@ -13110,6 +13591,12 @@ function finishImport(d, atts, res){
   function apply(){
     d.settings.lang = getLang();          // keep the language you are looking at
     state = d;
+    /* ++++++ ERASE SPLIT ++++++ ВОСКРЕШЕНИЕ. Владелец ответил «вернуть»,
+       и это делает существующий touch(): он снимает надгробие и ставит
+       метку правки — то есть правка становится НОВЕЕ удаления, и
+       следующий оборот записи уже не унесёт. Второго механизма не
+       заводим: touch() и есть единственное место, где ставится метка. */
+    if (revive) for (var ri = 0; ri < revive.length; ri++) touch(revive[ri]);
     ui.edit = { product:null, person:null, tx:null, pay:null };
     ui.txQuery = ui.payQuery = ui.peopleQuery = ui.sumPeopleQuery = ui.sumStockQuery = '';
     ui.peopleStatus = ui.sumStatus = '';
@@ -13239,19 +13726,43 @@ function importBackup(file){
     /* ++++++ PARTIAL IMPORT ++++++ цена выбора называется ДО выбора: импорт
        заменяет всё и отменить его нельзя, а сколько записей не доедет —
        известно уже сейчас. */
-    confirmBox(tr('dlg.impTitle'),
-      impStampHTML(parsed) +
+    /* ++++++ ERASE SPLIT ++++++ КОПИЯ ПОВЕРХ УДАЛЕНИЯ.
+     *
+     * Кнопка «Сначала скачать копию» без работающего пути назад — обман,
+     * а копия сегодня не работает: надгробия на Диске приезжают обратно
+     * и уносят импортированные записи при первом же обмене, тихо. Метки
+     * правок в копии старше времени удаления, поэтому слияние читает их
+     * как «запоздавшая копия», а не как спор.
+     *
+     * Один вопрос вместо двухсот конфликтов, и только когда есть о чём:
+     * без пересечения диалог импорта прежний ПОБАЙТОВО — та же
+     * confirmBox с тем же телом. */
+    var impBody = impStampHTML(parsed) +
       (res.dropped && res.dropped.length ? '<p>' + dropLine(res.dropped) + '</p>' : '') +
       tr('dlg.impBody', {prod: d.products.length, ppl: d.people.length,
                          tx: d.transactions.length, pay: d.payments.length}) +
       (d.returns.length ? tr('dlg.impRet', {n: d.returns.length}) : '') +
       /* ++++++ EXPENSES ++++++ говорится только когда есть о чём: копия без
          расходов печатает диалог байт в байт прежний. */
-      (d.expenses.length ? tr('dlg.impExp', {n: d.expenses.length}) : '') + extra,
-      tr('dlg.impOk'), true).then(function(ok){
+      (d.expenses.length ? tr('dlg.impExp', {n: d.expenses.length}) : '') + extra;
+    var revive = wipeImportClash(state.syncTombs || {}, d);
+    if (!revive.length){
+      confirmBox(tr('dlg.impTitle'), impBody, tr('dlg.impOk'), true).then(function(ok){
         if (!ok){ toast(tr('msg.impCancelled'),'info'); return; }
         finishImport(d, atts, res);
       });
+      return;
+    }
+    dialog({
+      title: tr('dlg.impTitle'),
+      html: impBody + '<div class="note warn">' +
+            tr('wipe.impAsk', { n: nq(revive.length, 'record') }) + '</div>',
+      buttons: [{ key:'no', label: tr('wipe.impNo') },
+                { key:'yes', label: tr('wipe.impYes'), variant:'primary' }]
+    }).then(function(k){
+      if (!k){ toast(tr('msg.impCancelled'),'info'); return; }
+      finishImport(d, atts, res, k === 'yes' ? revive : null);
+    });
 
   };
   reader.readAsText(file);
@@ -13326,8 +13837,11 @@ function resetProductForm(){
   /* ++++++ ATTACHMENTS ++++++ the lines being thrown away hold object URLs
      for their previews; dropping the form without them leaks the blobs. */
   stagedFreeAll();
-  ui.form.product = { mode:'inv', cur:purchaseCur(), vatOn:!!state.settings.vatOn,
+  ui.form.product = { mode:'inv', cur:purchaseCur(), vatPct:'',
     date:todayISO(), editId:'', lines:[newLine()] };
+  /* ++++++ CURRENCY VAT ++++++ ставку подставляет валюта, а не память
+     программы о прошлом приходе: налог принадлежит стране. */
+  vatFormReset();
   ui.edit.product = null;
   /* ++++++ PRODUCT EDIT ++++++ якорь живёт ровно столько, сколько
      открыта форма правки. */
@@ -15063,6 +15577,33 @@ function batchRateSub(p, b){
   return tr('prod.rateBatch', { rates: mine.join(' &middot; ') });
 }
 
+/** ++++++ CURRENCY VAT ++++++ СТАВКА, С КОТОРОЙ ПОСЧИТАНА ЭТА ПАРТИЯ.
+ *
+ *  Стоит во ВТОРОЙ подписи, а не в первой, и это не вкусовщина. Первая
+ *  подпись ужимается многоточием (`.row .k small`), и на телефоне
+ *  «10 × 24 шт по 1,900.00 AED + НДС 5%» обрывалось ровно на «+…» —
+ *  измерено снимком на 320 и на 430 px, и обрывалось ОДИНАКОВО до этой
+ *  задачи. Вторая подпись переносится (правило 26), поэтому ставка видна
+ *  целиком рядом с курсом записи и номером партии.
+ *
+ *  Три состояния, и третье — то самое «нейтральное указание»:
+ *    · ставка есть      -> «НДС 5%»;
+ *    · ставка ноль      -> «без НДС» — налог не начислялся, и это ответ
+ *      на вопрос «почему итог равен подытогу», а не предупреждение;
+ *    · накладной нет    -> НИЧЕГО: первая подпись уже говорит «введена
+ *      вручную», и повторять это вторым словом незачем. Так выглядит
+ *      партия, у которой ставка не записана вовсе, — своей выдумывать ей
+ *      нельзя (требование 12).
+ *
+ *  Читается ТОЛЬКО из записи. Настройки здесь не спрашиваются ни разу:
+ *  спросить их значило бы показать сегодняшнюю ставку у вчерашней
+ *  покупки. */
+function batchVatSub(b){
+  if (!b.inv) return '';
+  return b.inv.vatPct
+    ? tr('vat.rowRate', { pct: b.inv.vatPct })
+    : tr('vat.rowNone');
+}
 function viewProductCard(){
   var p = productById(ui.detail.id);
   if (!p){ ui.detail = null; return viewProducts(); }
@@ -15096,16 +15637,18 @@ function viewProductCard(){
   (p.batches || []).forEach(function(b, i){
     rows += row({ lead: avsq(units(b.qty)),
       k: tr('prod.batchN', {n: i + 1, date: fmtDateLong(b.date)}),
+      /* ++++++ CURRENCY VAT ++++++ ставка ушла отсюда во ВТОРУЮ подпись:
+         эта обрывается многоточием, и на телефоне налог не читался вовсе.
+         Плейсхолдер {vat} у ключа остаётся пустым — сам ключ не тронут. */
       sub: b.inv
         ? tr('inv.breakdown', {boxes: b.inv.boxes, per: b.inv.unitsPerBox,
-              price: fmtMinor(b.inv.pricePerBoxCents), cur: esc(b.inv.cur),
-              vat: b.inv.vatPct ? tr('inv.plusVat', {pct: b.inv.vatPct}) : ''})
+              price: fmtMinor(b.inv.pricePerBoxCents), cur: esc(b.inv.cur), vat: ''})
         : tr('prod.byHand'),
       /* ++++++ PRODUCT SNAPS ++++++ вторая подпись переносится, а не
          обрезается (хрупкое место 26) — курс в неё помещается целиком */
       /* ++++++ EXPENSE LOT ++++++ и рядом с ним — партия, в которую эта
          позиция входит; строка открывает карточку партии. */
-      sub2: [batchRateSub(p, b), batchLotSub(p, i)]
+      sub2: [batchVatSub(b), batchRateSub(p, b), batchLotSub(p, i)]
               .filter(function(t){ return !!t; }).join(' · '),
       v: secV(sec, b.totalCostCents),
       act:'lot-open', arg: (b.lotId || (p.id + '#' + i)) });
@@ -15140,10 +15683,15 @@ function formProduct(){
       tr(f.mode === 'inv' ? 'inv.cur' : 'inv.curBuy') + '</span>' + curSelect('product.cur', f.cur) + '</label>' +
     '<label class="f" style="margin:0"><span>' + tr('prod.batchDate') + '</span>' +
       input({ f:'product.date', value:f.date, type:'date' }) + '</label></div></div>';
-  if (f.mode === 'inv'){
-    h += '<div class="filters" style="margin:13px 0 0">' +
-      '<button type="button" class="chipf' + (f.vatOn ? ' on' : '') + '" data-act="vat">' +
-      tr(f.vatOn ? 'prod.vatOn' : 'prod.vatOff', {pct: state.settings.vatPct}) + '</button></div>';
+  /* ++++++ CURRENCY VAT ++++++ поля НЕТ ВОВСЕ там, где налога нет:
+     выключенное поле обещало бы выбор, которого не существует, а нулевое
+     — налог, которого не начисляли (область 44). */
+  if (vatFormShow()){
+    h += '<div class="f" style="margin:13px 0 0"><div class="two">' +
+      '<label class="f" style="margin:0"><span>' + tr('vat.field') + '</span>' +
+      input({ f:'product.vatPct', value:f.vatPct, mode:'decimal', id:'pVat', ph:'5' }) +
+      '</label><div style="flex:1 1 0"></div></div>' +
+      '<small class="hint">' + tr('vat.formHint', {cur: esc(f.cur)}) + '</small></div>';
   }
   h += '</div></section>';
 
@@ -15224,6 +15772,51 @@ function mergeNoteText(i){
   if (!exist) return tr('prod.mergeNew');
   return tr('prod.mergeExisting', {left: units(productStats()[exist.id].remaining)});
 }
+/* ++++++ CURRENCY VAT ++++++ ФОРМА ПРИХОДА: ставка приходит из валюты.
+ *
+ * Прежде здесь стоял чип «НДС 5% включён», и он делал две вещи сразу:
+ * решал, начислять ли налог ЭТОМУ приходу, и писал ответ в
+ * `state.settings.vatOn` — то есть менял умолчание для всех будущих.
+ * Одно нажатие, два последствия, и второе не было названо нигде.
+ *
+ * Теперь вопросов тоже два, но у каждого своё место: «есть ли налог у
+ * этой страны» решают настройки, «сколько его в этом приходе» — поле, и
+ * поле в настройки НЕ ПИШЕТ (требование 7). */
+
+/** Ставка, которую форма ПОДСТАВЛЯЕТ. Зовётся из трёх мест, и вопрос во
+ *  всех трёх один — «что предлагает эта валюта сейчас»: при открытии
+ *  формы, при смене валюты в ней и после правки настроек. */
+function vatFormReset(){
+  var f = ui.form.product;
+  if (!f) return;
+  var d = vatDefaultPct(state.settings, f.cur);
+  f.vatPct = (d === null) ? '' : trimNum(d);
+}
+/** Печатать ли поле. У ручного ввода НДС не бывает и не бывало: там нет
+ *  ни коробок, ни цены за коробку, — начислять не на что. */
+function vatFormShow(){
+  var f = ui.form.product;
+  return !!f && f.mode === 'inv' && vatOf(state.settings, f.cur).on;
+}
+/** Ставка, которой считается ЭТА позиция. Поля нет — налога нет.
+ *  Читается ТОЛЬКО когда vatLineErr() промолчал. */
+function vatFormPct(){
+  if (!vatFormShow()) return 0;
+  var v = parsePct(ui.form.product.vatPct);
+  return vatPctOk(v) ? v : 0;
+}
+/** Что не так со ставкой в форме, или пустая строка.
+ *
+ *  ПУСТОЕ ПОЛЕ — ОТКАЗ, а не ноль. Поле приходит заполненным, и стереть
+ *  его значит не сказать ничего; подставить вместо этого ноль значило бы
+ *  решить за владельца, что накладная пришла без налога, — и записать
+ *  это в приход навсегда. Ноль он пишет сам, одной клавишей. */
+function vatLineErr(){
+  if (!vatFormShow()) return '';
+  var v = parsePct(ui.form.product.vatPct);
+  return vatPctOk(v) ? '' : tr('err.vatPct', { max: VAT_MAX });
+}
+
 /* Одна позиция. Арифметика — слово в слово из прежнего readInvoice():
    всё считается в валюте инвойса и переводится в базу ОДНИМ округлением. */
 function readLine(i){
@@ -15244,7 +15837,12 @@ function readLine(i){
   if (priceMinor === null) return { err: tr('err.invPrice') };
   var qty = boxes * per;
   var subtotalMinor = boxes * priceMinor;
-  var vatMinor = f.vatOn ? Math.round(subtotalMinor * state.settings.vatPct / 100) : 0;
+  /* ++++++ CURRENCY VAT ++++++ ставку даёт ВАЛЮТА, а не глобальная
+     настройка. Формула ниже — прежняя до символа. */
+  var vatErr = vatLineErr();
+  if (vatErr) return { err: vatErr };
+  var vatPct = vatFormPct();
+  var vatMinor = vatPct > 0 ? Math.round(subtotalMinor * vatPct / 100) : 0;
   var totalMinor = subtotalMinor + vatMinor;
   var unitExactMinor = totalMinor / qty;
   return { qty:qty, subtotal:subtotalMinor, vat:vatMinor, total:totalMinor, cur:cur,
@@ -17976,23 +18574,39 @@ function curPickBox(on){
  *  Обе кнопки — СОСЕДИ строки, а не её потомки: <button> внутри <button>
  *  браузер перевешивает, и строка проглотила бы нажатие (область 25). */
 function curPickRowsHTML(){
-  var d = curPickDraft, h = '';
+  var d = curPickDraft, h = '', vbad = curPickVatBad();
   d.codes.forEach(function(c){
     var on = own(d.on, c), isBase = on && c === d.base;
     var sub = isBase ? tr('cp.base') : (curIsPopular(c) ? esc(curName(c)) : tr('cp.own'));
     var canDel = !curIsPopular(c) && !isBase;
+    /* ++++++ CURRENCY VAT ++++++ название в скобках, рядом с кодом:
+       «TJS (Сомони)». Скобки живут в ПОДПИСИ, а код остаётся в <b>
+       нетронутым — по нему наборы находят строку валюты. */
+    /* ++++++ VAT IN PICKER ++++++ ставка стоит в строке своей валюты, а
+       слово «НДС» — ВНУТРИ пустого поля, а не подписью слева: подпись
+       съедала около 30 px, и название обрывалось раньше (замер на 320 px,
+       решение 3). Заполненное поле показывает число, знак «%» — справа. */
+    var vv = own(d.vat, c) ? d.vat[c] : '';
     h += '<div class="currow">' +
-      row({ lead: curPickBox(on), k: esc(c), sub: sub,
+      row({ lead: curPickBox(on), k: esc(c), sub: '(' + sub + ')',
             act: 'cp-toggle', arg: c, noChev: true }) +
-      (on && !isBase
-        ? '<button type="button" class="curbase" data-act="cp-base" data-arg="' + esc(c) +
-          '">' + tr('cp.makeBase') + '</button>'
+      (on
+        ? '<span class="vatpct' + (vbad.indexOf(c) > -1 ? ' bad' : '') + '">' +
+          input({ f:'cp.vat_' + c, value: vv, mode:'decimal',
+                  ph: esc(tr('vat.short')), id:'cpv_' + c }) +
+          '<i class="sfx">%</i></span>'
         : '') +
       (canDel
         ? '<button type="button" class="curdel" data-act="cp-del" data-arg="' + esc(c) +
           '" aria-label="' + esc(tr('w.delete')) + '">' + ico('cross') + '</button>'
         : '') +
-      '</div>';
+      /* Гнездо есть ВСЕГДА — оно и держит высоту строки постоянной. */
+      '<div class="curslot">' +
+        (on && !isBase
+          ? '<button type="button" class="curbase" data-act="cp-base" data-arg="' + esc(c) +
+            '">' + tr('cp.makeBase') + '</button>'
+          : '') +
+      '</div></div>';
   });
   return h;
 }
@@ -18004,6 +18618,33 @@ function curPickOn(){
   for (c in curPickDraft.on) if (own(curPickDraft.on, c)) out.push(c);
   return curOrder(out);
 }
+
+/** ++++++ VAT IN PICKER ++++++ ОДИН УЗЕЛ И ОДНА КНОПКА, без render().
+ *  Поле, в котором стоит каретка, не переписывается никогда — то же
+ *  правило, что у liveSearch() и discSyncPair(). */
+function curPickVatLive(){
+  var n = $('cpNote');
+  if (n) n.innerHTML = curPickNoteHTML();
+  curPickSaveBtn();
+}
+
+/** ++++++ VAT IN PICKER ++++++ ЧЕРНОВИК СТАВОК, РАЗОБРАННЫЙ В ЧИСЛА.
+ *  Спрашиваются ОТМЕЧЕННЫЕ валюты: у снятой поля нет вовсе, и требовать
+ *  от неё ставку значило бы отказывать в сохранении из-за строки, которой
+ *  на экране не видно. */
+function curPickVatNums(){
+  var d = { pct:{} }, list = curPickOn(), i, c;
+  for (i = 0; i < list.length; i++){
+    c = list[i];
+    d.pct[c] = vatCellOf(curPickDraft && own(curPickDraft.vat, c)
+                           ? curPickDraft.vat[c] : '');
+  }
+  return d;
+}
+/** Коды, у которых в поле набрано нечитаемое. Тот же ответ читают и
+ *  доступность «Сохранить», и сообщение под списком: два ответа на один
+ *  вопрос разошлись бы при первой правке. */
+function curPickVatBad(){ return vatDraftBad(curPickVatNums(), curPickOn()); }
 
 /** Курс валюты С УЧЁТОМ ЧЕРНОВИКА: набранный в этом же окне считается
  *  заданным, хотя в документ ещё не попал. Без этого валюта, заведённая
@@ -18030,6 +18671,11 @@ function curPickBaseReady(){
 
 function curPickNoteHTML(){
   var d = curPickDraft, why = curPickBaseReady();
+  /* ++++++ VAT IN PICKER ++++++ негодная ставка называется ПЕРВОЙ: она
+     ближе всего к тому, что владелец только что набрал. */
+  var vbad = curPickVatBad();
+  if (vbad.length) return '<div class="note err" style="margin-top:12px">' +
+    tr('vat.errEmpty', { cur: esc(vbad.join(', ')), max: VAT_MAX }) + '</div>';
   if (why) return '<div class="note warn" style="margin-top:12px">' +
     (why === 'empty' ? tr('cp.needOne') : tr('cp.baseNoRate', { cur: esc(d.base) })) +
     '</div>';
@@ -18063,7 +18709,8 @@ function curPickHTML(){
   return '<div class="body" style="margin-bottom:12px">' +
     tr(curPickDraft.setup ? 'cp.hintFirst' : 'cp.hint') + '</div>' +
     '<div id="cpBody">' + listCard('', curPickRowsHTML()) +
-    curPickNoteHTML() + curPickAddHTML() + '</div>';
+    '<div id="cpNote">' + curPickNoteHTML() + '</div>' +
+    curPickAddHTML() + '</div>';
 }
 
 /** Перерисовка ОДНОГО окна, без render(): лист не часть render() вовсе
@@ -18071,7 +18718,8 @@ function curPickHTML(){
  *  прокрутила бы список к началу. Одиннадцатый частичный перерисовщик. */
 function curPickPaint(){
   var b = $('cpBody');
-  if (b) b.innerHTML = listCard('', curPickRowsHTML()) + curPickNoteHTML() + curPickAddHTML();
+  if (b) b.innerHTML = listCard('', curPickRowsHTML()) +
+    '<div id="cpNote">' + curPickNoteHTML() + '</div>' + curPickAddHTML();
   curPickSaveBtn();
 }
 
@@ -18088,7 +18736,10 @@ function curPickPaint(){
 function curPickSaveBtn(){
   var b = $('cpBody'), m = b && b.closest ? b.closest('.modal-back') : null;
   var btn = m ? m.querySelector('.btns [data-key="ok"]') : null;
-  if (btn) btn.disabled = !!curPickBaseReady();
+  /* ++++++ VAT IN PICKER ++++++ негодная ставка держит кнопку так же, как
+     отсутствие базы: сохранить нельзя по обеим причинам, и обе названы
+     под списком. */
+  if (btn) btn.disabled = !!curPickBaseReady() || curPickVatBad().length > 0;
 }
 /** Снять или поставить галочку — С ЛЮБОЙ валюты, включая базовую.
  *
@@ -18218,6 +18869,11 @@ function curPickApply(convert){
      одна из отмеченных, а прежняя подмешка была третьим местом запрета —
      она возвращала в набор валюту, галочку с которой только что сняли. */
   state.settings.curActive = list;
+  /* ++++++ VAT IN PICKER ++++++ ставки — из того же черновика, что и всё
+     остальное в окне. Негодное сюда не дойдёт: curPickVatBad() проверяется
+     до нажатия и держит «Сохранить» недоступной. */
+  var vnext = vatApplyDraft(state.settings.curVat, curPickVatNums(), list);
+  if (vnext) state.settings.curVat = vnext;
   /* Выбор, переставший быть активным, сбрасывается на безопасное
      умолчание: мёртвая ссылка на экране обещает валюту, которой в списке
      уже нет (требование 2.3, допущение A5). Спрашиваем БУДУЩИЙ набор
@@ -18294,7 +18950,15 @@ function curPickDone(res){
 function curPickSheet(){
   var setup = !curSetupDone(state.settings);
   curPickDraft = { codes: curPickCodes(state.settings), on: {}, rates: {}, del: {},
-                   code:'', rate:'', err:'', setup: setup, base:'' };
+                   vat: {}, code:'', rate:'', err:'', setup: setup, base:'' };
+  /* ++++++ VAT IN PICKER ++++++ ставки в черновик — из настроек. Пустая
+     строка там, где записи нет вовсе: поле обязано быть ПУСТЫМ, а не
+     показывать ноль, которого никто не набирал (для того vatRawOf и
+     отличает «записи нет» от «ставка ноль»). */
+  curPickDraft.codes.forEach(function(c){
+    var e = vatRawOf(state.settings, c);
+    curPickDraft.vat[c] = e ? trimNum(e.pct) : '';
+  });
   curActiveOf(state.settings).forEach(function(c){ curPickDraft.on[c] = true; });
   curPickDraft.base = curBaseFor(curPickOn(), state.settings.baseCurrency);
   dialog({ title: tr(setup ? 'cp.titleFirst' : 'cp.title'), html: curPickHTML(),
@@ -18375,6 +19039,9 @@ function acctCur(){
     h += ratePairCardHTML();
     h += ratePairTableCardHTML();
   }
+  /* ++++++ VAT IN PICKER ++++++ карточки НДС здесь больше нет: ставку
+     задают в окне выбора валют, в строке своей валюты. Второго места для
+     одной настройки быть не должно — оно и было причиной этой работы. */
   /* ++++++ RATELOG FOLD ++++++ последней в разделе и свёрнутой. Карточка
      по-прежнему есть только когда есть что показать. */
   h += rateLogHTML();
@@ -18398,8 +19065,15 @@ function acctBackup(){
       h += listCard(tr('resc.title'), rescRow);
       h += '<div class="note warn">' + tr('resc.storeLine', {key: RESC_KEY}) + '</div>';
     }
+    /* ++++++ ERASE SPLIT ++++++ ДВА действия вместо одного, и второе
+       появляется вместе с настроенным обменом: без входа «удалить
+       везде» — это «удалить здесь», и два одинаковых по последствиям
+       пункта рядом хуже одного. */
     h += listCard(tr('bak.dangerTitle'),
-      row({ k: tr('bak.erase'), sub: tr('bak.eraseHint'), act:'reset' }));
+      row({ k: tr('wipe.rowDevice'), sub: tr('wipe.rowDeviceSub'), act:'wipe-device' }) +
+      (wipeShowAll(wipeSyncOn())
+        ? row({ k: tr('wipe.rowAll'), sub: tr('wipe.rowAllSub'), act:'wipe-all' })
+        : ''));
     /* ++++++ INFO ++++++ блок расщеплён, и линия проведена по смыслу:
        ГДЕ лежат данные и что бывает с файлами — рассказ, он за иконкой;
        РАБОТАЕТ ли запись прямо сейчас — состояние, и оно остаётся на
@@ -18498,6 +19172,9 @@ function live(){
   if (ui.tab === 'acct' && ui.acct === 'cur'){
     n = $('rateTable'); if (n) n.innerHTML = ratePairTableHTML();
     n = $('rateNote');  if (n) n.innerHTML = ratePairNoteText();
+    /* ++++++ CURRENCY VAT ++++++ третий узел того же экрана. Ни один из
+       трёх не предок поля ввода, поэтому каретка цела. */
+    n = $('vatNote');   if (n) n.innerHTML = vatNoteText();
   }
   if (ui.tab === 'money' && ui.seg.money === 'pay'){
     n = $('payHint'); if (n) n.innerHTML = payHintText();
@@ -18721,7 +19398,17 @@ document.addEventListener('input', function(e){
      иначе курсор уезжал бы с каждой буквой. */
   var cf = el.getAttribute && el.getAttribute('data-f');
   if (cf && cf.indexOf('cp.') === 0){
-    if (curPickDraft) curPickDraft[cf.slice(3)] = el.value;
+    if (curPickDraft){
+      var ck = cf.slice(3);
+      /* ++++++ VAT IN PICKER ++++++ ставка живёт в карте, а не отдельным
+         полем черновика: валют десять, и десять полей рядом с code/rate
+         были бы десятью способами промахнуться именем. */
+      if (ck.indexOf('vat_') === 0){
+        curPickDraft.vat[ck.slice(4)] = el.value;
+        curPickVatLive();
+      }
+      else curPickDraft[ck] = el.value;
+    }
     return;
   }
   /* ++++++ DISCOUNT ++++++ поле процента помечено data-d, а не data-f:
@@ -18839,6 +19526,10 @@ function reexpressInvoice(newCur){
     l.cost     = convText(l.cost,     oldCur, newCur, 'product.lines.' + i + '.cost');
   });
   f.cur = newCur;
+  /* ++++++ CURRENCY VAT ++++++ ставка не переносится за валютой: она
+     принадлежит стране, а не сумме. Поле либо получает ставку новой
+     валюты, либо исчезает вовсе. */
+  vatFormReset();
 }
 document.addEventListener('submit', function(e){
   e.preventDefault();
@@ -18893,7 +19584,10 @@ function saveProduct(){
     var inv = f.mode === 'inv'
       ? { boxes: parseIntStrict(l.boxes), unitsPerBox: parseIntStrict(l.perBox),
           pricePerBoxCents: parseMoneyToCents(l.boxPrice),
-          vatPct: f.vatOn ? state.settings.vatPct : 0, cur: f.cur, totalEnteredMinor: r.total }
+          /* ++++++ CURRENCY VAT ++++++ ЗАМОРОЗКА, и она здесь не новая:
+             inv.vatPct пишется один раз и не пересчитывается никогда.
+             Изменился только источник числа. */
+          vatPct: vatFormPct(), cur: f.cur, totalEnteredMinor: r.total }
       : null;
     /* ++++++ ATTACHMENTS ++++++ the description and the staged picture travel
        with the item, so a three-item invoice gives each product its own.
@@ -19252,7 +19946,7 @@ function startProductEdit(id){
   /* ++++++ ATTACHMENTS ++++++ this replaces ui.form.product wholesale, so
      anything staged in the form being abandoned has to be released first. */
   stagedFreeAll();
-  ui.form.product = { mode:'man', cur:b, vatOn:!!state.settings.vatOn,
+  ui.form.product = { mode:'man', cur:b, vatPct:'',
     date: (p.batches[p.batches.length - 1] || {}).date || todayISO(), editId:p.id,
     lines: [{ name:p.name, boxes:'', perBox:'12', boxPrice:'',
       qty: String(p.qty), cost: (st.avgCostCents / 100).toFixed(2),
@@ -19380,22 +20074,399 @@ function deletePerson(id){
       commit();
     });
 }
-function eraseAll(){
+/* ================================================================== *
+ * ++++++ ERASE SPLIT ++++++      ЯДРО ДВУХ ДЕЙСТВИЙ СТИРАНИЯ
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   УДАЛЕНИЕ ДОЕЗЖАЕТ ДО СОСЕДА ТОЛЬКО НАДГРОБИЕМ. НЕТ НАДГРОБИЯ —
+ *   НЕТ УДАЛЕНИЯ, ЕСТЬ ВРЕМЕННАЯ ПУСТОТА НА ОДНОМ УСТРОЙСТВЕ.
+ *
+ * Отсюда обе половины задачи. «Очистить это устройство» надгробий не
+ * ставит — и потому обязано снять вход, иначе первый же оборот вернёт
+ * записи с Диска. «Удалить данные везде» надгробия ставит — и потому
+ * необратимо, и обязано доказать это владельцу ДО нажатия.
+ *
+ * Здесь только чистые функции: ни state, ни ui, ни DOM, ни сети. Ровно
+ * этот файл переезжает в goods-tracker.html одним блоком.
+ *
+ * ES5: var, function, конкатенация строк. Ни let, ни const, ни стрелок,
+ * ни шаблонных строк, ни классов.
+ * ================================================================== */
+
+/** Коллекции, которые ездят обменом, — они же те, что исчезают целиком.
+ *  В приложении этот список УЖЕ ЕСТЬ (`SYNC_COLS`, goods-tracker.html),
+ *  и второго заводить нельзя: два списка разойдутся на первой же новой
+ *  коллекции, и одна из них останется неудалённой навсегда. Поэтому
+ *  здесь — ссылка на существующий, а свой только в стенде, где его нет. */
+var WIPE_COLS = (typeof SYNC_COLS !== 'undefined' && SYNC_COLS)
+  ? SYNC_COLS
+  : ['products', 'people', 'transactions', 'payments', 'returns', 'expenses'];
+
+/** Своё свойство — R20: id вида `constructor` не должен отвечать
+ *  функцией из прототипа. Тот же приём, что во всём остальном файле. */
+function wipeOwn(o, k){ return !!o && Object.prototype.hasOwnProperty.call(o, k); }
+
+/* ------------------------------------------------------------------ */
+/* Сколько чего исчезнет                                              */
+/* ------------------------------------------------------------------ */
+/* Считается по СЫРЫМ коллекциям, а не через actProducts() и соседей:
+ * те отсекают корзину, а корзина исчезнет вместе со всем остальным.
+ * Число «412 выдач» в окне обязано сойтись с тем, что владелец видит на
+ * экране «Выдачи», плюс отдельная строка про корзину. */
+
+function wipeCounts(doc){
+  var out = { total: 0, trashed: 0 }, i, j, col, list, r;
+  for (i = 0; i < WIPE_COLS.length; i++){
+    col = WIPE_COLS[i];
+    list = (doc && doc[col]) || [];
+    out[col] = list.length;
+    out.total += list.length;
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (r && typeof r.trashedAt === 'string' && r.trashedAt) out.trashed++;
+    }
+  }
+  return out;
+}
+
+/** Есть ли вообще что удалять. Пустой документ не получает ни
+ *  надгробий, ни окна с числами: обещание «это нельзя отменить» на
+ *  пустоте — то же, что предупреждение без причины (область 44). */
+function wipeIsEmpty(counts){ return !counts || counts.total === 0; }
+
+/* ------------------------------------------------------------------ */
+/* Что уйдёт под надгробия                                            */
+/* ------------------------------------------------------------------ */
+/* Возвращаются СПИСКИ id, а не изменённый документ: снимает записи
+ * существующий dropFrom() — единственное место, где запись исчезает с
+ * надгробием. Второго механизма удаления в файле быть не должно, и
+ * `state = defaultState()` здесь запрещён именно потому, что уносит
+ * `state.syncTombs` вместе с записями — сегодняшний дефект. */
+
+function wipeRecordIds(doc){
+  var out = {}, i, j, col, list, r;
+  for (i = 0; i < WIPE_COLS.length; i++){
+    col = WIPE_COLS[i];
+    list = (doc && doc[col]) || [];
+    out[col] = [];
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (r && typeof r.id === 'string' && r.id) out[col].push(r.id);
+    }
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Какие файлы убрать                                                 */
+/* ------------------------------------------------------------------ */
+/* ТРИ ИСТОЧНИКА, И КАЖДЫЙ НУЖЕН:
+ *
+ *   документ  — фотографии и накладные, на которые ссылаются товары;
+ *   have      — метаданные этого устройства: файл, приехавший обменом,
+ *               но потерявший ссылку, лежит здесь и больше нигде;
+ *   map       — листинг скрытой папки: СИРОТЫ прошлых стираний живут
+ *               только там. Сегодня их не убирает никто вообще, и
+ *               «удалить везде» — единственный момент, когда это
+ *               вообще произойдёт (решение владельца 4).
+ *
+ * `data.json` сюда попасть не может: adList() отбирает файлы по имени
+ * `att-<id>`, а документ называется иначе. Проверять это в списке
+ * незачем — проверять надо, что уборка идёт по id, а не по именам. */
+
+function wipeFileIds(doc, have, map){
+  var out = [], seen = {}, i, j, p, inv, k;
+  var push = function(id){
+    if (typeof id !== 'string' || !id) return;
+    if (id.indexOf('__') === 0) return;      /* служебные записи хранилища */
+    if (wipeOwn(seen, id)) return;
+    seen[id] = 1; out.push(id);
+  };
+  var ps = (doc && doc.products) || [];
+  for (i = 0; i < ps.length; i++){
+    p = ps[i];
+    if (!p) continue;
+    push(p.photoId);
+    inv = p.invoiceIds || [];
+    for (j = 0; j < inv.length; j++) push(inv[j]);
+  }
+  for (k in have) if (wipeOwn(have, k)) push(k);
+  for (k in map)  if (wipeOwn(map, k))  push(k);
+  return out;
+}
+
+/** Сколько места освободит уборка — по листингу, потому что размер
+ *  файла знает только Диск. Файлы, которых в листинге нет, в счёт не
+ *  идут: врать про мегабайты нельзя. */
+function wipeFileBytes(ids, map){
+  var n = 0, i, m;
+  for (i = 0; i < ids.length; i++){
+    m = wipeOwn(map, ids[i]) ? map[ids[i]] : null;
+    if (m && typeof m.size === 'number') n += m.size;
+  }
+  return n;
+}
+
+/* ------------------------------------------------------------------ */
+/* Слово подтверждения                                                */
+/* ------------------------------------------------------------------ */
+/* Решение владельца 1: без учёта регистра и краевых пробелов.
+ *
+ * Регистр — потому что телефонная клавиатура ставит заглавную сама, и
+ * спорить с ней значит превращать защиту в издевательство. Краевые
+ * пробелы — потому что их добавляет длинное нажатие пробела, а не
+ * намерение.
+ *
+ * ДАЛЬШЕ НОРМАЛИЗАЦИЯ НЕ ИДЁТ. normQ() (свёртка «ё→е» и склейка
+ * пробелов внутри) здесь не зовётся: слово короткое, а второй
+ * нормализатор — это второй ответ на вопрос, на который уже есть один. */
+
+function wipeWordTrim(s){
+  return (typeof s === 'string' ? s : '').replace(/^\s+/, '').replace(/\s+$/, '');
+}
+
+function wipeWordOk(typed, want){
+  var a = wipeWordTrim(typed), b = wipeWordTrim(want);
+  /* Проверяется ЭТАЛОН, а не набранное. Пустое набранное отсеется само
+     сравнением; пустой эталон — нет: `'' === ''` пропустило бы пустое
+     поле, то есть сняло бы защиту целиком. А пустым он становится ровно
+     от той беды, которую этот файл уже знает: потерянный ключ словаря
+     печатается сам собой, и `tr()` вернёт что угодно, кроме слова. */
+  if (!b) return false;
+  return a.toUpperCase() === b.toUpperCase();
+}
+
+/* ------------------------------------------------------------------ */
+/* Что сказать после нажатия                                          */
+/* ------------------------------------------------------------------ */
+/* Решение владельца 5: без сети удалять МОЖНО, но отчёт обязан
+ * различать «удалено везде» и «удалено здесь, отправка ждёт сети».
+ * Сегодня syncRun(false) об успехе молчит вовсе — здесь молчать нельзя:
+ * человек, нажавший необратимую кнопку, обязан узнать, доехало ли. */
+
+function wipeDoneKey(sent){ return sent ? 'wipe.doneAll' : 'wipe.donePending'; }
+
+/** Показывать ли второй пункт вообще. Без настроенного обмена «везде» —
+ *  это «здесь», и два одинаковых по последствиям пункта рядом хуже
+ *  одного: владелец выберет наугад (решение 15). */
+function wipeShowAll(syncOn){ return !!syncOn; }
+
+/* ------------------------------------------------------------------ */
+/* Очистка устройства: о чём предупредить                             */
+/* ------------------------------------------------------------------ */
+/* Очистка заменяет документ пустым — вместе с надгробиями, которые ещё
+ * не уехали. Это потеря, и она называется числом до нажатия, а не
+ * обнаруживается потом соседом. */
+
+function wipeDeviceLoss(pending){
+  return (typeof pending === 'number' && pending > 0) ? pending : 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Что увидит сосед                                                   */
+/* ------------------------------------------------------------------ */
+/* mergeDocs() возвращает stats КАРТОЙ по коллекциям, а не одним числом.
+ * Полоса на втором устройстве печатает сумму: 412 исчезнувших записей
+ * без единого слова неотличимы от поломки. */
+
+function wipeDeletedCount(stats){
+  var n = 0, i, col, s;
+  for (i = 0; i < WIPE_COLS.length; i++){
+    col = WIPE_COLS[i];
+    s = wipeOwn(stats, col) ? stats[col] : null;
+    if (s && typeof s.deleted === 'number') n += s.deleted;
+  }
+  return n;
+}
+
+/** Можно ли ответить «удалить и здесь». Конфликт правки против удаления
+ *  сегодня неразрешим: `remote === null`, и кнопка «взять их» не делает
+ *  ничего — конфликт снимается, запись остаётся. Третий ответ печатается
+ *  ровно на этом виде конфликта. */
+function wipeCanDeleteHere(conflict){
+  return !!conflict && conflict.kind === 'edit-vs-delete';
+}
+
+/* ------------------------------------------------------------------ */
+/* Импорт копии поверх удаления                                       */
+/* ------------------------------------------------------------------ */
+/* Кнопка «Сначала скачать копию» без работающего пути назад — обман
+ * (решение владельца 2). Сегодня копия не работает: finishImport()
+ * ставит `state = d`, надгробия берутся из файла, а надгробия на Диске
+ * остаются и приезжают обратно — записи исчезают снова, тихо.
+ *
+ * Здесь считается ПЕРЕСЕЧЕНИЕ: какие записи копии сейчас под
+ * надгробием. Пусто — диалог импорта обязан остаться прежним побайтово;
+ * не пусто — ОДИН вопрос вместо двухсот конфликтов. */
+
+function wipeImportClash(tombs, incoming){
+  var out = [], seen = {}, i, j, col, list, r, id;
+  if (!tombs) return out;
+  for (i = 0; i < WIPE_COLS.length; i++){
+    col = WIPE_COLS[i];
+    list = (incoming && incoming[col]) || [];
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (!r || typeof r.id !== 'string' || !r.id) continue;
+      id = r.id;
+      if (!wipeOwn(tombs, id) || wipeOwn(seen, id)) continue;
+      seen[id] = 1; out.push(id);
+    }
+  }
+  return out;
+}
+
+/* ================================== ++++++ ERASE SPLIT ++++++ ==
+ * ДВА ДЕЙСТВИЯ ВМЕСТО ОДНОГО.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   УДАЛЕНИЕ ДОЕЗЖАЕТ ДО СОСЕДА ТОЛЬКО НАДГРОБИЕМ. НЕТ НАДГРОБИЯ —
+ *   НЕТ УДАЛЕНИЯ, ЕСТЬ ВРЕМЕННАЯ ПУСТОТА НА ОДНОМ УСТРОЙСТВЕ.
+ *
+ * Прежняя «Стереть все данные» надгробий не ставила: `state =
+ * defaultState()` уносит `state.syncTombs` вместе с записями, и первый
+ * же обмен приносил всё обратно с Диска. Кнопка выглядела сломанной.
+ *
+ * Теперь их две, и они честно разные:
+ *
+ *   wipeDevice()      очистить ЭТО устройство — надгробий не ставит,
+ *                     зато снимает вход, иначе записи вернутся;
+ *   wipeEverywhere()  удалить ВЕЗДЕ — надгробия на записи и на файлы,
+ *                     необратимо, за тремя защитами.
+ *
+ * Ядро решений (wipeCounts, wipeFileIds, wipeWordOk и прочие) стоит
+ * выше этого блока и не знает ни state, ни DOM.
+ * ================================================================== */
+
+/* Листинг скрытой папки: нужен окну (сказать число файлов) и уборке
+   (убрать СИРОТ, которых не убирает сегодня никто). Модульная
+   переменная, как prodEditAnchor: наполовину открытому окну нечего
+   делать ни в документе, ни в резервной копии. */
+var wipeMap = null;
+
+/* Ждём ли отчёта об отправке удаления. Ответ приходит асинхронно, и
+   различить «удалено везде» и «удалено здесь, ждёт сети» можно только
+   по итогу оборота — решение владельца 5. */
+var wipeSent = false;
+
+/** Настроен ли обмен ВООБЩЕ. Не syncCfgFull(): тот требует живой ключ,
+ *  а ключ приезжает из хранилища системы асинхронно — ряд «удалить
+ *  везде» мигал бы при каждом запуске. Вопрос здесь другой: есть ли у
+ *  этого устройства вторая сторона, до которой удалению надо доехать. */
+function wipeSyncOn(){
+  if (modeIsProduct()) return !!(gdTokens || (syncRead() || {}).bind);
+  var o = syncRead();
+  return !!(o && o.on && o.owner && o.repo);
+}
+
+/** Что лежит в скрытой папке. Своей сети не заводит: те же gdAuthLive()
+ *  и adList(), которыми ходит обмен файлов. Отказ — не беда: число
+ *  просто не будет названо, а удаление всё равно разрешено. */
+function wipeListRemote(cb){
+  if (!modeIsProduct() || !gdTokens){ cb('off'); return; }
+  gdAuthLive(function(err, access){
+    if (err){ cb(err); return; }
+    adList(access, function(e2, map){
+      if (e2){ cb(e2); return; }
+      cb(null, map);
+    });
+  });
+}
+
+/** Строка о файлах: число и размер — ИЗ ЛИСТИНГА, потому что размер
+ *  знает только Диск. Нет листинга — нет числа, и это говорится
+ *  словами вместо выдуманного нуля. */
+function wipeFilesText(){
+  if (!wipeMap) return tr('wipe.filesWait');
+  var ids = wipeFileIds(state, attMeta, wipeMap);
+  return nq(ids.length, 'file') + ' · ' + fmtBytes(wipeFileBytes(ids, wipeMap));
+}
+
+/** Числа окна. Считаются по СЫРЫМ коллекциям: actProducts() и соседи
+ *  отсекают корзину, а корзина исчезнет вместе со всем остальным. */
+function wipeNumsHTML(files){
+  var c = wipeCounts(state), h, rows, i;
+  rows = [['wipe.nProducts', c.products], ['wipe.nPeople', c.people],
+          ['wipe.nTx', c.transactions], ['wipe.nPay', c.payments],
+          ['wipe.nRet', c.returns], ['wipe.nExp', c.expenses]];
+  h = '<div class="note calc"><dl class="wnums">';
+  for (i = 0; i < rows.length; i++)
+    h += '<dt>' + esc(tr(rows[i][0])) + '</dt><dd>' + rows[i][1] + '</dd>';
+  h += '<dt class="sum">' + esc(tr('wipe.nTotal')) + '</dt>' +
+       '<dd class="sum">' + c.total + '</dd>';
+  if (c.trashed)
+    h += '<dt>' + esc(tr('wipe.nTrash')) + '</dt><dd>' + c.trashed + '</dd>';
+  if (files)
+    h += '<dt>' + esc(tr('wipe.files')) + '</dt>' +
+         '<dd id="wipeFiles">' + esc(files) + '</dd>';
+  h += '</dl></div>';
+  return h;
+}
+
+/** Сколько правок пропадёт вместе с документом. Очистка заменяет его
+ *  пустым — вместе с надгробиями, которые ещё не уехали, — и это
+ *  потеря: её называют числом ДО нажатия, а не обнаруживают потом
+ *  соседом. Пусто — строки нет вовсе (область 44). */
+function wipeLossHTML(){
+  var n = wipeDeviceLoss(syncCfgFull() ? syncPending() : 0);
+  return n ? '<p>' + tr('wipe.devicePending', { n: nq(n, 'change') }) + '</p>' : '';
+}
+
+/* ------------------------------------------------------------------ */
+/* Очистить это устройство                                            */
+/* ------------------------------------------------------------------ */
+/* ПРИВЯЗКА И КЛЮЧ ВХОДА СНИМАЮТСЯ ТОЛЬКО ВМЕСТЕ.
+ *
+ * Прежде снималась привязка, а ключ оставался, и это худшее из трёх
+ * состояний: ключ на месте — gdBoot() при следующем запуске тихо зовёт
+ * syncRun(), и записи возвращаются; привязки нет — вход ДРУГОЙ учётной
+ * записью читается как первый, вопроса не будет, и вернувшиеся записи
+ * прежнего владельца уезжают на чужой Диск.
+ *
+ * Это то же, что написано у signOutKeep(), прочитанное в обратную
+ * сторону: пока на устройстве лежат данные учётной записи, оно к ней и
+ * привязано. Данных нет — нет ни привязки, ни ключа. */
+
+function wipeDevice(){
   /* ++++++ RESCUE ++++++ см. выше */
-  /* ++++++ DIALOGS SAY ++++++ R25. defaultState() возвращает к исходным
-     базовую валюту, курсы, НДС и валюту «Сводки»; язык — единственное,
-     что сохраняется намеренно. Перечисление в диалоге об этом молчало. */
-  var resetBody = tr('dlg.resetBody') +
+  /* ++++++ DIALOGS SAY ++++++ R25. Настройки остаются, и об этом сказано
+     прежней фразой dlg.resetAlso — она не изменилась ни на букву. */
+  var body = '<div class="note info">' + tr('wipe.deviceKeep') + '</div>' +
+    wipeNumsHTML('') +
+    '<p>' + esc(tr('wipe.deviceSignout')) + ' ' + esc(tr('wipe.deviceBack')) + '</p>' +
     '<p>' + tr('dlg.resetAlso') + '</p>' +
+    wipeLossHTML() +
     (rescBlocked() ? '<p>' + tr('resc.eraseWarn') + '</p>' : '');
-  confirmBox(tr('dlg.resetTitle'), resetBody, tr('dlg.resetOk'), true).then(function(okd){
-    if (!okd) return;
+  /* ВЕТКИ «удалять нечего» здесь НЕТ, и это не забывчивость. Очистка
+     устройства шире, чем удаление записей: она снимает вход, чистит
+     файлы и снимает запрет на запись, оставленный нечитаемым
+     документом (R6). На пустом документе всё это по-прежнему имеет
+     смысл — а окно без кнопок отняло бы единственный путь к ним.
+     Найдено прогоном: набор запаса открывал стирание на пустом
+     документе именно ради rescAllow(). */
+  /* Кнопка ОБЫЧНАЯ, не красная: красный в этом файле означает
+     «разрушительное», а здесь данные целы на Диске и возвращаются
+     входом. Покрасить обе значило бы стереть разницу ровно там, ради
+     чего действия и разделены. */
+  dialog({ title: tr('wipe.deviceTitle'), html: body,
+           buttons: [{ key: 'ok', label: tr('wipe.deviceOk'), variant: 'primary' }]
+         }).then(function(okd){
+    if (okd !== 'ok') return;
+    /* Отложенный обмен отменяется ПЕРВЫМ: он мог бы уехать с
+       промежуточным состоянием документа. */
+    syncCancelPending();
     rescAllow();
     /* ++++++ ACCOUNT BIND ++++++ данных этой учётной записи на
        устройстве больше нет — значит и привязки быть не должно. */
     if (modeIsProduct()){
       var syncO = syncRead();
       if (syncO){ syncWrite(bindResetSync(bindClear(syncO))); }
+      /* И ключа тоже: без этого записи вернутся при первом же запуске,
+         а снятая привязка пропустит вход чужой учётной записью без
+         единого вопроса. */
+      gdForgetTokens();
     }
     /* ++++++ ERASE KEEPS ++++++ R25. Настройки снимаются ДО того, как
        документ заменён: после `defaultState()` прежних значений нет нигде. */
@@ -19419,8 +20490,115 @@ function eraseAll(){
     if (wiped) attClear(function(err){
       if (err){ ui.attErr = tr('att.errSave', {err:String(err)}); render(); }
     });
-
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* Удалить данные везде                                               */
+/* ------------------------------------------------------------------ */
+
+/** Предикат для dropFrom(): не оставить ничего из перечисленного.
+ *  Отдельной функцией, чтобы замыкание цикла не держало переменную. */
+function wipeKeeper(dead){
+  return function(r){ return !(r && typeof r.id === 'string' && own(dead, r.id)); };
+}
+
+/** Снять ВСЕ записи — существующим dropFrom(), то есть с надгробием.
+ *  Только оно и делает удаление окончательным на всех устройствах;
+ *  `state = defaultState()` унёс бы надгробия вместе с записями, и это
+ *  ровно тот дефект, ради которого написана эта задача. */
+function wipeDropAll(){
+  var ids = wipeRecordIds(state), i, j, col, dead, n = 0;
+  for (i = 0; i < WIPE_COLS.length; i++){
+    col = WIPE_COLS[i];
+    dead = {};
+    for (j = 0; j < ids[col].length; j++){ dead[ids[col][j]] = 1; n++; }
+    dropFrom(col, wipeKeeper(dead));
+  }
+  return n;
+}
+
+function wipeEverywhere(){
+  if (wipeIsEmpty(wipeCounts(state))){
+    dialog({ title: tr('wipe.allTitle'),
+             html: '<div class="note">' + esc(tr('wipe.nothing')) + '</div>',
+             bare: true, closeX: true });
+    return;
+  }
+  var word = tr('wipe.word');
+  var body =
+    '<div class="note err">' + tr('wipe.allBody') + '</div>' +
+    wipeNumsHTML(wipeFilesText()) +
+    '<p>' + tr('dlg.resetAlso') + '</p>' +
+    /* Копия — В ТЕЛЕ окна, а не в ряду ответов: ряд отвечает на вопрос
+       заголовка, а скачивание копии ответом не является. Действие
+       существующее — второй двери к файлу копии заводить нельзя, — и
+       лист от него не закрывается: render() не трогает #modalRoot. */
+    '<button type="button" class="btn sec block" data-act="export">' +
+      esc(tr('wipe.allBackup')) + '</button>' +
+    '<label class="f"><span>' + tr('wipe.allWordAsk', { word: esc(word) }) + '</span>' +
+      '<input id="wipeWord" type="text" autocomplete="off" spellcheck="false">' +
+      '<small class="hint">' + esc(tr('wipe.allWordHint')) + '</small></label>';
+
+  /* Листинг спрашивается ПОСЛЕ открытия окна и переписывает ОДИН узел:
+     ждать сети с закрытым экраном значило бы молчать, а без сети
+     удаление всё равно разрешено (решение владельца 5). */
+  wipeMap = null;
+  wipeListRemote(function(err, map){
+    if (err || !map) return;
+    wipeMap = map;
+    var el = document.querySelector('.modal #wipeFiles');
+    if (el) el.textContent = wipeFilesText();
+  });
+
+  dialog({
+    title: tr('wipe.allTitle'), html: body,
+    buttons: [{ key: 'ok', label: tr('wipe.allOk'), variant: 'danger' }]
+  }).then(function(k){ if (k === 'ok') wipeAllApply(); });
+
+  /* Кнопка гаснет, пока слово не напечатано, — а не ругается после
+     нажатия: любая кнопка листа закрывает его, и напечатанное пропало
+     бы. Один узел и один атрибут, как у payFillBtn; поле под кареткой
+     не переписывается никогда. */
+  /* Ключ кнопки — 'ok', как у confirmBox(): наборы и привычка жмут
+     именно его, и заводить второй ключ подтверждения незачем. */
+  var go = document.querySelector('.modal button[data-key="ok"]'), inp = $('wipeWord');
+  if (go) go.disabled = true;
+  if (inp) inp.addEventListener('input', function(){
+    if (go) go.disabled = !wipeWordOk(inp.value, word);
+  });
+}
+
+/* ПОРЯДОК ЗДЕСЬ — ЗАЩИТА, А НЕ СПИСОК ДЕЛ:
+ *
+ *   файлы посчитать -> надгробия на записи -> commitThenDrop -> обмен
+ *
+ * Файлы считаются ДО снятия записей: после них товара в документе уже
+ * нет и спросить его фотографию будет не у кого (правило trashAttIds).
+ * Дальше работает существующий commitThenDrop(): он и есть тот самый
+ * порядок «ссылка на диске раньше, чем уничтожены байты» — save(),
+ * render(), надгробия на файлы, и только потом attDel. */
+function wipeAllApply(){
+  var files = wipeFileIds(state, attMeta, wipeMap || {});
+  var n = wipeDropAll();
+  attForget(files);
+  commitThenDrop(files);
+  if (!lastSaveOk) return;          /* документ не сохранился — не врём об успехе */
+  toast(tr('wipe.doneRecs', { n: nq(n, 'rec') }), 'ok');
+  /* Обмен — немедленно и ГРОМКО: владелец нажал необратимую кнопку и
+     обязан узнать, доехало ли. commitThenDrop() планирует свой оборот
+     отложенно; лишний оборот безвреден, молчание — нет. */
+  if (syncCfgFull()){ wipeSent = true; syncRun(true); }
+  else banner('wipe-done', 'warn', esc(tr('wipe.donePending')));
+}
+
+/** Полоса «пришло удаление» — один узел в #alerts, никакого render():
+ *  то же правило, что у xtabPaint() и bakBarPaint(). Живёт до
+ *  следующего оборота: пустой обмен её снимает. */
+function wipeDelBarPaint(stats){
+  var n = wipeDeletedCount(stats);
+  if (!n){ removeBanner('sync-del'); return; }
+  banner('sync-del', 'warn', tr('wipe.peerBar', { n: nq(n, 'record') }));
 }
 
 /* ================================================== ОБРАБОТКА КЛИКОВ == */
@@ -19591,11 +20769,9 @@ function handleAct(act, arg, e, srcEl){
     ui.tab = 'tx'; ui.seg.tx = 'new'; ui.detail = null; ui.err = '';
     render(); window.scrollTo(0,0); return;
   }
-  if (act === 'vat'){
-    ui.form.product.vatOn = !ui.form.product.vatOn;
-    state.settings.vatOn = ui.form.product.vatOn; save();
-    render(); return;
-  }
+  /* ++++++ CURRENCY VAT ++++++ галочка правит ЧЕРНОВИК. render() здесь
+     безопасен: поля читаются из ui.form.vat, куда обработчик input их уже
+     записал, а каретки в момент нажатия по кнопке нет. */
   if (act === 'line-add'){
     ui.form.product.lines.push(newLine());
     ui.err = ''; render();
@@ -19755,7 +20931,8 @@ function handleAct(act, arg, e, srcEl){
   if (act === 'cp-add'){ curPickAdd(); return; }
   if (act === 'export'){ exportBackup(); return; }
   if (act === 'import-click'){ $('importInput').click(); return; }
-  if (act === 'reset'){ eraseAll(); return; }
+  if (act === 'wipe-device'){ wipeDevice(); return; }
+  if (act === 'wipe-all'){ wipeEverywhere(); return; }
   /* ++++++ TWO WINDOWS ++++++ выход из устаревшего окна — перечитать документ.
      Ничего не сохраняет: перезагрузка и есть отказ от своей копии. */
   if (act === 'xtab-reload'){ location.reload(); return; }
@@ -20142,15 +21319,27 @@ function syncConflictSheet(){
     if (!r) return '—';
     return esc(String(r.name || r.note || r.id || '—'));
   };
+  /* ++++++ ERASE SPLIT ++++++ ТРЕТИЙ ОТВЕТ, И БЕЗ НЕГО СПОР НЕРАЗРЕШИМ.
+     У конфликта «правка против удаления» remote === null, поэтому
+     «взять с другого устройства» защищено условием ниже и не делает
+     НИЧЕГО: конфликт снимается, запись остаётся. Пока «удалить везде»
+     не существовало, случай был почти недостижим; с ним он обычный. */
+  var isDel = wipeCanDeleteHere(c);
+  var btns = isDel
+    ? [{ key:'mine', label: tr('sy.cMine') },
+       { key:'del', label: tr('wipe.delHere'), variant:'danger' }]
+    : [{ key:'mine', label: tr('sy.cMine') },
+       { key:'theirs', label: tr('sy.cTheirs'), variant:'primary' }];
   dialog({
-    title: tr('sy.cTitle'),
-    html: '<div class="note">' + esc(tr('sy.cBody', {n: syncStatus.conflicts.length})) + '</div>' +
+    title: isDel ? tr('wipe.cDelTitle') : tr('sy.cTitle'),
+    html: '<div class="note">' +
+            (isDel ? tr('wipe.cDelBody')
+                   : esc(tr('sy.cBody', {n: syncStatus.conflicts.length}))) + '</div>' +
           '<div class="row"><div class="k"><b>' + name(c.local) + '</b>' +
           '<small>' + esc(c.localAt || '') + '</small></div></div>' +
           '<div class="row"><div class="k"><b>' + name(c.remote) + '</b>' +
-          '<small>' + esc(c.remoteAt || '') + '</small></div></div>',
-    buttons: [{ key:'mine', label: tr('sy.cMine') },
-              { key:'theirs', label: tr('sy.cTheirs'), variant:'primary' }]
+          '<small>' + esc(isDel ? (c.deletedAt || '') : (c.remoteAt || '')) + '</small></div></div>',
+    buttons: btns
   }).then(function(k){
     if (!k) return;
     if (k === 'theirs' && c.remote){
@@ -20158,6 +21347,11 @@ function syncConflictSheet(){
       for (i = 0; i < list.length; i++) if (list[i].id === c.id){ list[i] = c.remote; break; }
       touch(c.id);
     }
+    /* ++++++ ERASE SPLIT ++++++ принять удаление — это существующий
+       dropFrom(): только он ставит надгробие, и только надгробие делает
+       удаление окончательным. Каскада здесь нет и не нужно: соседние
+       записи приехали со своими надгробиями, когда удаляли там. */
+    if (k === 'del') dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
     syncStatus.conflicts.shift();
     syncBarPaint();
     commit();
@@ -20245,6 +21439,13 @@ function syncRun(loud){
       syncStatus.err = '';
       syncStatus.conflicts = r.conflicts || [];
       syncBarPaint();
+      /* ++++++ ERASE SPLIT ++++++ ПРИШЛО УДАЛЕНИЕ — И ОБ ЭТОМ ГОВОРЯТ.
+         Числа возвращает то же слияние, и до этой задачи их никто не
+         читал: четыре сотни записей исчезали молча, и владелец видел
+         пустую программу без единого слова о том, почему. */
+      wipeDelBarPaint(r.stats);
+      /* И ответ на необратимое нажатие: доехало или ждёт сети. */
+      if (wipeSent){ wipeSent = false; banner('wipe-done', 'ok', esc(tr('wipe.doneAll'))); }
       /* ++++++ GDRIVE ++++++ дорога у режимов разная, и сообщение об
          успехе обязано её называть: в продуктовой сборке нет ни
          репозитория, ни учётной записи GitHub, и слово «GitHub» на
@@ -20263,6 +21464,9 @@ function syncRun(loud){
       });
     } else {
       syncStatus.err = (r && r.err) || 'server';
+      /* ++++++ ERASE SPLIT ++++++ оборот не удался — удаление осталось
+         здесь и ждёт сети. Молчать нельзя: нажатие было необратимым. */
+      if (wipeSent){ wipeSent = false; banner('wipe-done', 'warn', esc(tr('wipe.donePending'))); }
       if (r && r.conflicts && r.conflicts.length){
         syncStatus.conflicts = r.conflicts;
         syncBarPaint();
@@ -20417,6 +21621,16 @@ function gdAuthLive(cb){
   gdSecret(function(secret){
   gdRefresh(GOOGLE_CLIENT_ID, secret, gdTokens.refresh, function(err, t){
     if (err){
+      /* ++++++ AUTH EXPIRED ++++++ `invalid_grant` НА ЭТОМ ПУТИ ЗНАЧИТ
+         ДРУГОЕ, ЧЕМ НА ВХОДЕ. При входе он означает «одноразовый код
+         просрочен, попробуйте ещё раз», и фраза «вход не успел
+         завершиться» там верна. Здесь вход давно состоялся: просрочен
+         КЛЮЧ ОБНОВЛЕНИЯ, повторять нечего, и выход один — войти заново.
+         Пока оба случая назывались одним словом, программа советовала
+         повторить, держала мёртвый ключ и продолжала считать владельца
+         вошедшим — обмен молча не проходил, пока он сам не догадывался
+         выйти и войти. Живая беда владельца 4 сентября 2026. */
+      if (err === 'expired') err = 'auth';
       /* Отозванный доступ — не сетевая беда: чинится только новым
          входом, и сказать об этом надо словами. */
       if (err === 'auth') gdForgetTokens();
