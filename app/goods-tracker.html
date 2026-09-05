@@ -749,9 +749,34 @@
 
   .modal-back{position:fixed;inset:0;background:rgba(10,16,26,.45);z-index:90;
     display:flex;align-items:flex-end;justify-content:center;padding:0}
+  /* ++++++ SHEET SCROLL ++++++ ПРОКРУТКА ЖИВЁТ ВНУТРИ ЛИСТА, А НЕ НА
+     САМОМ ЛИСТЕ.
+     Было: overflow-y:auto стоял ЗДЕСЬ — на элементе, у которого
+     скруглены верхние углы (22 px, на телефоне 20). Полоса поэтому шла
+     по всей высоте окна, включая скруглённую шапку, и ТОРЧАЛА над
+     краем: обрезать её было нечем, overflow:hidden не было.
+     Стало: лист — колонка, которая обрезает (скругление наконец режет
+     то, что в него не влезает), а прокручивается ТЕЛО. Отсюда же само
+     собой выходит то, что просил владелец: заголовок и пояснение
+     стоят, уезжает только список.
+     Приём не новый — ровно так уже устроено окно пояснения
+     (.modal-back[data-info] ниже); задача распространяет его на все
+     листы, второго механизма не заводя. */
   .modal{background:var(--surface);width:100%;max-width:520px;border-radius:22px 22px 0 0;
     padding:20px var(--pad) calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg);
-    animation:sheetUp .18s ease-out;max-height:92vh;overflow-y:auto}
+    animation:sheetUp .18s ease-out;max-height:92vh;
+    display:flex;flex-direction:column;overflow:hidden}
+  .modal > h3{flex:0 0 auto}
+  .modal > .btns{flex:0 0 auto}
+  /* min-height:0 — без него flex-элемент не даёт себя сжать ниже
+     содержимого, и прокрутка не появляется вовсе. */
+  .modal > .body{flex:1 1 auto;min-height:0;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  /* Подзаголовок листа: стоит МЕЖДУ заголовком и телом, вне прокрутки.
+     Тот же кегль и цвет, что у .modal .body, — это тот же текст, просто
+     он больше не уезжает вместе со списком. */
+  .modal > .sub{flex:0 0 auto;font-size:14px;color:var(--ink-2);line-height:1.55;
+    margin:0 0 12px}
   @keyframes sheetUp{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
   .modal h3{margin:0 0 8px;font-size:17px}
   .modal .body{font-size:14px;color:var(--ink-2);line-height:1.55}
@@ -5006,8 +5031,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.8.0';
-var APP_BUILD = '2026-09-05T09:22:53.153Z';
+var APP_VERSION = '1.8.1';
+var APP_BUILD = '2026-09-05T10:52:34.350Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -12453,6 +12478,50 @@ function toast(msg, kind){
   setTimeout(function(){ removeBanner(id); }, 6000);
 }
 /** dialog({title, html, buttons:[{key,label,variant}]}) -> Promise<key|null> */
+/* ============================ ++++++ SHEET SCROLL ++++++ ==========
+ * ФОН НЕ ПРОКРУЧИВАЕТСЯ, ПОКА ОТКРЫТ ЛИСТ.
+ *
+ * overscroll-behavior:contain на теле листа прекращает ЦЕПОЧКУ — то
+ * есть «докрутил список до конца, потянул дальше, и поехала страница».
+ * Но остаётся второй путь: палец или колесо ВНЕ листа, по затемнению.
+ * Поэтому фон ещё и запирается.
+ *
+ * СОСТОЯНИЕ СЧИТАЕТСЯ ПО ФАКТУ, а не счётчиком открытий: спрашиваем,
+ * есть ли в #modalRoot хоть один лист. Счётчик разошёлся бы с
+ * действительностью в первый же раз, когда лист снимают в обход
+ * dialog(), — а таких мест в файле ДВА (ветки fltset и lot-join),
+ * и оба зовут sheetLock() после remove().
+ *
+ * ПОЗИЦИЯ ФОНА ЗАПОМИНАЕТСЯ И ВОЗВРАЩАЕТСЯ. Запирание переполнения
+ * само по себе позицию не теряет, но на Android WebView возврат к
+ * прежнему смещению после снятия — не гарантия, а вопрос везения;
+ * сохранённое число превращает его в обещание. Владелец просил именно
+ * этого: закрыл окно — фон там же, где был, а не наверху.
+ *
+ * Способ выбран ЗАМЕРОМ, а не по вкусу: position:fixed на body держит
+ * не хуже, но переносит раскладку страницы, и .shell с min-height:100%
+ * при этом дёргается. overflow:hidden ничего не переносит. */
+var sheetLockY = 0, sheetLockOn = false;
+function sheetsOpen(){
+  var root = $('modalRoot');
+  return !!(root && root.querySelector('.modal-back'));
+}
+function sheetLock(){
+  var want = sheetsOpen();
+  if (want === sheetLockOn) return;
+  sheetLockOn = want;
+  var d = document.documentElement, b = document.body;
+  if (want){
+    sheetLockY = window.pageYOffset || d.scrollTop || 0;
+    d.style.overflow = 'hidden';
+    b.style.overflow = 'hidden';
+  } else {
+    d.style.overflow = '';
+    b.style.overflow = '';
+    window.scrollTo(0, sheetLockY);
+  }
+}
+
 function dialog(opts){
   return new Promise(function(resolve){
     var root = $('modalRoot');
@@ -12484,6 +12553,12 @@ function dialog(opts){
         (hx ? '<h3 class="hx"><span>' + esc(opts.title || '') + '</span>' +
                 (opts.aside || '') + (opts.closeX ? mx : '') + '</h3>'
             : '<h3>' + esc(opts.title || '') + '</h3>') +
+        /* ++++++ SHEET SCROLL ++++++ sub — ПЯТЫЙ необязательный признак,
+           рядом с closeX / bare / info / noCancel. Он нужен ровно потому,
+           что теперь прокручивается тело: текст, который обязан стоять
+           на месте, должен жить ВЫШЕ тела, а не внутри него. Без
+           признака разметка листа прежняя до байта. */
+        (opts.sub ? '<div class="sub">' + opts.sub + '</div>' : '') +
         '<div class="body">' + (opts.html || '') + '</div>' +
         (opts.bare ? '' :
         /* ++++++ ACTIVE CURRENCIES ++++++ noCancel — четвёртый необязательный
@@ -12528,7 +12603,12 @@ function dialog(opts){
     function done(key){
       document.removeEventListener('keydown', onKey);
       resolve(key);
-      Promise.resolve().then(function(){ back.remove(); });
+      /* ++++++ SHEET SCROLL ++++++ отпирать надо ПОСЛЕ снятия узла:
+         sheetLock() спрашивает документ, есть ли ещё лист, и до
+         remove() ответ был бы «есть». Поверх листа открывается
+         пояснение — и тогда ответ «есть» правильный, фон остаётся
+         заперт. */
+      Promise.resolve().then(function(){ back.remove(); sheetLock(); });
     }
     /* ++++++ INFO ++++++ закрыть окно СНАРУЖИ — правильно, а не снятием
        узла: снятый узел оставил бы за собой обработчик Escape. Нужно
@@ -12548,6 +12628,7 @@ function dialog(opts){
     });
     document.addEventListener('keydown', onKey);
     root.appendChild(back);
+    sheetLock();                       /* ++++++ SHEET SCROLL ++++++ */
     /* ++++++ INFO ++++++ у окна пояснения нижних кнопок нет — фокус
        берёт крестик. Для всех прежних листов первая половина находит
        то же, что находила. */
@@ -18078,6 +18159,7 @@ function lotAdd(arg){
   ui.detail = { type:'lot', id: id };
   var back = document.querySelector('.modal-back');
   if (back) back.remove();                 /* лист не часть render() — область 14 */
+  sheetLock();                             /* ++++++ SHEET SCROLL ++++++ */
   toast(tr('msg.lotJoined', {name: esc(src.items[i].product.name)}), 'ok');
   commit();
 }
@@ -18789,10 +18871,16 @@ function curPickAddHTML(){
                         esc(curPickDraft.err) + '</div>' : '') +
     '</div>';
 }
+/* ++++++ SHEET SCROLL ++++++ Пояснение уехало отсюда в ПОДЗАГОЛОВОК
+   листа (opts.sub): прокручивается теперь тело, и текст, который
+   объясняет, что вообще делает это окно, обязан стоять на месте — иначе
+   он уезжает вместе со списком при первом же движении пальца. Слова не
+   изменились ни на букву, ключи словаря те же. */
+function curPickSubHTML(){
+  return tr(curPickDraft.setup ? 'cp.hintFirst' : 'cp.hint');
+}
 function curPickHTML(){
-  return '<div class="body" style="margin-bottom:12px">' +
-    tr(curPickDraft.setup ? 'cp.hintFirst' : 'cp.hint') + '</div>' +
-    '<div id="cpBody">' + listCard('', curPickRowsHTML()) +
+  return '<div id="cpBody">' + listCard('', curPickRowsHTML()) +
     '<div id="cpNote">' + curPickNoteHTML() + '</div>' +
     curPickAddHTML() + '</div>';
 }
@@ -19046,6 +19134,7 @@ function curPickSheet(){
   curActiveOf(state.settings).forEach(function(c){ curPickDraft.on[c] = true; });
   curPickDraft.base = curBaseFor(curPickOn(), state.settings.baseCurrency);
   dialog({ title: tr(setup ? 'cp.titleFirst' : 'cp.title'), html: curPickHTML(),
+    sub: curPickSubHTML(),
     noCancel: setup, cancelLabel: tr('w.cancel'),
     buttons: [{ key:'ok', label: tr(setup ? 'cp.start' : 'w.save'), variant:'primary' }] })
     .then(function(k){
@@ -20835,6 +20924,7 @@ function handleAct(act, arg, e, srcEl){
        #modalRoot — тем же способом закрывает себя set-product. */
     var fback = document.querySelector('.modal-back');
     if (fback) fback.remove();
+    sheetLock();                       /* ++++++ SHEET SCROLL ++++++ */
     /* render(), а не liveSearch(): меняется ещё и подпись на кнопке фильтра.
        Фокуса в поле сейчас нет — нажимали в листе, — терять нечего. */
     render();
