@@ -1,12 +1,12 @@
 {
-  "version": "1.7.0",
-  "build": "2026-09-04T21:02:03.615Z",
+  "version": "1.8.0",
+  "build": "2026-09-05T09:22:53.153Z",
   "minShell": "0.0.0",
   "core": "app/goods-tracker.html",
-  "hash": "a47400e8-92752590-1114826",
-  "size": 1114826,
-  "notes": "Ставка НДС задаётся в окне выбора валют, отдельной карточки больше нет",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.7.0",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.7.0/personal-accountant-1.7.0.apk",
-  "apkVersion": "1.7.0"
+  "hash": "6e141008-9520847d-1120261",
+  "size": 1120261,
+  "notes": "Полосы прокрутки стали тонкими и аккуратными во всей программе, окно выбора валют открывается со списком валют, а не с кнопками, значок настроек стал шестерёнкой",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.8.0",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.8.0/personal-accountant-1.8.0.apk",
+  "apkVersion": "1.8.0"
 }
