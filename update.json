@@ -1,12 +1,12 @@
 {
-  "version": "1.8.0",
-  "build": "2026-09-05T09:22:53.153Z",
+  "version": "1.8.1",
+  "build": "2026-09-05T10:52:34.350Z",
   "minShell": "0.0.0",
   "core": "app/goods-tracker.html",
-  "hash": "6e141008-9520847d-1120261",
-  "size": 1120261,
-  "notes": "Полосы прокрутки стали тонкими и аккуратными во всей программе, окно выбора валют открывается со списком валют, а не с кнопками, значок настроек стал шестерёнкой",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.8.0",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.8.0/personal-accountant-1.8.0.apk",
-  "apkVersion": "1.8.0"
+  "hash": "55cb0c8-97f7bd41-1124705",
+  "size": 1124705,
+  "notes": "Полоса прокрутки больше не торчит над краем окна, а список валют не уводит страницу под окном; заголовок и пояснение при прокрутке остаются на месте",
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.8.1",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.8.1/personal-accountant-1.8.1.apk",
+  "apkVersion": "1.8.1"
 }
