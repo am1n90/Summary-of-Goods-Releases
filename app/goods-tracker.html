@@ -2175,6 +2175,7 @@ var STR = {
 'nw.none':       { en:'The list of changes is not available yet.',
                    ru:'Список изменений пока недоступен.' },
 'nw.loading':    { en:'Loading…',                            ru:'Загружаем…' },
+'nw.coming':     { en:'What this update brings',             ru:'Что приедет с обновлением' },
 'nw.yours':      { en:'yours',                               ru:'у вас' },
 'nw.added':      { en:'Added',                               ru:'Добавлено' },
 'nw.fixed':      { en:'Fixed',                               ru:'Исправлено' },
@@ -5076,8 +5077,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.9.1';
-var APP_BUILD = '2026-09-06T00:53:48.095Z';
+var APP_VERSION = '1.9.2';
+var APP_BUILD = '2026-09-06T07:19:29.687Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5544,6 +5545,30 @@ function newsUpTo(hist, cur) {
   for (i = 0; i < hist.versions.length; i++) {
     v = hist.versions[i];
     if (cur && verCmp(v.version, cur) > 0) continue;
+    out.push(v);
+  }
+  return out;
+}
+
+/* ЧТО ПРИЕДЕТ — зеркало newsUpTo(). Там ответ на вопрос «что я уже
+   видел», здесь — «чего у меня ещё нет»: версии строго новее
+   установленной и не новее той, которую предлагают поставить.
+ *
+ * Нужен он ДО установки: список изменений, доступный только после неё,
+ * приходит поздно — решать, ставить ли, человек будет раньше. Данные
+ * для этого уже есть: история лежит рядом с манифестом, и качать ради
+ * неё нечего.
+ *
+ * Верхняя граница обязательна. Без неё список показал бы и версии,
+ * которых в этом обновлении нет: на Android ставится ПАКЕТ, и его
+ * номер может отставать от последнего выложенного ядра. */
+function newsComing(hist, cur, to) {
+  var out = [], i, v;
+  if (!hist || !hist.versions || !cur) return out;
+  for (i = 0; i < hist.versions.length; i++) {
+    v = hist.versions[i];
+    if (verCmp(v.version, cur) <= 0) continue;
+    if (to && verCmp(v.version, to) > 0) continue;
     out.push(v);
   }
   return out;
@@ -19555,8 +19580,11 @@ function acctBackup(){
    сегменте «Данные» рядом с резервной копией — двумя несвязанными
    вещами в одном месте только потому, что сегментов было пять. */
 function acctAbout(){
-  /* ++++++ WHAT'S NEW ++++++ строка «Что нового» под карточкой версии. */
-  return updCardHTML() + listCard('', newsRowHTML());
+  /* ++++++ WHAT'S NEW ++++++ порядок несущий: сначала предложение
+     обновиться, СРАЗУ под ним — что приедет, и только потом вся история.
+     Список того, что приедет, стоит рядом с кнопкой установки, потому
+     что решение принимают там. */
+  return updCardHTML() + newsComingHTML() + listCard('', newsRowHTML());
 }
 /* ++++++ TRASH ++++++ единственный экран, который читает удалённые
    записи. Всё остальное приложение их не видит вовсе. */
@@ -19603,6 +19631,10 @@ function render(){
      переставляется одним узлом. Никаких таймеров: «сколько дней прошло»
      считается здесь же, из отметки, на каждой отрисовке. */
   bakBarPaint();
+  /* ++++++ WHAT'S NEW ++++++ по той же причине, что и две строки выше:
+     сеть не должна задерживать экран. Уходит в неё, только когда открыта
+     «О программе» и обновление найдено. */
+  newsAfterRender();
 }
 /** живые подсказки — без полной перерисовки, чтобы не терять курсор */
 function live(){
@@ -21835,6 +21867,33 @@ function newsDate(iso){
 /* Экран целиком. Пункт — кнопка, раскрытие — её СОСЕД: <button> внутри
    <button> браузер разбирает по-своему, и нажатие уходит не туда
    (область 25). */
+/* ЕДИНСТВЕННАЯ разметка списка версий. Печатают её ДВА места — раздел
+   «Что нового» и карточка «что приедет» перед установкой, — и разметка
+   у них обязана быть одна: две копии одного списка разойдутся при
+   первой же правке. Тот же довод, по которому блок распределения
+   расхода печатает одна функция на форму и на лист записи. */
+function newsVersionsHTML(list){
+  var h = '', i, j, v, it, key;
+  for (i = 0; i < list.length; i++){
+    v = list[i];
+    h += '<div class="nver"><b>' + esc(v.version) + '</b>' +
+         (v.at ? '<small>' + esc(newsDate(v.at)) + '</small>' : '') +
+         (v.version === APP_VERSION ? '<span class="now">' + esc(tr('nw.yours')) + '</span>' : '') +
+         '</div>';
+    for (j = 0; j < v.items.length; j++){
+      it = v.items[j];
+      key = v.version + '#' + j;
+      h += '<button class="nitem" type="button" data-act="news-item" data-arg="' + esc(key) + '">' +
+           newsMarkHTML(it.type) + '<span class="h">' + esc(it.head) + '</span>' +
+           (it.body ? '<span class="caret">' + (own(newsOpen, key) ? '▲' : '▼') + '</span>' : '') +
+           '</button>';
+      if (it.body)
+        h += '<div class="nbody' + (own(newsOpen, key) ? ' open' : '') + '">' + esc(it.body) + '</div>';
+    }
+  }
+  return h;
+}
+
 function newsScreenHTML(){
   var h = '<section class="card"><div class="b">';
   if (newsBusy) return h + '<div class="note">' + esc(tr('nw.loading')) + '</div></div></section>';
@@ -21855,25 +21914,44 @@ function newsScreenHTML(){
   if (since.length > 1 && newsHist.versions.length > 1)
     h += '<div class="note">' + esc(tr('nw.missed', {v: newsSeen(), n: since.length})) + '</div>';
 
-  var i, j, v, it, key;
-  for (i = 0; i < all.length; i++){
-    v = all[i];
-    h += '<div class="nver"><b>' + esc(v.version) + '</b>' +
-         (v.at ? '<small>' + esc(newsDate(v.at)) + '</small>' : '') +
-         (v.version === APP_VERSION ? '<span class="now">' + esc(tr('nw.yours')) + '</span>' : '') +
-         '</div>';
-    for (j = 0; j < v.items.length; j++){
-      it = v.items[j];
-      key = v.version + '#' + j;
-      h += '<button class="nitem" type="button" data-act="news-item" data-arg="' + esc(key) + '">' +
-           newsMarkHTML(it.type) + '<span class="h">' + esc(it.head) + '</span>' +
-           (it.body ? '<span class="caret">' + (own(newsOpen, key) ? '▲' : '▼') + '</span>' : '') +
-           '</button>';
-      if (it.body)
-        h += '<div class="nbody' + (own(newsOpen, key) ? ' open' : '') + '">' + esc(it.body) + '</div>';
-    }
-  }
-  return h + '</div></section>';
+  return h + newsVersionsHTML(all) + '</div></section>';
+}
+
+/* ЧТО ПРИЕДЕТ — та же разметка, но ДО установки.
+ *
+ * Список изменений, доступный только после обновления, приходит поздно:
+ * решать, ставить ли, человек будет раньше. Данные для этого уже есть —
+ * история лежит рядом с манифестом, и качать ради неё нечего.
+ *
+ * Верхняя граница — версия, которую предлагают поставить, а не «всё, что
+ * новее»: на Android ставится ПАКЕТ, и его номер может отставать от
+ * последнего выложенного ядра. Обещать в списке то, чего в этом
+ * обновлении нет, — та же неправда, что «доступна версия», о которой
+ * молчат. */
+function newsComingHTML(){
+  var to = updBarVersion();
+  if (!to) return '';
+  if (newsBusy)
+    return '<section class="card"><div class="t">' + esc(tr('nw.coming')) +
+           '</div><div class="b"><div class="note">' + esc(tr('nw.loading')) +
+           '</div></div></section>';
+  var list = newsComing(newsHist, APP_VERSION, to);
+  if (!list.length) return '';
+  return '<section class="card"><div class="t">' + esc(tr('nw.coming')) +
+         '</div><div class="b">' + newsVersionsHTML(list) + '</div></section>';
+}
+
+/* История для этого списка приносится, когда владелец открыл «О
+   программе» и обновление НАЙДЕНО, — то есть по требованию и не раньше.
+   При запуске по-прежнему уходит один запрос: за манифестом.
+ *
+ * Зовётся ПОСЛЕ отрисовки, рядом с attPaint() и bakBarPaint(), и по той
+ * же причине: сеть не должна задерживать экран. Зацикливания нет —
+ * newsLoad() помнит и загруженное, и идущую загрузку. */
+function newsAfterRender(){
+  if (ui.tab !== 'acct' || ui.acct !== 'about') return;
+  if (!updBarVersion() || newsHist || newsBusy) return;
+  newsLoad(function(){ if (ui.tab === 'acct' && ui.acct === 'about') render(); });
 }
 
 /* Строка в карточке «О программе»: сюда приходят и по полосе, и сами —
@@ -22718,6 +22796,12 @@ window.GoodsTracker = {
      владелец может посмотреть, что программа вообще о ней знает. */
   news: { get hist(){ return newsHist; }, set hist(v){ newsHist = v; },
           version: APP_VERSION,
+          /* Состояние обновления — то же, что читает карточка. Набор
+             подставляет сюда план, чтобы проверить список «что приедет»
+             без настоящего обновления на сервере; владелец видит здесь,
+             что программа вообще нашла. */
+          get upd(){ return updState; },
+          coming: newsComing, barVersion: updBarVersion,
           parse: newsParse, since: newsSince, upTo: newsUpTo, count: newsCount,
           split: newsSplit, fromManifest: newsFromManifest,
           seen: newsSeen, seenSave: newsSeenSave, seenNext: newsSeenNext,
