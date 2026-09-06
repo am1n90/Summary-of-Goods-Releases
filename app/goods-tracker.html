@@ -254,6 +254,36 @@
   .dmark.disc{background:var(--got-soft);color:var(--got-ink)}
   .dmark.up{background:var(--warn-soft);color:var(--warn)}
 
+  /* ++++++ WHAT'S NEW ++++++ список изменений. Своё имя класса, а НЕ
+     .pill.<key>: множество .pill.* — это множество статусов, и правило
+     без статуса сломало бы «все три или ни одного». Ни одного нового
+     цветового токена: все три пары уже есть в файле, и контраст на них
+     ИЗМЕРЕН — 4,77 / 4,89 / 4,58 в светлой теме, 5,69 / 5,35 / 8,82 в
+     тёмной. */
+  .nmark{display:inline-block;padding:1px 7px;border-radius:999px;font-weight:600;
+    font-size:11.5px;white-space:nowrap;margin-right:6px}
+  .nmark.added{background:var(--got-soft);color:var(--got-ink)}
+  .nmark.fixed{background:var(--accent-soft);color:var(--accent)}
+  .nmark.changed{background:var(--warn-soft);color:var(--warn)}
+
+  .nver{display:flex;align-items:baseline;gap:8px;padding:14px 0 2px;
+    border-top:1px solid var(--line-2);margin-top:6px}
+  .card > .b > .nver:first-child{border-top:0;margin-top:0;padding-top:2px}
+  .nver b{font-size:15px}
+  .nver small{color:var(--muted)}
+  .nver .now{margin-left:auto;font-size:11.5px;color:var(--accent);
+    background:var(--accent-soft);border-radius:999px;padding:1px 8px}
+
+  /* Пункт — кнопка на всю ширину; раскрытие живёт ПОД ней отдельным
+     узлом, а не внутри неё (область 25). Заголовок ПЕРЕНОСИТСЯ, а не
+     обрезается: обрезанный прячет ровно то, ради чего строку читают. */
+  .nitem{display:block;width:100%;text-align:left;border:0;background:none;
+    color:inherit;font:inherit;padding:7px 0;cursor:pointer;line-height:1.45}
+  .nitem .h{font-weight:500}
+  .nitem .caret{color:var(--muted);margin-left:4px;font-size:11px}
+  .nbody{padding:0 0 9px;color:var(--ink-2);font-size:13px;display:none}
+  .nbody.open{display:block}
+
   /* ++++++ ACTIVE CURRENCIES ++++++ четыре правила и ни одного нового
      цветового токена. Сброса системного вида у шестерёнки нет: он стоит
      один раз, на голом button (область 82). */
@@ -2134,6 +2164,21 @@ var STR = {
                    ru:'Нет сети. Программа работает без неё как обычно.' },
 'up.eAuth':      { en:'GitHub did not accept the token.',    ru:'GitHub не принял токен.' },
 'up.eServer':    { en:'GitHub answered with an error.',      ru:'GitHub ответил ошибкой.' },
+/* ++++++ WHAT'S NEW ++++++ список изменений. Десять ключей, оба языка. */
+'up.barNew':     { en:'Updated to {v}',                      ru:'Программа обновлена до {v}' },
+'up.barNewGo':   { en:'What changed',                        ru:'Что изменилось' },
+'nw.title':      { en:"What's new",                          ru:'Что нового' },
+'nw.rowSub':     { en:'Changes by version',                  ru:'Изменения по версиям' },
+'nw.count':      { en:'{v} versions · {n} changes',          ru:'версий: {v} · изменений: {n}' },
+'nw.missed':     { en:'Updates since your previous version ({v}): {n}',
+                   ru:'С вашей прошлой версии ({v}) вышло обновлений: {n}' },
+'nw.none':       { en:'The list of changes is not available yet.',
+                   ru:'Список изменений пока недоступен.' },
+'nw.loading':    { en:'Loading…',                            ru:'Загружаем…' },
+'nw.yours':      { en:'yours',                               ru:'у вас' },
+'nw.added':      { en:'Added',                               ru:'Добавлено' },
+'nw.fixed':      { en:'Fixed',                               ru:'Исправлено' },
+'nw.changed':    { en:'Changed',                             ru:'Изменено' },
 /* ++++++ SYNC ++++++ обмен между устройствами */
 /* Ярлык сегмента короткий не для красоты: «Синхронизация» в четвёртой
    кнопке обрезается многоточием уже на 420px — снято и проверено. Слово,
@@ -5031,8 +5076,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.8.1';
-var APP_BUILD = '2026-09-05T10:52:34.350Z';
+var APP_VERSION = '1.9.0';
+var APP_BUILD = '2026-09-06T00:15:52.311Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -5078,6 +5123,9 @@ var APP_BUILD = '2026-09-05T10:52:34.350Z';
    сборки: это один и тот же вид документа, и два разных имени пришлось
    бы объяснять. */
 var PUB_MANIFEST = 'update.json';
+/* ++++++ WHAT'S NEW ++++++ история изменений — рядом с манифестом, в том
+   же публичном репозитории и той же дорогой. */
+var PUB_NOTES_FILE = 'notes.json';
 
 /* ------------------------------------------------------------------ */
 /* Сравнение версий                                                   */
@@ -5311,6 +5359,31 @@ function pubGetManifest(cfg, cb){
 }
 
 /* ------------------------------------------------------------------ */
+/* ++++++ WHAT'S NEW ++++++ принести список изменений                  */
+/* ------------------------------------------------------------------ */
+/* Тот же ghReq(), тот же pubUrl(), тот же публичный репозиторий:
+   НОВОГО АДРЕСА НЕ ПОЯВЛЯЕТСЯ, netHosts() не растёт. Файла нет — это
+   не ошибка, а «истории ещё не выкладывали»: программа тогда покажет
+   то, что несёт манифест.
+
+   Качается ТОЛЬКО по требованию. Тянуть 13 КБ при каждом запуске ради
+   текста, который читают раз в месяц, значило бы платить за него
+   каждый день. */
+function pubGetNotes(cfg, cb){
+  ghReq(cfg, 'GET', pubUrl(cfg, PUB_NOTES_FILE), null, function(err, j, status){
+    if (err === 'notfound'){ cb(null, null); return; }
+    if (err){
+      var rate = pubRateOf(status, j && JSON.stringify(j));
+      cb(rate || err); return;
+    }
+    if (!j || !j.content){ cb('badmanifest'); return; }
+    var text = b64dec(j.content);
+    if (text === null){ cb('badmanifest'); return; }
+    cb(null, newsParse(text));
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Принести ядро                                                      */
 /* ------------------------------------------------------------------ */
 /* ЯДРО — ЭТО ТЕКСТ, и читается оно текстовым декодером: b64dec() ядра
@@ -5353,6 +5426,190 @@ function pubGetCore(cfg, info, cb){
       cb(null, text);
     });
   });
+}
+
+/* ++++++ WHAT'S NEW ++++++   СПИСОК ИЗМЕНЕНИЙ И ТИХАЯ ПРОВЕРКА
+ *
+ * ES5. Ни одной стрелки, ни одного `let` — файл написан так, чтобы лечь
+ * в goods-tracker.html как есть.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *     ПРОГРАММА САМА ГОВОРИТ, ЧТО ВЫШЛА НОВАЯ ВЕРСИЯ, И САМА ГОВОРИТ,
+ *     ЧТО В НЕЙ ИЗМЕНИЛОСЬ — НО НИЧЕГО НЕ СТАВИТ БЕЗ НАЖАТИЯ.
+ *
+ * Отсюда всё остальное:
+ *   · проверка при запуске — ставит ПОЛОСУ, а не программу;
+ *   · отказ при старте молчит: сети может не быть, и полоса об этом —
+ *     шум, о котором никто не просил. Нажатие «Проверить» тот же отказ
+ *     покажет, и вот тогда о нём спросили;
+ *   · список изменений НАКОПИТЕЛЬНЫЙ: человек, пропустивший три версии,
+ *     видит все три, а не последнюю;
+ *   · история — та же, что в заметках релиза. Второго списка нет.
+ *
+ * Здесь только РЕШЕНИЯ: ни сети, ни DOM, ни localStorage. Поэтому всё
+ * ниже проверяется без браузера, без телефона и без выкладки.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Сравнение версий                                                    */
+/* ------------------------------------------------------------------ */
+/* В приложении такая функция УЖЕ ЕСТЬ — verCmp() рядом с updPlanFor().
+   При интеграции берётся она, а эта не переносится: два ответа на вопрос
+
+/* ------------------------------------------------------------------ */
+/* Разбор истории                                                      */
+/* ------------------------------------------------------------------ */
+/* notes.json лежит рядом с манифестом, в том же публичном репозитории, и
+   пишет его та же выкладка из тех же заметок. Это НЕ второй список: то
+   же самое, разложенное по версиям машинно — ровно так же, как манифест
+   хранит машинно ту же версию.
+ *
+ * Кривая запись выбрасывает СЕБЯ, а не всю историю: политика rateSnap и
+ * rateLog. Список, который не читается ЦЕЛИКОМ, — это «истории нет», и
+ * тогда показывать нечего; одна испорченная версия истории не уносит. */
+function newsParse(text) {
+  var o, list, out = [], i;
+  try { o = JSON.parse(text); } catch (e) { return null; }
+  /* Массив — тоже typeof 'object', и без этой проверки список
+     версий читался бы как «история есть, просто пустая». */
+  if (!o || typeof o !== 'object' || Object.prototype.toString.call(o) === '[object Array]') return null;
+  list = o.versions;
+  if (!list || !list.length) return { versions: [] };
+  for (i = 0; i < list.length; i++) {
+    var v = newsVerOf(list[i]);
+    if (v) out.push(v);
+  }
+  out.sort(function (a, b) { return verCmp(b.version, a.version); });
+  return { versions: out };
+}
+
+/* Одна версия истории. Без номера версии запись бессмысленна — её
+   некуда поставить и не с чем сравнить; без единого читаемого пункта
+   она пуста, и печатать заголовок версии, под которым ничего нет, значит
+   обещать рассказ, которого нет (область 44). */
+function newsVerOf(r) {
+  if (!r || typeof r !== 'object') return null;
+  if (typeof r.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(r.version)) return null;
+  var items = [], src = r.items, i, it;
+  if (!src || !src.length) return null;
+  for (i = 0; i < src.length; i++) {
+    it = src[i];
+    if (!it || typeof it !== 'object') continue;
+    if (typeof it.head !== 'string' || !it.head) continue;
+    items.push({
+      type: newsType(it.type),
+      head: String(it.head),
+      body: (typeof it.body === 'string') ? it.body : ''
+    });
+  }
+  if (!items.length) return null;
+  return { version: r.version, at: (typeof r.at === 'string') ? r.at : '', items: items };
+}
+
+/* Незнакомый тип читается как «изменено» — идиома статусов и категорий
+   расхода: чужая запись не имеет права уронить показ. */
+function newsType(t) {
+  return (t === 'added' || t === 'fixed' || t === 'changed') ? t : 'changed';
+}
+
+/* ------------------------------------------------------------------ */
+/* Что показать                                                        */
+/* ------------------------------------------------------------------ */
+/* ЕДИНСТВЕННОЕ место, где решается, какие версии человек ещё не видел.
+ *
+ * Строго БОЛЬШЕ той, что он видел, и не больше той, что у него стоит:
+ * рассказывать о версии, которой на устройстве нет, значит обещать то,
+ * чего он не увидит на экране. Пустая `seen` — первый запуск: показывать
+ * нечего, потому что ничего и не менялось у НЕГО. */
+function newsSince(hist, seen, cur) {
+  var out = [], i, v;
+  if (!hist || !hist.versions) return out;
+  if (!seen) return out;
+  for (i = 0; i < hist.versions.length; i++) {
+    v = hist.versions[i];
+    if (verCmp(v.version, seen) <= 0) continue;
+    if (cur && verCmp(v.version, cur) > 0) continue;
+    out.push(v);
+  }
+  return out;
+}
+
+/* Вся история, новые сверху — для раздела «Что нового», куда можно
+   вернуться в любой день. Версии новее установленной не показываются:
+   их на устройстве нет, и человек не может их проверить. */
+function newsUpTo(hist, cur) {
+  var out = [], i, v;
+  if (!hist || !hist.versions) return out;
+  for (i = 0; i < hist.versions.length; i++) {
+    v = hist.versions[i];
+    if (cur && verCmp(v.version, cur) > 0) continue;
+    out.push(v);
+  }
+  return out;
+}
+
+/* Сколько пунктов в наборе версий — для строки «с версии 1.6.0 вышло
+   3 обновления, 12 изменений». */
+function newsCount(list) {
+  var n = 0, i;
+  for (i = 0; i < (list ? list.length : 0); i++) n += list[i].items.length;
+  return n;
+}
+
+/* ------------------------------------------------------------------ */
+/* Заголовок и подробность из одного текста                            */
+/* ------------------------------------------------------------------ */
+/* Заметки написаны в два слоя: первая фраза говорит, ЧТО случилось,
+   остальное объясняет. Разделитель — «. » или «: », и только они: тире в
+   этих заметках чаще стоит ВНУТРИ фразы («Вместо «Ещё» — экран
+   «Аккаунт»»), и резать по нему значит рвать заголовок пополам.
+ *
+   Ту же резку делает выкладка, когда пишет notes.json. Здесь она нужна
+   для ЗАПАСНОГО случая: истории нет вовсе, а манифест несёт `notes` —
+   одну строку про последнюю версию. Тогда показывается она. */
+function newsSplit(text) {
+  var s = String(text || '').replace(/\s+/g, ' ').trim(), cut;
+  if (!s) return { head: '', body: '' };
+  cut = s.search(/(?:[.] |: )/);
+  if (cut < 0) return { head: s, body: '' };
+  return { head: s.slice(0, cut).replace(/\s+$/, ''), body: s.slice(cut + 2).replace(/^\s+/, '') };
+}
+
+/* Запасная история из манифеста: одна версия, один пункт. Она честно
+   говорит только о последней версии, поэтому НЕ выдаёт себя за полную —
+   вызывающий печатает её без строки «вы пропустили N версий». */
+function newsFromManifest(info) {
+  if (!info || !info.version || !info.notes) return null;
+  var s = newsSplit(info.notes);
+  if (!s.head) return null;
+  return { versions: [{ version: info.version, at: '',
+                        items: [{ type: 'changed', head: s.head, body: s.body }] }] };
+}
+
+/* ------------------------------------------------------------------ */
+/* Отметка «эту версию человек уже видел»                              */
+/* ------------------------------------------------------------------ */
+/* Отметка живёт РЯДОМ с записями устройства (goods-tracker/sync-v1), а
+   не в документе, и причина та же, по которой там живёт метка настроек:
+   документ уезжает обменом, а «какую версию я видел» — свойство ЭТОГО
+   устройства. На телефоне и на компьютере версии разные, и общая отметка
+   означала бы, что телефон считает прочитанным то, чего не показывал.
+ *
+ * Шестого ключа хранилища при этом не появляется: ключей по-прежнему
+ * пять, и sync-v1 уже хранит про устройство именно такие вещи. */
+function newsSeenNext(seen, cur) {
+  if (!cur) return seen || '';
+  if (!seen) return cur;                      /* первый запуск — просто помним */
+  return verCmp(cur, seen) > 0 ? cur : seen;   /* назад отметка не двигается */
+}
+
+/* Показывать ли «программа обновилась» при этом запуске. Только когда
+   версия ВЫРОСЛА относительно виденной: первый запуск молчит (человеку
+   не о чем рассказывать), откат назад тоже молчит — он его сделал сам и
+   знает об этом. */
+function newsJustUpdated(seen, cur) {
+  return !!(seen && cur && verCmp(cur, seen) > 0);
 }
 
 /* ==================================================================
@@ -12498,9 +12755,30 @@ function toast(msg, kind){
  * сохранённое число превращает его в обещание. Владелец просил именно
  * этого: закрыл окно — фон там же, где был, а не наверху.
  *
- * Способ выбран ЗАМЕРОМ, а не по вкусу: position:fixed на body держит
- * не хуже, но переносит раскладку страницы, и .shell с min-height:100%
- * при этом дёргается. overflow:hidden ничего не переносит. */
+ * ++++++ BG JUMP ++++++ СПОСОБ ЗАПИРАНИЯ: ПЕРЕНОС, А НЕ СХЛОПЫВАНИЕ.
+ *
+ * Было overflow:hidden на html и body. Держит он честно, но запирает
+ * НЕ ТЕМ способом: браузеру больше нечего прокручивать, документ
+ * схлопывается до экрана — и фон за листом показывает своё НАЧАЛО.
+ * Прокрутил «Сводку» вниз, открыл окно — и по краям листа видно то,
+ * что было наверху. Измерено: сдвиг ровно на величину прокрутки,
+ * 300 px из 300, плюс ещё 5 px вбок, потому что исчезает полоса.
+ *
+ * Стало position:fixed с top:-Y и возмещением ширины полосы. Он не
+ * схлопывает документ, а СДВИГАЕТ его ровно на столько, на сколько
+ * страница была прокручена, — фон остаётся на месте до пикселя.
+ *
+ * Прежний комментарий здесь утверждал, что position:fixed «переносит
+ * раскладку, и .shell с min-height:100% при этом дёргается». ЗАМЕР
+ * этого не подтвердил: высота .shell, высота #rail и положение #bar
+ * не меняются ни на пиксель — ни на длинном экране, ни на коротком,
+ * ни на телефоне, ни на десктопе. Утверждение было взято из общего
+ * рассуждения, а не из измерения, и потому оказалось неверным.
+ *
+ * ВОЗМЕЩЕНИЕ ШИРИНЫ ПОЛОСЫ — не украшение. Запертый фон полосы не
+ * имеет, её 5 px достаются содержимому, и вся страница прыгает вбок.
+ * У прежнего способа этот прыжок тоже был и просто терялся на фоне
+ * вертикального. */
 var sheetLockY = 0, sheetLockOn = false;
 function sheetsOpen(){
   var root = $('modalRoot');
@@ -12510,14 +12788,26 @@ function sheetLock(){
   var want = sheetsOpen();
   if (want === sheetLockOn) return;
   sheetLockOn = want;
-  var d = document.documentElement, b = document.body;
+  var b = document.body;
   if (want){
-    sheetLockY = window.pageYOffset || d.scrollTop || 0;
-    d.style.overflow = 'hidden';
-    b.style.overflow = 'hidden';
+    sheetLockY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    /* Ширина полосы: сколько окно шире того, что видно внутри него.
+       На телефоне и при наложенной полосе это ноль, и тогда ничего
+       не возмещается. */
+    var gap = window.innerWidth - document.documentElement.clientWidth;
+    b.style.position = 'fixed';
+    b.style.top = (-sheetLockY) + 'px';
+    b.style.left = '0';
+    b.style.right = '0';
+    b.style.width = '100%';
+    if (gap > 0) b.style.paddingRight = gap + 'px';
   } else {
-    d.style.overflow = '';
-    b.style.overflow = '';
+    b.style.position = '';
+    b.style.top = '';
+    b.style.left = '';
+    b.style.right = '';
+    b.style.width = '';
+    b.style.paddingRight = '';
     window.scrollTo(0, sheetLockY);
   }
 }
@@ -18539,6 +18829,9 @@ function viewAcct(){
   if (ui.acct === 'trash')  return backHead(tr('trash.title'), '', infoBtn('trash')) + acctTrash();
   if (ui.acct === 'look')   return backHead(tr('acct.look'), '', infoBtn('look')) + acctLook();
   if (ui.acct === 'about')  return backHead(tr('up.title')) + acctAbout();
+  /* ++++++ WHAT'S NEW ++++++ шестой раздел: список изменений, куда можно
+     вернуться в любой день, а не только в минуту обновления. */
+  if (ui.acct === 'news')   return backHead(tr('nw.title')) + newsScreenHTML();
 
   /* Рассказ об обмене — это рассказ об учётной записи, и иконка стоит у
      заголовка экрана, как на «Резервной копии» (решение владельца
@@ -19262,7 +19555,8 @@ function acctBackup(){
    сегменте «Данные» рядом с резервной копией — двумя несвязанными
    вещами в одном месте только потому, что сегментов было пять. */
 function acctAbout(){
-  return updCardHTML();
+  /* ++++++ WHAT'S NEW ++++++ строка «Что нового» под карточкой версии. */
+  return updCardHTML() + listCard('', newsRowHTML());
 }
 /* ++++++ TRASH ++++++ единственный экран, который читает удалённые
    записи. Всё остальное приложение их не видит вовсе. */
@@ -21111,13 +21405,26 @@ function handleAct(act, arg, e, srcEl){
      Ничего не сохраняет: перезагрузка и есть отказ от своей копии. */
   if (act === 'xtab-reload'){ location.reload(); return; }
   /* ++++++ SELF UPDATE ++++++ */
-  if (act === 'upd-goto'){ removeBanner('upd'); ui.tab = 'more'; ui.seg.more = 'data';
+  if (act === 'upd-goto'){ removeBanner('upd');
+    /* ++++++ WHAT'S NEW ++++++ карточка обновления живёт в «О программе».
+       Прежде здесь стояло ui.seg.more = 'data', и navNorm() переводил
+       это в 'backup' — то есть кнопка полосы вела в «Резервную копию».
+       Осталось от перестройки навигации 1 сентября. */
+    ui.tab = 'acct'; ui.acct = 'about';
     ui.detail = null; render(); window.scrollTo(0,0); return; }
   if (act === 'upd-check'){ updCheckNow(); return; }
   if (act === 'upd-install'){ updInstallNow(); return; }
   if (act === 'upd-rollback'){ updRollbackNow(); return; }
   /* ++++++ PRODUCT UPDATE ++++++ */
   if (act === 'upd-open'){ pubOpenNow(); return; }
+  /* ++++++ WHAT'S NEW ++++++ */
+  if (act === 'news-open'){ newsOpenScreen(); return; }
+  if (act === 'news-item'){
+    /* Раскрытие — одно значение и обычная отрисовка: полей ввода на этом
+       экране нет, каретке негде стоять. */
+    if (own(newsOpen, arg)) delete newsOpen[arg]; else newsOpen[arg] = true;
+    render(); return;
+  }
   /* ++++++ SYNC ++++++ */
   /* ++++++ GDRIVE ++++++ четыре действия продуктового режима. Обмен и
      разрешение расхождения общие: sync-now и sync-conf работают в
@@ -21361,8 +21668,45 @@ function updBoot(){
    баннер об этом — шум, о котором никто не просил. Нажатие «Проверить»
    тот же отказ покажет, и вот тогда о нём спросили. */
 function updSilent(){
+  if (!updBridge()) return;
+  /* ++++++ WHAT'S NEW ++++++ РАЗВИЛКА ПО РЕЖИМУ, И ЭТО ВЕСЬ ДЕФЕКТ.
+     До 2026-09-06 здесь стоял только личный путь — приватный репозиторий
+     плюс токен, — которого у продуктовой сборки нет вовсе. Не вошли в
+     Google: syncCfgFull() отдавал null, и функция выходила молча. Вошли:
+     отдавал конфиг Диска, без owner и repo, запрос уходил на
+     repos/undefined/undefined/…, и 404 читался как «обновлений нет».
+     То есть проверка при запуске не срабатывала НИ РАЗУ, а один
+     анонимный запрос в никуда уходил при каждом старте. */
+  if (modeIsProduct()){ updSilentPub(); return; }
+  updSilentOwn();
+}
+
+/* Продуктовая дорога: публичный манифест без токена, решение принимает
+   updPlanFor() — та же функция, что и по нажатию «Проверить». Второго
+   ответа на вопрос «что предложить владельцу» здесь не заводится. */
+function updSilentPub(){
+  pubGetManifest(pubCfg(), function(err, info){
+    if (err || !info) return;              /* при старте отказ молчит */
+    var plan = updPlanFor(info, pubEnv());
+    if (plan.do === 'none' || plan.do === 'browser') return;
+    updState.at = nowISO();
+    updState.info = info;
+    updState.plan = plan;
+    /* «Установить» показывается ровно там, где программа ставит сама. */
+    updState.found = plan.do === 'core' ? { version: plan.version, notes: plan.notes } : null;
+    updBarPaint();
+  });
+}
+
+/* Личная дорога — прежняя, до буквы. Единственное отличие: если токена
+   ещё нет (syncBoot читает его у моста асинхронно, и кто успеет первым
+   не определено), проверка не пропадает, а ждёт — syncBoot дозовёт её
+   ровно один раз. */
+var updSilentWait = false;
+function updSilentOwn(){
   var cfg = (typeof syncCfgFull === 'function') ? syncCfgFull() : null;
-  if (!cfg || !updBridge()) return;
+  if (!cfg){ updSilentWait = true; return; }
+  updSilentWait = false;
   updCheck(cfg, function(err, info){
     if (err || !info) return;
     updState.found = info;
@@ -21371,13 +21715,161 @@ function updSilent(){
   });
 }
 
+/* Какую версию называет полоса. У продуктовой дороги ответ живёт в
+   плане: для Android и для «нужен новый установщик» updState.found
+   пуст намеренно — программа там ничего не ставит сама. */
+function updBarVersion(){
+  if (updState.plan && updState.plan.do !== 'none' && updState.plan.version)
+    return updState.plan.version;
+  return updState.found ? updState.found.version : '';
+}
+
 /* Один узел в #alerts, как xtabPaint() и bakBarPaint(). Никакого
    render(): при старте каретка уже может стоять в поле поиска. */
 function updBarPaint(){
-  if (!updState.found){ removeBanner('upd'); return; }
-  banner('upd', 'info', tr('up.bar', {v: updState.found.version}) +
+  var v = updBarVersion();
+  if (!v){ removeBanner('upd'); return; }
+  banner('upd', 'info', tr('up.bar', {v: v}) +
     '<span class="rb"><button type="button" class="go" data-act="upd-goto">' +
     tr('up.barGo') + '</button></span>');
+}
+
+
+/* ============================================ ++++++ WHAT'S NEW ++++++ ==
+ *                     СПИСОК ИЗМЕНЕНИЙ: ПОКАЗ И ДЕЙСТВИЯ
+ *
+ * Решения принимает ядро выше (newsSince, newsUpTo, newsSeenNext);
+ * здесь — разметка, отметка «видел» и связь с сетью.
+ * ====================================================================== */
+
+/* История этого сеанса и что раскрыто. МОДУЛЬНЫЕ переменные, как
+   prodEditAnchor: наполовину раскрытому списку нечего делать ни в
+   документе, ни в резервной копии. */
+var newsHist = null;
+var newsBusy = false;
+var newsErr = '';
+var newsOpen = {};
+
+/* Какую версию человек уже видел. Живёт в записи УСТРОЙСТВА, рядом с
+   настройками обмена, а не в документе: документ уезжает обменом, а
+   версии на телефоне и на компьютере разные — общая отметка означала бы,
+   что телефон считает прочитанным то, чего не показывал. Шестого ключа
+   хранилища при этом не появляется. */
+function newsSeen(){
+  var o = syncRead();
+  return (o && typeof o.seenVer === 'string') ? o.seenVer : '';
+}
+function newsSeenSave(v){
+  if (!v) return;
+  var o = syncRead() || {};
+  if (o.seenVer === v) return;
+  o.seenVer = v;
+  syncWrite(o);
+}
+
+/* Полоса «программа обновилась». Первый запуск молчит — человеку не о
+   чем рассказывать, — и отметка просто запоминается. Откат назад тоже
+   молчит: его сделали сами и знают об этом. */
+function newsBoot(){
+  var seen = newsSeen();
+  if (!seen){ newsSeenSave(APP_VERSION); return; }
+  if (!newsJustUpdated(seen, APP_VERSION)) return;
+  banner('news', 'info', tr('up.barNew', {v: APP_VERSION}) +
+    '<span class="rb"><button type="button" class="go" data-act="news-open">' +
+    tr('up.barNewGo') + '</button></span>');
+}
+
+/* Принести историю — один раз за сеанс и только когда её открыли.
+   Отказ здесь ГОВОРИТ вслух, в отличие от проверки при старте: сюда
+   человек пришёл сам и ждёт ответа. */
+function newsLoad(cb){
+  if (newsHist || newsBusy){ cb(); return; }
+  if (!modeIsProduct()){
+    /* У личной сборки публичной истории нет: она обновляется из своего
+       приватного репозитория. Остаётся то, что несёт манифест. */
+    newsHist = newsFromManifest(updState.found) || { versions: [] };
+    cb(); return;
+  }
+  newsBusy = true; newsErr = '';
+  pubGetNotes(pubCfg(), function(err, hist){
+    newsBusy = false;
+    if (err){ newsErr = err; }
+    newsHist = hist || newsFromManifest(updState.info || updState.found) || { versions: [] };
+    cb();
+  });
+}
+
+function newsMarkHTML(t){
+  return '<span class="nmark ' + t + '">' + esc(tr('nw.' + t)) + '</span>';
+}
+
+function newsDate(iso){
+  var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3] + '.' + m[2] + '.' + m[1]) : '';
+}
+
+/* Экран целиком. Пункт — кнопка, раскрытие — её СОСЕД: <button> внутри
+   <button> браузер разбирает по-своему, и нажатие уходит не туда
+   (область 25). */
+function newsScreenHTML(){
+  var h = '<section class="card"><div class="b">';
+  if (newsBusy) return h + '<div class="note">' + esc(tr('nw.loading')) + '</div></div></section>';
+
+  var all = newsUpTo(newsHist, APP_VERSION);
+  if (!all.length){
+    /* Две ветки, а не тернарник внутри tr(): ключ, собранный на лету, не
+       виден ни глазу, ни проверке «этот ключ кто-нибудь читает». */
+    if (newsErr) h += '<div class="note">' + esc(tr(pubErrKey(newsErr))) + '</div>';
+    else h += '<div class="note">' + esc(tr('nw.none')) + '</div>';
+    return h + '</div></section>';
+  }
+
+  var since = newsSince(newsHist, newsSeen(), APP_VERSION);
+  /* «Вы пропустили N» печатается, только когда есть что пропустить.
+     Запасная история из манифеста знает лишь последнюю версию и такого
+     обещания дать не может (область 44). */
+  if (since.length > 1 && newsHist.versions.length > 1)
+    h += '<div class="note">' + esc(tr('nw.missed', {v: newsSeen(), n: since.length})) + '</div>';
+
+  var i, j, v, it, key;
+  for (i = 0; i < all.length; i++){
+    v = all[i];
+    h += '<div class="nver"><b>' + esc(v.version) + '</b>' +
+         (v.at ? '<small>' + esc(newsDate(v.at)) + '</small>' : '') +
+         (v.version === APP_VERSION ? '<span class="now">' + esc(tr('nw.yours')) + '</span>' : '') +
+         '</div>';
+    for (j = 0; j < v.items.length; j++){
+      it = v.items[j];
+      key = v.version + '#' + j;
+      h += '<button class="nitem" type="button" data-act="news-item" data-arg="' + esc(key) + '">' +
+           newsMarkHTML(it.type) + '<span class="h">' + esc(it.head) + '</span>' +
+           (it.body ? '<span class="caret">' + (own(newsOpen, key) ? '▲' : '▼') + '</span>' : '') +
+           '</button>';
+      if (it.body)
+        h += '<div class="nbody' + (own(newsOpen, key) ? ' open' : '') + '">' + esc(it.body) + '</div>';
+    }
+  }
+  return h + '</div></section>';
+}
+
+/* Строка в карточке «О программе»: сюда приходят и по полосе, и сами —
+   перечитать. Подпись говорит, сколько всего накоплено. */
+function newsRowHTML(){
+  var all = newsHist ? newsUpTo(newsHist, APP_VERSION) : null;
+  var sub = all && all.length
+    ? tr('nw.count', {v: all.length, n: newsCount(all)})
+    : tr('nw.rowSub');
+  return row({ k: esc(tr('nw.title')), sub: esc(sub), act: 'news-open' });
+}
+
+function newsOpenScreen(){
+  ui.tab = 'acct'; ui.acct = 'news'; ui.detail = null;
+  removeBanner('news'); removeBanner('upd');
+  /* Список показан — значит эти версии человек увидел. Отметка двигается
+     ТОЛЬКО отсюда и только вперёд. */
+  newsSeenSave(newsSeenNext(newsSeen(), APP_VERSION));
+  render(); window.scrollTo(0, 0);
+  newsLoad(function(){ if (ui.acct === 'news') render(); });
 }
 
 /* ================================================== ++++++ SYNC ++++++ ==
@@ -21709,6 +22201,10 @@ function syncBoot(){
   p.then(function(r){
     syncTokenCache = (r && r.token) || '';
     if (!syncTokenCache) return;
+    /* ++++++ WHAT'S NEW ++++++ токен приехал — тихая проверка, если она
+       вышла без него, идёт теперь. Один запрос суммарно: флаг снимает
+       сама updSilentOwn(). */
+    if (updSilentWait) updSilentOwn();
     syncRun(false);
   })['catch'](function(){});
 }
@@ -22120,6 +22616,9 @@ function boot(){
   syncBoot();
   /* ++++++ SELF UPDATE ++++++ откуда открыто ядро и есть ли откат */
   updBoot();
+  /* ++++++ WHAT'S NEW ++++++ здесь же и по той же причине: banner() кладёт
+     узел в #alerts, которого до первой отрисовки нет. */
+  newsBoot();
   /* ++++++ ATTACHMENTS ++++++ the picture store opens AFTER the first paint.
      The app must never wait for it: bookkeeping works with no files at all.
      When it cannot open, the whole consequence is one banner and dead file
@@ -22185,6 +22684,15 @@ window.GoodsTracker = {
            cascade: trashCascade, mark: trashMark, restore: trashRestore,
            purgeIds: trashPurgeIds, allIds: trashAllIds, attIds: trashAttIds,
            age: trashAge, DAYS: TRASH_DAYS },
+  /* ++++++ WHAT'S NEW ++++++ набор проверок подставляет историю и
+     спрашивает те же функции, которыми её показывает экран. Здесь же
+     владелец может посмотреть, что программа вообще о ней знает. */
+  news: { get hist(){ return newsHist; }, set hist(v){ newsHist = v; },
+          version: APP_VERSION,
+          parse: newsParse, since: newsSince, upTo: newsUpTo, count: newsCount,
+          split: newsSplit, fromManifest: newsFromManifest,
+          seen: newsSeen, seenSave: newsSeenSave, seenNext: newsSeenNext,
+          justUpdated: newsJustUpdated, load: newsLoad, open: newsOpenScreen },
   save: save, render: render, STORAGE_KEY: STORAGE_KEY,
   /* ++++++ DIALOGS SAY ++++++ набор проверок спрашивает хвост отсюда */
   baseWarn: { html: baseWarnHTML, snaps: baseSnapCount },
