@@ -777,6 +777,15 @@
     .alert .rb button{flex:1 1 100%}
   }
 
+  /* ++++++ TRIPS ++++++ оговорка о позициях, не вошедших в итог.
+     ЕДИНСТВЕННЫЙ собственный класс задачи, и он обязан иметь правило:
+     класс, который код печатает, а оформления у него нет, — молчаливый
+     дефект (R33). Цвета — существующие токены предупреждения, ни одного
+     нового. Замерено: 6,95:1 в светлой теме и 7,09:1 в тёмной. */
+  .mixnote{background:var(--warn-soft);border:1px solid var(--line);border-radius:12px;
+    padding:12px var(--pad);font-size:13px;color:var(--ink-2);margin:0 0 14px;line-height:1.5}
+  .mixnote b{color:var(--ink)}
+
   .modal-back{position:fixed;inset:0;background:rgba(10,16,26,.45);z-index:90;
     display:flex;align-items:flex-end;justify-content:center;padding:0}
   /* ++++++ SHEET SCROLL ++++++ ПРОКРУТКА ЖИВЁТ ВНУТРИ ЛИСТА, А НЕ НА
@@ -1447,7 +1456,35 @@ var STORAGE_KEY = 'goods-tracker/v1';
        свою ставку: ядро обновляется само, а установленная оболочка — не
        всегда, и пока это так, старая половина обязана продолжать
        работать. Ни одна считающая функция их больше не читает. */
-var SCHEMA_VERSION = 19;
+/* v20: lots — ПОЕЗДКИ. Коллекция записей { id, name, date, note,
+       createdAt }, и в ней хранится ИМЯ поездки, а НЕ ЕЁ СОСТАВ. Состав
+       по-прежнему выводится из batch.lotId — тем же и единственным
+       сборщиком (lotList()), каким он был с v15.
+
+       Из этого следует всё остальное. Запись НЕ заводит поездку: `id`
+       берётся у уже существующей партии, поэтому документ, сделанный до
+       v20, УЖЕ ПРАВИЛЕН — переносить в нём нечего, и ветки по версии
+       нет нигде, как в v8…v19. Запись появляется ЛЕНИВО, когда владелец
+       впервые даёт поездке имя (идиома batch.id и batch.lotId), и
+       снимается, когда имя, дата и заметка пусты разом: запись, за
+       которой ничего нет, и её отсутствие — одно и то же, а два способа
+       сказать одно разошлись бы при первом сравнении документов.
+
+       Хранить состав здесь было бы ВТОРЫМ списком позиций рядом с
+       batch.lotId, и разошлись бы они буквально: batchTrim() укорачивает
+       список с конца, reconcileBatches() меняет последнюю позицию, а
+       второй список об этом не узнает.
+
+       Ссылка на исчезнувшую партию НЕ проверяется и безвредна: поездка,
+       чьи товары ушли в корзину, просто не печатается, а имя вернётся
+       вместе с товаром. Запись НЕ ходит в корзину (TRASH_COLS не
+       трогается): терять в ней нечего — ни суммы, ни количества, — а
+       стёртое имя набирается заново, в отличие от суммы.
+
+       В ЗАПИСЬ ПОЗИЦИИ не добавлено ничего: lotId там с v15. Пустой
+       список не скармливается bakSig() — подпись документа, поездками не
+       пользующегося, остаётся байт в байт прежней (хрупкие места 64, 76). */
+var SCHEMA_VERSION = 20;
 
 /* Status keys are the stable identifiers; never compare by label.
    The labels themselves live in the dictionary below, as status.<key>. */
@@ -3066,18 +3103,21 @@ var STR = {
    («6 август»), и «Партия от 6 август» читалось бы как ошибка. Заводить
    второй способ печатать дату ради предлога — хуже: место, где дата
    становится текстом, в файле одно. */
-'lot.title':     { en:'Shipment of {date}',                 ru:'Партия · {date}' },
+/* ++++++ TRIPS ++++++ v20: раздел называется «Поездки», и безымянная
+   поездка обязана называться так же. «Партия · 12 августа» рядом с
+   заголовком «Поездки» читается как две разные сущности, а она одна. */
+'lot.title':     { en:'Trip of {date}',                     ru:'Поездка · {date}' },
 'lot.sub':       { en:'{n} &middot; bought for {sum}',      ru:'{n} &middot; закуплено на {sum}' },
 'lot.items':     { en:'What came in it',                    ru:'Что в неё вошло' },
 'lot.itemBuy':   { en:'{unit} per unit',                    ru:'{unit} за штуку' },
-'lot.itemPct':   { en:'{pct} of the shipment cost',         ru:'{pct} стоимости партии' },
+'lot.itemPct':   { en:'{pct} of the trip cost',             ru:'{pct} стоимости поездки' },
 'lot.itemShare': { en:'expenses {sum} &middot; {pct} &middot; {unit} per unit with them',
                    ru:'расходы {sum} &middot; {pct} &middot; с ними {unit} за штуку' },
 'lot.itemsTotal':{ en:'Expenses in total',                  ru:'Расходов всего' },
 'lot.itemsTotalHint':{ en:'the shares add up to the expenses exactly',
                    ru:'доли складываются в сумму расходов точно' },
-'lot.expenses':  { en:'Expenses of this shipment',          ru:'Расходы этой партии' },
-'lot.expTotal':  { en:'Expenses on this shipment',          ru:'Расходы на партию' },
+'lot.expenses':  { en:'Expenses of this trip',              ru:'Расходы этой поездки' },
+'lot.expTotal':  { en:'Expenses on this trip',              ru:'Расходы на поездку' },
 'lot.expOf':     { en:'{n} &middot; the shipment itself cost {sum}',
                    ru:'{n} &middot; сама партия стоила {sum}' },
 'lot.expNone':   { en:'nothing charged to this shipment yet',
@@ -3088,10 +3128,51 @@ var STR = {
 'lot.batShare':  { en:'expenses {sum}',                     ru:'расходы {sum}' },
 'lot.hint':      { en:'The split is for reading only: the purchase cost, the profit and the report are counted exactly as before, and Net profit subtracts the expense once, whole.',
                    ru:'Деление — только для чтения: себестоимость, прибыль и отчёт считаются ровно как раньше, а «Чистая прибыль» вычитает расход один раз, целиком.' },
-'lot.join':      { en:'Add a shipment to this one',         ru:'Присоединить партию' },
+'lot.join':      { en:'Add a shipment to this one',         ru:'Присоединить приход' },
+/* ++++++ TRIPS ++++++ v20 */
+'lot.tab':       { en:'Trips',                              ru:'Поездки' },
+'lot.rowInvested':{ en:'invested {sum}',                    ru:'вложено {sum}' },
+'lot.rowOff':    { en:'{n} left out of the result',         ru:'за кадром: {n}' },
+'lot.rowNone':   { en:'no result: {n} came with another trip',
+                   ru:'итог не считается: {n} из другой поездки' },
+'lot.invested':  { en:'Invested',                           ru:'Вложено' },
+'lot.investedOf':{ en:'goods {buy} &middot; expenses {exp}',
+                   ru:'закупка {buy} &middot; расходы {exp}' },
+'lot.result':    { en:'Trip result',                        ru:'Итог поездки' },
+'lot.resultOf':  { en:'{rev} − cost {cogs} − expenses {exp}',
+                   ru:'выручка {rev} − себестоимость {cogs} − расходы {exp}' },
+'lot.resultNone':{ en:'not one product of this trip can be counted on its own',
+                   ru:'ни по одному товару этой поездки итог не считается' },
+'lot.mixed':     { en:'Left out: <b>{n}</b>. That product came with another trip too, and a handout does not remember which one. It cannot be split — so we do not split it. If both shipments were one trip of yours, add one to the other.',
+                   ru:'За кадром: <b>{n}</b>. Этот товар приходил и другой поездкой, а выдача не помнит, из какой именно. Разделить нельзя — поэтому и не делим. Если оба прихода были одной вашей поездкой, присоедините один к другому.' },
+'lot.left':      { en:'Left in stock',                      ru:'Осталось на складе' },
+'lot.leftCost':  { en:'at cost {sum}',                      ru:'по себестоимости {sum}' },
+'lot.leftNone':  { en:'counted only over products of this trip',
+                   ru:'считается только по товарам этой поездки' },
+'lot.sold':      { en:'handed out {a} &middot; left {b}',   ru:'продано {a} &middot; осталось {b}' },
+'lot.soldMixed': { en:'came with another trip too — sales cannot be split',
+                   ru:'товар приходил и другой поездкой — продажи не разделить' },
+'lot.name':      { en:'Name and date',                      ru:'Имя и дата' },
+'lot.nameTitle': { en:'Name of the trip',                   ru:'Имя поездки' },
+'lot.nameField': { en:'Name',                               ru:'Название' },
+'lot.namePh':    { en:'Dubai, August',                      ru:'Дубай, август' },
+'lot.dateField': { en:'Date of the trip',                   ru:'Дата поездки' },
+'lot.noteField': { en:'Note',                               ru:'Заметка' },
+'lot.noteTitle': { en:'Note',                               ru:'Заметка' },
+'lot.nameHint':  { en:'Leave the name, the date and the note empty and the trip becomes unnamed again. The goods and the expenses stay.',
+                   ru:'Пустые имя, дата и заметка — поездка снова станет безымянной. Товары и расходы останутся.' },
+'lot.joinWhole': { en:'One tap moves the WHOLE shipment.',
+                   ru:'Одно нажатие переносит приход ЦЕЛИКОМ.' },
+'lot.infoResult':{ en:'<b>Trip result</b> is revenue minus the cost of the goods handed out minus the share of the expenses — all three over the SAME items, or the number would mean nothing. It is not the Profit and not the Net profit above: those are counted over a period and never subtract an expense share.',
+                   ru:'<b>Итог поездки</b> — это выручка минус себестоимость выданного минус доля расходов, и все три величины берутся по ОДНИМ И ТЕМ ЖЕ позициям, иначе число не значило бы ничего. Это не «Прибыль» и не «Чистая прибыль»: те считаются за период и доли расходов не вычитают вовсе.' },
+'lot.infoPure':  { en:'The result is counted only over products that came with THIS trip alone. A product brought twice cannot be split: a handout does not remember which shipment it came from. If two shipments were one trip of yours, add one to the other — the product becomes countable.',
+                   ru:'Итог считается только по товарам, пришедшим ТОЛЬКО этой поездкой. Товар, привезённый дважды, разделить нельзя: выдача не помнит, из какого прихода он взят. Если два прихода были одной вашей поездкой, присоедините один к другому — товар станет считаемым.' },
+'lot.infoMoney': { en:'How much money came back from a trip is NOT counted at all: a payment belongs to a person, not to goods, and one payment can close debts for two trips at once. A number like that would be a guess wearing the clothes of a fact.',
+                   ru:'Сколько денег вернулось из поездки — НЕ считается вовсе: оплата привязана к человеку, а не к товару, и одним платежом можно закрыть долг за две поездки сразу. Такое число было бы оценкой в одежде факта.' },
+'msg.lotNamed':  { en:'Trip saved',                         ru:'Поездка сохранена' },
 'lot.joinTitle': { en:'Which one came in together with it?',ru:'Какая пришла вместе с ней?' },
 'lot.joinNone':  { en:'There is nothing else to add.',      ru:'Присоединять больше нечего.' },
-'lot.itemTitle': { en:'Item of the shipment',               ru:'Позиция партии' },
+'lot.itemTitle': { en:'Item of the trip',                   ru:'Позиция поездки' },
 'lot.openProduct':{ en:'Open the product',                  ru:'Открыть товар' },
 'lot.split1':    { en:'Detach from the shipment',           ru:'Отделить от партии' },
 'lot.prodShare': { en:'Other expenses on it',               ru:'Прочих расходов на него' },
@@ -3101,7 +3182,7 @@ var STR = {
 'lot.prodUnitHint':{ en:'purchase plus the expense share &middot; profit is not counted from it',
                    ru:'закупка плюс доля расхода &middot; прибыль считается не от неё' },
 
-'msg.lotJoined': { en:'{name} moved into this shipment.',   ru:'{name} перенесён в эту партию.' },
+'msg.lotJoined': { en:'{n} moved into this trip.',           ru:'{n} перенесено в эту поездку.' },
 'msg.lotSplit':  { en:'{name} is a shipment of its own again.',
                    ru:'{name} снова отдельная партия.' },
 
@@ -5077,8 +5158,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.9.4';
-var APP_BUILD = '2026-09-06T09:11:02.921Z';
+var APP_VERSION = '1.10.0';
+var APP_BUILD = '2026-09-06T15:07:56.963Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -6540,7 +6621,11 @@ function trashAttIds(doc, ids){
    определяет порядок ключей в data.json, а тот обязан быть
    детерминированным, иначе разница между двумя версиями файла
    становится нечитаемой. */
-var SYNC_COLS = ['products', 'people', 'transactions', 'payments', 'returns', 'expenses'];
+/* ++++++ TRIPS ++++++ v20: имена поездок ездят обменом, как всякая
+   запись. WIPE_COLS — ССЫЛКА на этот список и следует сам; TRASH_COLS —
+   ОТДЕЛЬНОЕ объявление, и оно НЕ трогается: поездка в корзину не идёт,
+   потому что терять в её записи нечего (решение 8). */
+var SYNC_COLS = ['products', 'people', 'transactions', 'payments', 'returns', 'expenses', 'lots'];
 
 /* Поля `settings`, которые ЕДУТ. Всё остальное — предпочтение этого
    устройства и остаётся дома (список и доводы — в README задачи).
@@ -9849,6 +9934,8 @@ function defaultState(){
       curVat: {}
     },
     products: [], people: [], transactions: [], payments: [], returns: [], expenses: [],
+    /* ++++++ TRIPS ++++++ v20. Имена поездок — не их состав. */
+    lots: [],
     /* ++++++ SYNC ++++++ v16. Карты рядом с записями, не внутри них. */
     syncMeta: {}, syncTombs: {}
   };
@@ -10550,7 +10637,20 @@ function bakSig(){
      возвратов: подпись документа, этой возможностью не пользующегося,
      обязана остаться байт в байт прежней, и запись о копии, сделанная до
      этой версии, не должна начать врать «записи менялись». */
-  if (state.expenses.length) walk(state.expenses);
+  /* ++++++ TRIPS ++++++ имена поездок — записи, и их изменение обязано
+     менять подпись. Пустой список НЕ скармливается, ровно по той же
+     причине, что пустые возвраты и расходы: подпись документа, этой
+     возможностью не пользующегося, обязана остаться байт в байт прежней,
+     иначе напоминание о копии заявит «записи изменились» о нетронутых
+     данных, а «Вернуть суммы» пропадёт без причины.
+
+     Проверка на САМО НАЛИЧИЕ списка — не украшение: bakSig() зовут и на
+     документе, собранном в обход validate() (так делают наборы, и так
+     может сделать любой будущий читатель), а у документа прежней сборки
+     ключа нет вовсе. Соседние строки её не имеют лишь потому, что их
+     поля старше всех сегодняшних вызовов; здесь это уже не так —
+     test-trash упал ровно на этом, и упал на ПРОГОНЕ, а не в чтении. */
+  if (state.lots && state.lots.length) walk(state.lots);
   return h1.toString(36) + '-' + h2.toString(36) + '-' + len.toString(36);
 }
 
@@ -11265,6 +11365,10 @@ function validate(obj){
       rateLog: rateLogOf(s.rateLog)
     },
     products: [], people: [], transactions: [], payments: [], returns: [], expenses: [],
+    /* ++++++ TRIPS ++++++ v20: имена поездок. Заполняется ниже, после
+       товаров: раньше проверять ссылку было бы не по чему — хотя она и
+       не проверяется (см. lotsOf). */
+    lots: [],
     /* ++++++ SYNC ++++++ v16: карты обмена. Читаются той же рукой, что и
        rateLog: кривое значение отбрасывается целиком, документ из-за него
        не перестаёт открываться. Внутрь записей не попадает ничего. */
@@ -11607,6 +11711,15 @@ function validate(obj){
       if (xlot) xrec.lotId = xlot;
       out.expenses.push(trashPut(xrec, x));
     } catch(e){ dropRec(e); } });
+
+    /* ++++++ TRIPS ++++++ v20. Имена поездок. Кривая запись выбрасывает
+       СЕБЯ, список не уносит — политика rateSnap / rateLog / baseUndo, и
+       R23 не должен становиться хуже. Ссылка на исчезнувшую партию НЕ
+       проверяется: имя безвредно и вернётся вместе с товаром из корзины.
+       Пустая запись отбрасывается — её быть не должно по построению
+       (lotRecSet), и принять её значило бы завести второй способ сказать
+       «имени нет». */
+    out.lots = lotsOf(obj.lots);
   }catch(e){ return bad(e.message); }
 
   /* stock sanity: a backup must not contain more taken than exists */
@@ -12132,22 +12245,30 @@ function cmpLotDesc(a, b){
  *  «товар#индекс». Второй вид временный: как только к такой партии
  *  присоединяют соседнюю, она получает настоящий номер (lotEnsureId). */
 function lotList(){
-  var byId = {}, order = [], out = [];
+  var byId = {}, order = [], out = [], i, g;
   batAll().forEach(function(it){
     var b = it.batch;
     if (b.lotId){
       if (!own(byId, b.lotId)){
-        byId[b.lotId] = { key: b.lotId, id: b.lotId, date: b.date, items: [] };
+        byId[b.lotId] = { key: b.lotId, id: b.lotId, rec: null, date: '', items: [] };
         order.push(b.lotId);
       }
-      var g = byId[b.lotId];
-      g.items.push(it);
-      if (b.date < g.date) g.date = b.date;   /* дата партии — самая ранняя из позиций */
+      byId[b.lotId].items.push(it);
     } else {
-      out.push({ key: it.product.id + '#' + it.index, id: '', date: b.date, items: [it] });
+      out.push({ key: it.product.id + '#' + it.index, id: '', rec: null,
+                 date: '', items: [it] });
     }
   });
   order.forEach(function(k){ out.push(byId[k]); });
+  /* ++++++ TRIPS ++++++ имя и дата разрешаются ЗДЕСЬ, один раз. Дата
+     раньше считалась в цикле выше; теперь у поездки может быть СВОЯ, и
+     два ответа на один вопрос означали бы, что список сортируется по
+     одной дате, а заголовок печатает другую (решение 4). */
+  for (i = 0; i < out.length; i++){
+    g = out[i];
+    g.rec = g.id ? lotRecOf(state, g.id) : null;
+    g.date = lotDateOf(g.rec, g.items);
+  }
   out.sort(cmpLotDesc);
   return out;
 }
@@ -12366,6 +12487,263 @@ function lotEnsureId(lot){
   lot.id = id; lot.key = id;
   return id;
 }
+/* ============================================== ++++++ TRIPS ++++++ ==
+ * ПОЕЗДКИ: имя, своя дата, заметка и итог.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   ЗАПИСЬ ПОЕЗДКИ ХРАНИТ ИМЯ, А НЕ СОСТАВ.
+ *
+ * Состав по-прежнему выводится из batch.lotId через lotList() — тем же и
+ * единственным сборщиком, каким он был с v15. state.lots лишь ДОПОЛНЯЕТ
+ * поездку именем, своей датой и заметкой.
+ * ================================================================== */
+
+var LOT_NAME_MAX = 60;
+var LOT_NOTE_MAX = 400;
+
+/** Дата в том виде, в каком её принимает документ. Своей арифметики дат
+ *  здесь нет и быть не должно — вопрос ровно один: «это дата?». */
+function lotDateOk(v){ return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v); }
+
+/** Строка записи: обрезана по краям, не длиннее предела. */
+function lotStr(v, max){
+  if (typeof v !== 'string') return '';
+  v = v.replace(/^\s+|\s+$/g, '');
+  return v.length > max ? v.slice(0, max) : v;
+}
+
+/** Запись поездки по её номеру, или null. ЕДИНСТВЕННОЕ чтение коллекции:
+ *  добравшийся до doc.lots в обход отвечает на тот же вопрос второй раз. */
+function lotRecOf(doc, id){
+  var list = (doc && doc.lots) || [], i;
+  if (typeof id !== 'string' || !id) return null;
+  for (i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
+  return null;
+}
+
+/** Нечего ли хранить: ни имени, ни своей даты, ни заметки. Такая запись
+ *  не заводится и снимается — поездка снова безымянна. Это и есть
+ *  «удалить поездку», и отдельного действия под него нет: понятие
+ *  «удалённая поездка» существовало бы только затем, чтобы его
+ *  объяснять (решение 8). */
+function lotRecEmpty(o){
+  if (!o) return true;
+  return !lotStr(o.name, LOT_NAME_MAX) &&
+         !lotStr(o.note, LOT_NOTE_MAX) &&
+         !lotDateOk(o.date);
+}
+
+/** ЕДИНСТВЕННЫЙ писатель записи. Пустое содержимое СНИМАЕТ запись, а не
+ *  кладёт пустую. ПИШЕТ в документ — зовётся только оттуда, где документ
+ *  и так сохраняется (идиома batEnsureId / lotEnsureId). */
+function lotRecSet(doc, id, o){
+  var rec;
+  if (typeof id !== 'string' || !id) return null;
+  if (!doc.lots) doc.lots = [];
+  if (lotRecEmpty(o)){ lotRecDrop(doc, id); return null; }
+  rec = lotRecOf(doc, id);
+  if (!rec){
+    rec = { id: id, name: '', date: '', note: '', createdAt: nowISO() };
+    doc.lots.push(rec);
+  }
+  rec.name = lotStr(o.name, LOT_NAME_MAX);
+  rec.note = lotStr(o.note, LOT_NOTE_MAX);
+  rec.date = lotDateOk(o.date) ? o.date : '';
+  return rec;
+}
+
+/** Снять запись. Позиции не трогаются ни одна: поездка теряет имя,
+ *  состав цел. */
+function lotRecDrop(doc, id){
+  var list = (doc && doc.lots) || [], i;
+  for (i = 0; i < list.length; i++){
+    if (list[i] && list[i].id === id){ list.splice(i, 1); return true; }
+  }
+  return false;
+}
+
+/** Чтение коллекции из входящего документа. Кривая запись выбрасывает
+ *  СЕБЯ, список не уносит. */
+function lotsOf(v){
+  var out = [], seen = {}, i, r, id, rec;
+  if (!v || Object.prototype.toString.call(v) !== '[object Array]') return out;
+  for (i = 0; i < v.length; i++){
+    r = v[i];
+    if (!r || typeof r !== 'object') continue;
+    id = r.id;
+    if (typeof id !== 'string' || !id || id === '__proto__') continue;
+    if (own(seen, id)) continue;
+    seen[id] = true;
+    rec = { id: id,
+      name: lotStr(r.name, LOT_NAME_MAX),
+      note: lotStr(r.note, LOT_NOTE_MAX),
+      date: lotDateOk(r.date) ? r.date : '',
+      createdAt: typeof r.createdAt === 'string' ? r.createdAt : '' };
+    if (lotRecEmpty(rec)) continue;
+    out.push(rec);
+  }
+  return out;
+}
+
+/** ЕДИНСТВЕННЫЙ ответ на «какого числа эта поездка»: своя дата, если
+ *  задана; иначе самая ранняя из дат позиций — ровно то, что lotList()
+ *  считал до v20. */
+function lotDateOf(rec, items){
+  var d = '', i, v;
+  if (rec && lotDateOk(rec.date)) return rec.date;
+  for (i = 0; i < (items || []).length; i++){
+    v = items[i] && items[i].batch ? items[i].batch.date : '';
+    if (!lotDateOk(v)) continue;
+    if (!d || v < d) d = v;
+  }
+  return d;
+}
+
+/** Имя поездки или '' — «безымянна». Что печатать вместо пустого имени,
+ *  решает экран. */
+function lotNameOf(lot){ return (lot && lot.rec && lot.rec.name) ? lot.rec.name : ''; }
+
+/** Заголовок поездки: имя, а если его нет — дата. */
+function lotTitleOf(lot){
+  return lotNameOf(lot) ? esc(lotNameOf(lot)) : tr('lot.title', {date: fmtDateLong(lot.date)});
+}
+
+/* ---- ЧИСТЫЕ ТОВАРЫ И СМЕШАННЫЕ ---------------------------------------
+ *
+ * Выдача не знает партии и знать не будет (решение владельца 2), поэтому
+ * «продано из этой поездки» выводимо не всегда. Граница проходит ТОЧНО:
+ *
+ *   ТОВАР ЧИСТ ДЛЯ ПОЕЗДКИ, ЕСЛИ ВСЕ ЕГО ПОЗИЦИИ ВХОДЯТ В НЕЁ.
+ *
+ * Тогда полка товара в cogsAllocate() и полка поездки — одно и то же
+ * множество, и productStats() отвечает по нему точно, без единого нового
+ * вычисления денег. Иначе полка смешана, и ответа не существует — ни
+ * точного, ни приблизительного, который стоило бы показывать: оценка,
+ * похожая на факт, хуже отсутствия цифры (решение владельца 3, и здесь
+ * его довод верен слово в слово).
+ * ---------------------------------------------------------------------- */
+
+/** Сколько позиций у каждого товара ВСЕГО: id товара -> число. */
+function lotItemCounts(){
+  var m = {}, all = batAll(), i, id;
+  for (i = 0; i < all.length; i++){
+    id = all[i].product.id;
+    m[id] = (own(m, id) ? m[id] : 0) + 1;
+  }
+  return m;
+}
+
+/** Чистые позиции поездки. */
+function lotPureItems(lot, counts){
+  var mine = {}, out = [], i, id;
+  for (i = 0; i < lot.items.length; i++){
+    id = lot.items[i].product.id;
+    mine[id] = (own(mine, id) ? mine[id] : 0) + 1;
+  }
+  for (i = 0; i < lot.items.length; i++){
+    id = lot.items[i].product.id;
+    if (mine[id] === (own(counts, id) ? counts[id] : 0)) out.push(lot.items[i]);
+  }
+  return out;
+}
+
+/** Сколько позиций осталось за кадром. Печатается ТОЛЬКО когда больше
+ *  нуля: строка «смешанных позиций: 0» не сведение (область 44). */
+function lotMixedCount(lot, counts){
+  return lot.items.length - lotPureItems(lot, counts).length;
+}
+
+/** УНИКАЛЬНЫЕ товары чистых позиций. Считать по позициям было бы ошибкой,
+ *  и дорогой: товар с двумя позициями В ОДНОЙ поездке чист, но выручка у
+ *  него ОДНА — по позициям она задвоилась бы. */
+function lotPureProducts(pure){
+  var seen = {}, out = [], i, p;
+  for (i = 0; i < pure.length; i++){
+    p = pure[i].product;
+    if (own(seen, p.id)) continue;
+    seen[p.id] = true;
+    out.push(p);
+  }
+  return out;
+}
+
+/** Выручка, себестоимость и остаток по ЧИСТЫМ товарам поездки. Ни одного
+ *  нового вычисления: всё складывается из готовых ответов productStats(). */
+function lotSales(pure, ps){
+  var prods = lotPureProducts(pure), i, s;
+  var r = { revenueCents: 0, cogsCents: 0, remaining: 0, stockCostCents: 0,
+            taken: 0, products: prods.length };
+  for (i = 0; i < prods.length; i++){
+    s = own(ps, prods[i].id) ? ps[prods[i].id] : null;
+    if (!s) continue;
+    r.revenueCents += s.valueCents || 0;
+    r.cogsCents += s.cogsCents || 0;
+    r.remaining += s.remaining || 0;
+    r.stockCostCents += s.stockCostCents || 0;
+    r.taken += s.taken || 0;
+  }
+  return r;
+}
+
+/** ВЛОЖЕНО: закупка ВСЕЙ поездки плюс ВСЕ пришедшиеся на неё расходы.
+ *  Здесь берётся поездка ЦЕЛИКОМ, в отличие от итога ниже, и это не
+ *  небрежность: сколько вложено — факт, известный точно, и делить его на
+ *  «известную» и «неизвестную» половину не о чем. Неизвестно только,
+ *  сколько из вложенного уже вернулось товаром. */
+function lotInvestedCents(lot){
+  return lotTotalCents(lot) + lotExpCents(lot);
+}
+
+/** Доля расходов, пришедшаяся на ЧИСТЫЕ позиции.
+ *
+ *  Половина правильности итога, и найдена она была ПРОГОНОМ, а не
+ *  чтением. Первая формула вычитала расходы ПОЕЗДКИ ЦЕЛИКОМ из выручки
+ *  по ЧИСТЫМ товарам — то есть вычитала доставку товара, чью выручку
+ *  сама же не считала: 1572.50 вместо 1993.33 на макете, при совершенно
+ *  правдоподобном виде числа.
+ *
+ *  Правило: ИТОГ ОБЯЗАН БЫТЬ СОГЛАСОВАН САМ С СОБОЙ — выручка,
+ *  себестоимость и расходы берутся по ОДНОМУ И ТОМУ ЖЕ множеству
+ *  позиций. Число, смешавшее два множества, не значит ничего, и ошибку в
+ *  нём не увидеть глазом. */
+function lotPureExpCents(pure){
+  var m = expShareAll(), s = 0, i, k;
+  for (i = 0; i < pure.length; i++){
+    k = pure[i].key;
+    if (own(m, k)) s += m[k];
+  }
+  return s;
+}
+
+/** ИТОГ ПОЕЗДКИ: выручка − себестоимость − доля расходов, и все три по
+ *  ЧИСТЫМ позициям.
+ *
+ *  Решение владельца 4. На экране называется «Итог поездки» — слова
+ *  «прибыль» в названии нет вовсе, потому что двух прибылей в программе
+ *  уже достаточно, а третья со схожим именем заставляла бы помнить,
+ *  какая из трёх перед глазами.
+ *
+ *  В «Прибыль» и «Чистую прибыль» эта величина не входит и войти не
+ *  может: доля расхода — производная только для показа, и прибыль уже
+ *  посчитана по цене выдачи. */
+function lotResultCents(sales, pureExp){
+  return (sales.revenueCents || 0) - (sales.cogsCents || 0) - (pureExp || 0);
+}
+
+/** ОДИН расчёт на поездку: список, карточка и заголовок читают его
+ *  результат и потому не могут разойтись. */
+function lotFigures(lot, counts, ps){
+  var pure = lotPureItems(lot, counts);
+  var sales = lotSales(pure, ps);
+  var pureExp = lotPureExpCents(pure);
+  return { pure: pure, sales: sales, pureExp: pureExp,
+           invested: lotInvestedCents(lot),
+           result: lotResultCents(sales, pureExp),
+           mixed: lotMixedCount(lot, counts),
+           has: sales.products > 0 };
+}
+
 function productStats(){
   var m = {};
   actProducts().forEach(function(p){
@@ -13045,8 +13423,13 @@ var INFO = {
 
   /* Карточка партии */
   'lot': {
-    title: function(){ return tr('lot.expenses'); },
-    html: function(){ return infoP(tr('lot.hint')); }
+    title: function(){ return tr('lot.result'); },
+    /* ++++++ TRIPS ++++++ формула итога, граница его точности и — отдельным
+       абзацем — то, что деньги по поездке не считаются ВОВСЕ. Последнее
+       надо сказать вслух: иначе владелец будет искать цифру, которой нет
+       по решению, а не по недоделке. */
+    html: function(){ return infoP(tr('lot.infoResult')) + infoP(tr('lot.infoPure')) +
+                             infoP(tr('lot.infoMoney')) + infoP(tr('lot.hint')); }
   },
 
   /* «Корзина». ОБА предложения, всегда: на экране их разводило
@@ -15982,7 +16365,11 @@ function viewProducts(){
   if (ui.detail && ui.detail.type === 'lot') return viewLotCard();
   var sec = 'products';
   var h = head(tr('tab.products'), tr('sum.inCur', {note: secNote(sec) || '—'}));
+  /* ++++++ TRIPS ++++++ третий сегмент. Пункт в нижней панели НЕ
+     добавляется: их пять, и шестого быть не должно. Поездка — это
+     закупка, и карточка поездки уже живёт на этой вкладке. */
   h += segbar('products', [['list', tr('seg.list')],
+    ['lots', tr('lot.tab')],
     ['add', ui.form.product.editId ? tr('seg.editing') : tr('seg.add')]]);
   h += warnNote(sec);
   /* ++++++ ATTACHMENTS ++++++ a file refused or unwritable from the EDIT
@@ -16007,6 +16394,8 @@ function viewProducts(){
     });
 
     h += listCard('', rows);
+  } else if (ui.seg.products === 'lots'){
+    h += viewTripList();
   } else {
     h += formProduct();
   }
@@ -18355,15 +18744,75 @@ function expSplitText(x){
   return tr('lot.split', { list: parts.join(' &middot; '), cur: esc(cur) });
 }
 
+/** ++++++ TRIPS ++++++ Список поездок. Ни одного нового способа что-либо
+ *  нарисовать: те же row() и listCard(). */
+function viewTripList(){
+  var list = lotList(), counts = lotItemCounts(), ps = productStats();
+  var sec = 'products', rows = '';
+  list.forEach(function(lot){
+    var f = lotFigures(lot, counts, ps);
+    rows += row({ lead: avsq(units(lot.items.length)),
+      k: lotTitleOf(lot),
+      /* ++++++ TRIPS ++++++ дата печатается ТОЛЬКО у поездки С ИМЕНЕМ: у
+         безымянной она уже стоит в заголовке («Поездка · 27 августа»), и
+         второй раз она лишь съедает место — подпись обрезается, а первой
+         уходит самая нужная величина, «вложено». Найдено СНИМКОМ с
+         телефона: в коде дублирования не видно. */
+      sub: (lotNameOf(lot) ? fmtDateLong(lot.date) + ' · ' : '') +
+           nq(lot.items.length, 'line') +
+           ' · ' + tr('lot.rowInvested', {sum: secBare(sec, f.invested)}),
+      sub2: f.has
+        ? (f.mixed ? tr('lot.rowOff', {n: nq(f.mixed, 'line')}) : '')
+        : tr('lot.rowNone', {n: nq(f.mixed, 'line')}),
+      v: f.has ? secV(sec, f.result) : '—',
+      vcls: f.has ? (f.result >= 0 ? 'pos' : 'neg') : '',
+      act:'lot-open', arg: lot.key });
+  });
+  /* listCard() сам печатает «Пока пусто», когда строк нет — второго
+     способа сказать это заводить нельзя. */
+  return listCard('', rows);
+}
+
 function viewLotCard(){
   var lot = lotByKey(ui.detail.id);
   if (!lot){ ui.detail = null; return viewProducts(); }
   var sec = 'products';
   var sh = lotShareCents(lot), expCents = lotExpCents(lot), buy = lotTotalCents(lot);
-  var h = backHead(tr('lot.title', {date: fmtDateLong(lot.date)}),
-    tr('lot.sub', {n: nq(lot.items.length, 'line'), sum: secOne(sec, buy)}),
+  /* ++++++ TRIPS ++++++ один расчёт на поездку — его читают все строки */
+  var counts = lotItemCounts(), ps = productStats(), f = lotFigures(lot, counts, ps);
+  var h = backHead(lotTitleOf(lot),
+    fmtDateLong(lot.date) + ' · ' + tr('lot.sub', {n: nq(lot.items.length, 'line'),
+      sum: secOne(sec, buy)}),
     infoBtn('lot'));
   h += warnNote(sec);
+  if (lot.rec && lot.rec.note) h += listCard(tr('lot.noteTitle'),
+    '<div class="b">' + esc(lot.rec.note) + '</div>');
+
+  /* ВЛОЖЕНО — по ВСЕЙ поездке: это факт, известный точно */
+  h += hero({ k: tr('lot.invested'), v: heroMoney(sec, f.invested),
+    s: tr('lot.investedOf', {buy: secBare(sec, buy), exp: secBare(sec, expCents)}) });
+
+  /* ИТОГ — по ЧИСТЫМ позициям, или его нет вовсе, и сказано почему */
+  if (f.has){
+    h += hero({ cls: f.result >= 0 ? 'good' : 'bad',
+      k: tr('lot.result'), v: heroMoney(sec, f.result),
+      s: tr('lot.resultOf', {rev: secBare(sec, f.sales.revenueCents),
+        cogs: secBare(sec, f.sales.cogsCents), exp: secBare(sec, f.pureExp)}) });
+  } else {
+    h += hero({ k: tr('lot.result'), v: '—', s: tr('lot.resultNone') });
+  }
+
+  /* Оговорка печатается ТОЛЬКО когда есть смешанные позиции (область 44),
+     и она ведёт к действию: если два прихода были одним выездом, их
+     достаточно присоединить (решение 14). */
+  if (f.mixed) h += '<p class="mixnote">' +
+    tr('lot.mixed', {n: nq(f.mixed, 'line')}) + '</p>';
+
+  h += hero({ k: tr('lot.left'), v: units(f.sales.remaining) + ' <span class="cur">' +
+      tr('w.pcs') + '</span>',
+    s: f.has ? tr('lot.leftCost', {sum: secBare(sec, f.sales.stockCostCents)})
+             : tr('lot.leftNone') });
+
   h += hero({ k: tr('lot.expTotal'), v: heroMoney(sec, expCents),
     s: expCents ? tr('lot.expOf', {n: nq(lotExpenses(lot).length, 'expense'),
                                    sum: secOne(sec, buy)})
@@ -18380,6 +18829,15 @@ function viewLotCard(){
       ? tr('lot.itemShare', { sum: secBare(sec, sh[i]), pct: lotPctText(pctOfSum(sh, i)),
             unit: unit === null ? '—' : secBare(sec, Math.round(unit)) })
       : tr('lot.itemPct', { pct: lotPctText(lotPct(lot, i)) });
+    /* ++++++ TRIPS ++++++ третья подпись: продано и осталось — для
+       ЧИСТОГО товара; для смешанного сказано, что разделить нельзя.
+       Обе переносятся, а не обрезаются: первая подпись уже занята. */
+    var isPure = false, pk;
+    for (pk = 0; pk < f.pure.length; pk++) if (f.pure[pk].key === it.key) isPure = true;
+    var st3 = own(ps, it.product.id) ? ps[it.product.id] : null;
+    sub2 += '<br>' + (isPure && st3
+      ? tr('lot.sold', {a: units(st3.taken), b: units(st3.remaining)})
+      : tr('lot.soldMixed'));
     rows += row({ lead: avsq(units(it.batch.qty)), k: esc(it.product.name),
       sub: tr('lot.itemBuy', { unit: secBare(sec, it.batch.costCents) }),
       sub2: sub2, v: secV(sec, it.batch.totalCostCents),
@@ -18405,8 +18863,52 @@ function viewLotCard(){
   });
   h += listCard(tr('lot.expenses'), er);
 
-  h += '<div class="btns">' + btn(tr('lot.join'), 'lot-join', 'ghost') + '</div>';
+  h += '<div class="btns">' + btn(tr('lot.name'), 'lot-name', 'sec') +
+    btn(tr('lot.join'), 'lot-join', 'ghost') + '</div>';
   return h;
+}
+
+/** ++++++ TRIPS ++++++ Имя, своя дата и заметка.
+ *
+ *  Тот же dialog(), что у всех листов, — Escape, нажатие мимо окна и
+ *  «Назад» на Android работают без единой новой строки. Поля читаются
+ *  ПРИ ЗАКРЫТИИ: dialog() снимает лист после того, как отработал
+ *  .then() вызывающего, и на этом уже стоит правка курсов (область 54).
+ *
+ *  Пустые имя, дата и заметка разом СНИМАЮТ запись: поездка снова
+ *  безымянна, а товары и расходы целы (решение 8). */
+function lotNameSheet(){
+  var lot = lotByKey(ui.detail && ui.detail.id);
+  if (!lot) return;
+  var rec = lot.rec || { name:'', date:'', note:'' };
+  var body = '<div class="body">' +
+    '<div class="f"><label>' + tr('lot.nameField') + '</label>' +
+      '<input id="lotName" maxlength="' + LOT_NAME_MAX + '" placeholder="' +
+      tr('lot.namePh') + '" value="' + esc(rec.name) + '"></div>' +
+    '<div class="f"><label>' + tr('lot.dateField') + '</label>' +
+      '<input id="lotDate" type="date" value="' + esc(rec.date) + '"></div>' +
+    '<div class="f"><label>' + tr('lot.noteField') + '</label>' +
+      '<textarea id="lotNote" maxlength="' + LOT_NOTE_MAX + '"></textarea></div>' +
+    '<p class="note">' + tr('lot.nameHint') + '</p></div>';
+  dialog({ title: tr('lot.nameTitle'), html: body,
+    cancelLabel: tr('w.cancel'), buttons: [{key:'ok', label: tr('w.save')}] })
+    .then(function(k){
+      if (k !== 'ok') return;
+      var nEl = $('lotName'), dEl = $('lotDate'), tEl = $('lotNote');
+      if (!nEl) return;
+      /* Номер выдаётся ЗДЕСЬ, если его ещё нет: поездке без номера
+         привязываться нечем. То же делает присоединение. */
+      var id = lotEnsureId(lot);
+      lotRecSet(state, id, { name: nEl.value, date: dEl ? dEl.value : '',
+                             note: tEl ? tEl.value : '' });
+      touch(id);
+      ui.detail = { type:'lot', id: id };
+      toast(tr('msg.lotNamed'), 'ok');
+      commit();
+    });
+  /* textarea не принимает value атрибутом — заполняется после вставки */
+  var t = $('lotNote');
+  if (t) t.value = rec.note || '';
 }
 
 /** Лист позиции: открыть товар или отделить позицию от партии. */
@@ -18444,19 +18946,23 @@ function lotSplit(key, i){
 function lotJoinSheet(){
   var lot = lotByKey(ui.detail.id);
   if (!lot) return;
+  /* ++++++ TRIPS ++++++ предлагаются ПРИХОДЫ, а не позиции. Прежде одно
+     нажатие переносило ровно одну позицию, и приход из семи товаров
+     требовал семи нажатий, — для поездки, которая и есть несколько
+     приходов, это ровно наоборот (решение владельца 1). */
   var rows = '', n = 0;
   lotList().forEach(function(o){
     if (o.key === lot.key) return;
-    o.items.forEach(function(it, i){
-      n++;
-      rows += row({ lead: avsq(units(it.batch.qty)),
-        k: esc(it.product.name),
-        sub: fmtDateLong(it.batch.date) + ' · ' + secOne('products', it.batch.totalCostCents),
-        act:'lot-add', arg: o.key + '|' + i });
-    });
+    n++;
+    rows += row({ lead: avsq(units(o.items.length)),
+      k: lotTitleOf(o),
+      sub: fmtDateLong(o.date) + ' · ' + secOne('products', lotTotalCents(o)),
+      sub2: lotWhat(o),
+      act:'lot-add', arg: o.key });
   });
   dialog({ title: tr('lot.joinTitle'),
-    html: n ? '<div class="rows">' + rows + '</div>'
+    html: n ? '<div class="body">' + tr('lot.joinWhole') + '</div>' +
+              '<div class="rows">' + rows + '</div>'
             : '<div class="body">' + tr('lot.joinNone') + '</div>',
     cancelLabel: tr('w.close'), buttons: [] });
 }
@@ -18467,15 +18973,20 @@ function lotJoinSheet(){
 function lotAdd(arg){
   var lot = lotByKey(ui.detail && ui.detail.id);
   if (!lot) return;
-  var p = String(arg).split('|'), src = lotByKey(p[0]), i = parseInt(p[1], 10);
-  if (!src || !src.items[i]) return;
+  var src = lotByKey(arg);
+  if (!src || !src.items.length) return;
   var id = lotEnsureId(lot);
-  src.items[i].batch.lotId = id;
+  /* ++++++ TRIPS ++++++ ВЕСЬ приход донора, одним нажатием. Асимметрия с
+     «Отделить» (та по-прежнему по одной позиции) намеренная: после
+     слияния донора как отдельного прихода больше НЕТ, он слился, —
+     разделять поэтому можно только позициями. Разделять всегда должно
+     быть можно точнее, чем объединять. */
+  src.items.forEach(function(it){ it.batch.lotId = id; });
   ui.detail = { type:'lot', id: id };
   var back = document.querySelector('.modal-back');
   if (back) back.remove();                 /* лист не часть render() — область 14 */
   sheetLock();                             /* ++++++ SHEET SCROLL ++++++ */
-  toast(tr('msg.lotJoined', {name: esc(src.items[i].product.name)}), 'ok');
+  toast(tr('msg.lotJoined', {n: nq(src.items.length, 'line')}), 'ok');
   commit();
 }
 
@@ -21356,6 +21867,7 @@ function handleAct(act, arg, e, srcEl){
     lotItemSheet(li[0], parseInt(li[1], 10)); return;
   }
   if (act === 'lot-join'){ lotJoinSheet(); return; }
+  if (act === 'lot-name'){ lotNameSheet(); return; }
   if (act === 'lot-add'){ lotAdd(arg); return; }
   if (act === 'pay-fill'){
     /* ++++++ PAY FILL ++++++ R30. Здесь стояло convertFor(...).toFixed(2) —
