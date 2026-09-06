@@ -5076,8 +5076,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.9.0';
-var APP_BUILD = '2026-09-06T00:15:52.311Z';
+var APP_VERSION = '1.9.1';
+var APP_BUILD = '2026-09-06T00:53:48.095Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -21656,6 +21656,9 @@ function updBoot(){
     updState.shell = (i && i.shell) ? String(i.shell) : '';
     updState.installer = (i && i.installer) ? String(i.installer) : '';
     updSilent();
+    /* ++++++ WHAT'S NEW ++++++ здесь, а не в boot(): до ответа оболочки
+       неизвестно, подменялось ли ядро. */
+    newsAfterInfo();
   })['catch'](function(){ updSilent(); });
 }
 
@@ -21767,16 +21770,37 @@ function newsSeenSave(v){
   syncWrite(o);
 }
 
-/* Полоса «программа обновилась». Первый запуск молчит — человеку не о
-   чем рассказывать, — и отметка просто запоминается. Откат назад тоже
-   молчит: его сделали сами и знают об этом. */
-function newsBoot(){
-  var seen = newsSeen();
-  if (!seen){ newsSeenSave(APP_VERSION); return; }
-  if (!newsJustUpdated(seen, APP_VERSION)) return;
+function newsBarPaint(){
   banner('news', 'info', tr('up.barNew', {v: APP_VERSION}) +
     '<span class="rb"><button type="button" class="go" data-act="news-open">' +
     tr('up.barNewGo') + '</button></span>');
+}
+
+/* Полоса «программа обновилась». Первый запуск молчит — человеку не о
+   чем рассказывать, — и отметка просто запоминается. Откат назад тоже
+   молчит: его сделали сами и знают об этом. */
+var newsWasBlank = false;
+function newsBoot(){
+  var seen = newsSeen();
+  if (!seen){ newsWasBlank = true; newsSeenSave(APP_VERSION); return; }
+  if (!newsJustUpdated(seen, APP_VERSION)) return;
+  newsBarPaint();
+}
+
+/* ОДИН переход, о котором иначе рассказать нечем: устройство приехало со
+   СТАРОГО ядра, которое отметки не вело. Отметки нет, а ядро уже
+   подменялось — значит обновление было, и список изменений это ровно то,
+   что человек сейчас ждёт. Найдено живой проверкой: цепочка «1.8.1 →
+   проверить → установить → 1.9.0» доходила до конца молча.
+ *
+ * Спрашивается ПОСЛЕ coreInfo(): раньше updState.source ещё пуст, и
+ * условие читалось бы как «нет». Дальше отметка уже есть, и работает
+ * обычный newsBoot(). */
+function newsAfterInfo(){
+  if (!newsWasBlank) return;
+  newsWasBlank = false;
+  if (updState.source !== 'installed') return;
+  newsBarPaint();
 }
 
 /* Принести историю — один раз за сеанс и только когда её открыли.
@@ -22614,11 +22638,16 @@ function boot(){
   /* ++++++ SYNC ++++++ по той же причине, что и две строки выше: сначала
      показать документ, потом идти в сеть. */
   syncBoot();
+  /* ++++++ WHAT'S NEW ++++++ ДО updBoot(), и это не стиль, а порядок.
+     newsBoot() ставит признак «отметки не было», а решение по нему
+     принимает newsAfterInfo() внутри ответа оболочки. Стой newsBoot()
+     ниже — ответ мог бы прийти раньше признака, и полоса не появлялась
+     бы ровно в том случае, ради которого написана: приход со старого
+     ядра. Найдено живой проверкой, а не чтением: разница видна только
+     на настоящем мосте. */
+  newsBoot();
   /* ++++++ SELF UPDATE ++++++ откуда открыто ядро и есть ли откат */
   updBoot();
-  /* ++++++ WHAT'S NEW ++++++ здесь же и по той же причине: banner() кладёт
-     узел в #alerts, которого до первой отрисовки нет. */
-  newsBoot();
   /* ++++++ ATTACHMENTS ++++++ the picture store opens AFTER the first paint.
      The app must never wait for it: bookkeeping works with no files at all.
      When it cannot open, the whole consequence is one banner and dead file
