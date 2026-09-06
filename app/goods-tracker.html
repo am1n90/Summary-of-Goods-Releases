@@ -5077,8 +5077,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.9.2';
-var APP_BUILD = '2026-09-06T07:19:29.687Z';
+var APP_VERSION = '1.9.3';
+var APP_BUILD = '2026-09-06T07:51:54.847Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -21781,6 +21781,12 @@ function updBarPaint(){
    prodEditAnchor: наполовину раскрытому списку нечего делать ни в
    документе, ни в резервной копии. */
 var newsHist = null;
+/* Отметка, какой она была НА ВХОДЕ в раздел. Без неё строка «с вашей
+   прошлой версии вышло N» не печаталась НИКОГДА: открытие раздела
+   сохраняет отметку раньше, чем строится экран, и к моменту отрисовки
+   пропущенного уже нет. Найдено живой проверкой на телефоне — набор
+   ставил отметку руками ПОСЛЕ открытия и потому был зелёным. */
+var newsSeenAt = '';
 var newsBusy = false;
 var newsErr = '';
 var newsOpen = {};
@@ -21907,12 +21913,12 @@ function newsScreenHTML(){
     return h + '</div></section>';
   }
 
-  var since = newsSince(newsHist, newsSeen(), APP_VERSION);
+  var since = newsSince(newsHist, newsSeenAt || newsSeen(), APP_VERSION);
   /* «Вы пропустили N» печатается, только когда есть что пропустить.
      Запасная история из манифеста знает лишь последнюю версию и такого
      обещания дать не может (область 44). */
   if (since.length > 1 && newsHist.versions.length > 1)
-    h += '<div class="note">' + esc(tr('nw.missed', {v: newsSeen(), n: since.length})) + '</div>';
+    h += '<div class="note">' + esc(tr('nw.missed', {v: newsSeenAt || newsSeen(), n: since.length})) + '</div>';
 
   return h + newsVersionsHTML(all) + '</div></section>';
 }
@@ -21968,7 +21974,10 @@ function newsOpenScreen(){
   ui.tab = 'acct'; ui.acct = 'news'; ui.detail = null;
   removeBanner('news'); removeBanner('upd');
   /* Список показан — значит эти версии человек увидел. Отметка двигается
-     ТОЛЬКО отсюда и только вперёд. */
+     ТОЛЬКО отсюда и только вперёд. Прежнее её значение запоминается ДО
+     записи: экран строится уже после, и без этого он не смог бы сказать,
+     сколько версий человек пропустил. */
+  newsSeenAt = newsSeen();
   newsSeenSave(newsSeenNext(newsSeen(), APP_VERSION));
   render(); window.scrollTo(0, 0);
   newsLoad(function(){ if (ui.acct === 'news') render(); });
