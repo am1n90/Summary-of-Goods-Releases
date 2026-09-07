@@ -3300,6 +3300,55 @@ var STR = {
                       'скидки прошлых выдач на экране пересчитаются — на деньги это не влияет.' },
 'ppl.discGot':   { en:'Received as discounts',              ru:'Получил скидками' },
 'ppl.discGotHint':{ en:'over all time',                     ru:'за всё время' },
+/* ++++++ PERSON EARN ++++++ карточка человека: заработок на нём */
+'earn.title':    { en:'Earnings',                           ru:'Заработок' },
+'earn.earned':   { en:'Earned',                             ru:'Заработано' },
+'earn.credit':   { en:'Credit',                             ru:'Переплата' },
+'earn.earnedSub':{ en:'received &mdash; all time &middot; other expenses not included',
+                   ru:'получено &mdash; за всё время &middot; без прочих расходов' },
+'earn.got':      { en:'received {sum}',                     ru:'получено {sum}' },
+'earn.noCost':   { en:'{n} with no cost share &mdash; counted at 0',
+                   ru:'{n} без доли себестоимости &mdash; посчитано как 0' },
+'earn.info1':    { en:'Revenue is the price of every handout to this person: a discount is ' +
+                      'already inside that price and is not subtracted a second time. Cost is ' +
+                      'the same as on the Summary &mdash; each handout&rsquo;s share at the average ' +
+                      'purchase price of what was in stock on its day. A return reduces both ' +
+                      'revenue and cost, in the period of its own date. ' +
+                      '<b>Earned</b> = revenue &minus; cost: what I will have earned once the ' +
+                      'person has settled the debt. <b>Received</b> = paid &minus; cost of ' +
+                      'everything handed out to them: what is already in my hands. Paid less ' +
+                      'than the goods cost me &mdash; a minus, and it is shown as one.',
+                   ru:'Выручка — цена каждой выдачи этому человеку: скидка уже в ней и второй ' +
+                      'раз не вычитается. Себестоимость — та же, что в «Сводке»: доля каждой ' +
+                      'выдачи по средней цене того, что лежало на складе в день выдачи. ' +
+                      'Возврат уменьшает и выручку, и себестоимость — в периоде своей даты. ' +
+                      '<b>Заработано</b> = выручка &minus; себестоимость: столько заработаю, ' +
+                      'когда человек погасит долг. <b>Получено</b> = оплачено &minus; ' +
+                      'себестоимость всего выданного ему: столько уже у меня на руках. ' +
+                      'Оплатил меньше, чем мне стоил товар, — минус, и он так и показан.' },
+'earn.info2':    { en:'Delivery, customs, commission, money transfer and &laquo;other&raquo; ' +
+                      'expenses are not tied to people and are NOT in this figure. So the ' +
+                      'earnings of all people added together exceed the Summary&rsquo;s ' +
+                      '&laquo;Net profit&raquo; by exactly the other expenses of the period ' +
+                      '&mdash; the two cannot be compared one to one.',
+                   ru:'Доставка, растаможка, комиссия, перевод денег и «другое» к людям не ' +
+                      'привязаны и в эту цифру НЕ входят. Поэтому заработок по всем людям ' +
+                      'вместе больше «Чистой прибыли» на «Сводке» ровно на прочие расходы ' +
+                      'периода — сравнивать эти две цифры один к одному нельзя.' },
+'earn.info3':    { en:'Revenue, cost and earnings follow the period chosen above the card, and ' +
+                      'a product chosen there narrows them too. Paid, owed and received are for ' +
+                      'all time: a debt is a state, not an event of one month, and a payment is ' +
+                      'not tied to a month or a product. If a shipment was recorded ' +
+                      'without a cost (an old backup, a repaired shipment log), its cost is zero ' +
+                      'and earnings equal revenue: the program cannot tell &laquo;got it for ' +
+                      'free&raquo; from &laquo;cost not recorded&raquo;.',
+                   ru:'Выручка, себестоимость и заработок — за период с панели над карточкой; ' +
+                      'выбранный там товар сужает и их. Оплачено, долг и получено — за всё ' +
+                      'время: долг это состояние, а не событие месяца, а оплата не привязана ' +
+                      'ни к месяцу, ни к товару. Если партия записана без стоимости ' +
+                      '(старая копия, восстановленный журнал), её себестоимость ноль и ' +
+                      'заработок равен выручке: отличить «получил бесплатно» от «стоимость не ' +
+                      'записана» программа не может.' },
 'rem.colDisc':   { en:'Discounts',                          ru:'Скидки' },
 'rem.colDiscSub':{ en:'all time',                           ru:'за всё время' },
 'err.expCat':    { en:'Choose a category.',                 ru:'Выберите категорию.' },
@@ -5195,8 +5244,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.11.0';
-var APP_BUILD = '2026-09-06T21:10:51.375Z';
+var APP_VERSION = '1.12.0';
+var APP_BUILD = '2026-09-07T09:59:52.961Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -13513,6 +13562,15 @@ var INFO = {
     }
   },
 
+  /* ++++++ PERSON EARN ++++++ карточка человека, карточка «Заработок».
+     Три абзаца: что внутри цифры, чего в ней НЕТ (прочие расходы — и
+     потому она не равна «Чистой прибыли»), и по какому правилу считана
+     каждая из пяти строк. Последнее сказано и на самих строках; здесь —
+     почему так. */
+  'earn': {
+    title: function(){ return tr('earn.title'); },
+    html: function(){ return infoP(tr('earn.info1')) + infoP(tr('earn.info2')) + infoP(tr('earn.info3')); }
+  },
   /* Раздел «Внешний вид» */
   'look': {
     title: function(){ return tr('acct.look'); },
@@ -15037,6 +15095,167 @@ function discPersonCents(personId){
 function discProductD(productId){
   return discReportD('', '', productId);
 }
+/* ==================================================================
+ * ++++++ PERSON EARN ++++++  ЗАРАБОТОК НА ЧЕЛОВЕКЕ
+ *
+ * Пять цифр карточки человека: выручка от его выдач, себестоимость
+ * выданного ему, заработок (разность), оплачено и долг.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: ЗДЕСЬ НИЧЕГО НЕ СЧИТАЕТСЯ ЗАНОВО.
+ *   · выручка выдачи — qty × unitPriceCents, цена ВЫДАЧИ: скидка уже в
+ *     ней и второй раз не вычитается;
+ *   · себестоимость выдачи — ГОТОВАЯ доля ps[productId].cogsOf[txId],
+ *     которую разложил cogsAllocate(): та же, что читают computeReport()
+ *     и dcStats(). Сложить её по t.personId вместо t.productId — всё, что
+ *     здесь делается. cogsAllocate() не трогается ни на байт;
+ *   · возврат гасит выручку по цене СВОЕЙ выдачи и себестоимость через
+ *     retCogsOf — в периоде своей даты, той же формой, что computeReport();
+ *   · оплачено и долг НЕ пересчитываются — берутся из personStats() и
+ *     dcStats().per: два ответа на «сколько он должен» разошлись бы;
+ *   · в валюте показа КАЖДАЯ запись — своим снимком курса (у возврата —
+ *     снимок его выдачи, как в dcStats()), и итог есть СУММА
+ *     пересчитанных, а не пересчитанная сумма. В базовой валюте
+ *     revenueD === revenueCents и costD === costCents — тождество dcCents().
+ *
+ * Расходы (доставка, растаможка, комиссия) к человеку не привязаны и
+ * сюда НЕ входят — об этом сказано за «i». Корзина отсечена аксессорами.
+ *
+ * rng = { from, to, productId } — уже разрешённый период, как у
+ * computeReport() после проверки «С позже По». ps — карта productStats(),
+ * hs — personStats(), d — dcStats(): считаются один раз вызывающим.
+ * ================================================================== */
+
+/** Пять цифр одного человека. Читает документ через аксессоры, ничего
+ *  не пишет. noCostN — защитный счётчик: выдачи, у которых доли
+ *  себестоимости НЕТ (товар вне активной карты). В согласованном
+ *  документе такого не бывает — корзина уносит выдачи вместе с товаром, а
+ *  валидатор запрещает ссылку в никуда, — поэтому ноль почти всегда;
+ *  партия по цене 0 сюда НЕ попадает: у неё доля есть и она ноль. */
+function personEarn(personId, rng, ps, hs, d){
+  var from = (rng && rng.from) || '', to = (rng && rng.to) || '';
+  var pid = (rng && rng.productId) || '';
+  /* начальное значение в валюте показа — dcCents(0, null), не ноль: в
+     валюте без курса все пять строк обязаны быть прочерками, а не одна
+     из них числом (правило expSumD) */
+  var out = { revenueCents:0, costCents:0, earnCents:0,
+              revenueD: dcCents(0, null), costD: dcCents(0, null), earnD:null,
+              /* себестоимость ВСЕГО выданного этому человеку — без периода и
+                 без товара — для «получено» (см. ниже) */
+              costAllCents:0, costAllD: dcCents(0, null),
+              gotCents:0, gotD:null,
+              units:0, txN:0, retN:0, noCostN:0,
+              paidCents:0, outCents:0, credCents:0,
+              paidD:null, outD:null, credD:null };
+  actTx().forEach(function(t){
+    if (t.personId !== personId) return;
+    var s = own(ps, t.productId) ? ps[t.productId] : null;
+    var has = !!(s && own(s.cogsOf, t.id));      /* own(): id вроде «constructor» (R20) */
+    var cost = has ? s.cogsOf[t.id] : 0;
+    var costD = dcCents(cost, t.rateSnap);
+    out.costAllCents += cost;
+    out.costAllD = dcAdd(out.costAllD, costD);
+    if (pid && t.productId !== pid) return;
+    if (!inRange(t.date, from, to)) return;
+    var rev = t.qty * t.unitPriceCents;
+    if (!has) out.noCostN++;
+    out.txN++; out.units += t.qty;
+    out.revenueCents += rev;
+    out.costCents += cost;
+    out.revenueD = dcAdd(out.revenueD, dcCents(rev, t.rateSnap));
+    out.costD    = dcAdd(out.costD,    costD);
+  });
+  actRet().forEach(function(x){
+    var t = txById(x.txId);
+    if (!t || t.personId !== personId) return;
+    var s = own(ps, t.productId) ? ps[t.productId] : null;
+    var back = (s && own(s.retCogsOf, x.id)) ? s.retCogsOf[x.id] : 0;
+    var backD = dcCents(back, t.rateSnap);
+    out.costAllCents -= back;
+    out.costAllD = dcSub(out.costAllD, backD);
+    if (pid && t.productId !== pid) return;
+    if (!inRange(x.date, from, to)) return;
+    var rrev = x.qty * t.unitPriceCents;
+    out.retN++; out.units -= x.qty;
+    out.revenueCents -= rrev;
+    out.costCents -= back;
+    out.revenueD = dcSub(out.revenueD, dcCents(rrev, t.rateSnap));
+    out.costD    = dcSub(out.costD,    backD);
+  });
+  out.earnCents = out.revenueCents - out.costCents;
+  out.earnD = dcSub(out.revenueD, out.costD);
+  /* оплачено и долг — за всё время, из тех же карт, что читает вся
+     карточка; периода они не знают, и это решение (A2) */
+  var h = (hs && own(hs, personId)) ? hs[personId] : null;
+  if (h){ out.paidCents = h.paidCents; out.outCents = h.outstandingCents; out.credCents = h.creditCents; }
+  var x = (d && d.per && own(d.per, personId)) ? d.per[personId] : null;
+  if (x){ out.paidD = x.paidD; out.outD = x.outD; out.credD = x.credD; }
+  /* «получено» = оплачено − себестоимость ВСЕГО выданного (решение владельца
+     2026-09-07): сколько уже на руках, тогда как «заработано» — сколько
+     будет, когда долг погашен. Обе половины — за всё время: оплата к
+     периоду и к товару не привязана, а «на руках» — состояние, не событие
+     месяца. Минус не зажимается: оплатил меньше, чем стоил товар, — минус. */
+  out.gotCents = out.paidCents - out.costAllCents;
+  out.gotD = dcSub(out.paidD, out.costAllD);
+  return out;
+}
+
+/** Период карточки — тот же ui.report и та же проверка «С позже По», что
+ *  у computeReport(): три строки повторены нарочно, computeReport() не
+ *  трогается ни на байт, а наборы сравнивают его побайтово. */
+function earnRange(){
+  var f = ui.report, swapped = !!(f.from && f.to && f.from > f.to);
+  return { from: swapped ? '' : f.from, to: swapped ? '' : f.to,
+           productId: f.productId || '', swapped: swapped };
+}
+/** «за август · Чайник» — то, что сужает три цифры периода. Товар назван
+ *  ВСЛУХ (решение владельца 2026-09-07): без него цифра втрое меньше
+ *  ожидаемой читается как ложь программы. */
+function earnScopeText(rng){
+  var s = periodLabel();
+  var p = rng.productId ? productById(rng.productId) : null;
+  if (p) s += ' · ' + esc(shortName(p.name));
+  return s;
+}
+/** Карточка «Заработок»: пять строк. ПЕРИОД И ТОВАР — В ЗАГОЛОВКЕ
+ *  («Заработок · в AED · за август · Чайник»), а не в каждой подписи:
+ *  повторённый пять раз, он загромождал строки (решение владельца
+ *  2026-09-07). Две строки периоду НЕ подчиняются — «Оплачено» и «Долг»
+ *  всегда за всё время, — и у них остаётся ОДНА короткая пометка «за всё
+ *  время» мелким шрифтом и ничего больше: без неё при выбранном августе
+ *  их прочли бы как августовские. «Получено» под заработком — тоже за всё
+ *  время, и подпись строки говорит это в двух словах; формула — за «i».
+ *  Названия строк ПЕРЕНОСЯТСЯ (существующий .row.wrap), а не режутся:
+ *  «Себестоимость выданного» на 320 px иначе теряет половину слова. */
+function earnCardHTML(personId, ps, hs){
+  var rng = earnRange();
+  ps = ps || productStats(); hs = hs || personStats();
+  var e = personEarn(personId, rng, ps, hs, dcStats(ps));
+  var sep = ' · ';
+  var rows =
+    row({ cls:'wrap', k: tr('sum.handedOutFor'),
+          sub: e.txN ? nq(e.units, 'unit') + sep + tr('sum.byTxDate') : tr('sum.nothingOut'),
+          v: dcMoney(e.revenueD) }) +
+    row({ cls:'wrap', k: tr('sum.costOfHandedOut'),
+          sub: tr('sum.atAvgCost') +
+               (e.noCostN ? sep + tr('earn.noCost', {n: nq(e.noCostN, 'transaction')}) : ''),
+          v: dcMoney(e.costD) }) +
+    /* две цифры в одной строке: крупно — «заработано» за период, под ней
+       мелко — «получено» за всё время. Мелкая строка — тот же <small>
+       внутри .v, которым список людей печатает статус под суммой; минус в
+       ней печатается знаком. */
+    row({ cls:'wrap', k: tr('earn.earned'), sub: tr('earn.earnedSub'),
+          v: dcMoney(e.earnD) + '<small>' + tr('earn.got', {sum: dcMoney(e.gotD)}) + '</small>',
+          vcls: (e.earnD !== null && e.earnD < 0) ? 'neg' : '' }) +
+    row({ cls:'wrap', k: tr('w.paid'), sub: tr('flt.forAllTime'), v: dcMoney(e.paidD) }) +
+    (e.credCents > 0
+      ? row({ cls:'wrap', k: tr('earn.credit'), sub: tr('flt.forAllTime'), v: dcMoney(e.credD) })
+      : row({ cls:'wrap', k: tr('w.outstanding'), sub: tr('flt.forAllTime'), v: dcMoney(e.outD),
+              vcls: e.outCents > 0 ? 'neg' : '' }));
+  return '<section class="card"><div class="t"><span>' + tr('earn.title') + sep +
+    tr('sum.inCur', {note: '<b>' + esc(dcCur()) + '</b>'}) + sep + earnScopeText(rng) + '</span>' +
+    infoBtn('earn') + '</div>' + rows + '</section>';
+}
+/* ++++++ PERSON EARN END ++++++ */
 
 /* ---- форма выдачи: подсказка и двусторонняя пара «цена ↔ скидка %» ---
  *
@@ -17517,7 +17736,7 @@ function deleteRet(id){
 function viewPersonCard(){
   var p = personById(ui.detail.id);
   if (!p){ ui.detail = null; return viewPeople(); }
-  var sec = 'people', st = personStats()[p.id];
+  var sec = 'people', hs = personStats(), st = hs[p.id];
   var h = backHead(esc(p.name), esc(personSub(p)) || tr('ppl.noContacts'));
   if (st.outstandingCents > 0){
     h += hero({ cls:'bad', k: tr('ppl.card.debtLeft'), v: heroMoney(sec, st.outstandingCents),
@@ -17540,6 +17759,14 @@ function viewPersonCard(){
     h += '<div class="btns" style="margin-bottom:14px">' +
       btn(tr('rmd.copy'), 'rmd-copy', 'ghost', p.id) + '</div>';
   }
+  /* ++++++ PERSON EARN ++++++ панель периода — та же, что на «Сводке», и
+     тот же ui.report: один выбор на всё приложение (решение владельца
+     2026-09-07). Стоит НАД карточкой заработка, а не над героем: герой —
+     долг за всё время, и панель над ним читалась бы как его фильтр.
+     «С позже По» — тот же note, что печатает «Сводка». */
+  h += filterBar();
+  if (earnRange().swapped) h += '<div class="note warn">' + tr('rep.swapped') + '</div>';
+  h += earnCardHTML(p.id, null, hs);
 
   var contact = '';
   if (p.phone){
@@ -23536,6 +23763,9 @@ window.GoodsTracker = {
      третий аргумент обязан быть необязательным, и это свойство поведения,
      а не текста. */
   statusOf: statusOf,
+  /* ++++++ PERSON EARN ++++++ набор проверок спрашивает пять цифр той же
+     функцией, которой их печатает карточка, и тот же разрешённый период. */
+  earn: personEarn, earnRange: earnRange,
   /* ++++++ REMAINDER REPORT ++++++ the one builder the window is made of */
   remainder: remainderReport,
   /* ++++++ REMINDER LIST ++++++ the one debtor-data function and the one
