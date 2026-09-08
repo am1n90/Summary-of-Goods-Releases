@@ -1008,6 +1008,56 @@
   .infobody .ip{margin:0 0 12px}
   .infobody .ip:last-child{margin-bottom:0}
 
+  /* ============================================= ++++++ FAQ ++++++ ==
+   * Раздел «Вопросы и ответы» и ссылка под ответом в окне.
+   *
+   * НИ ОДНОГО НОВОГО ЦВЕТОВОГО ТОКЕНА: всё рисуется теми, что уже есть,
+   * и там, где нужен вид уже существующего элемента, берётся ЕГО класс,
+   * а не сочиняется второй набор свойств о том же (правило 101).
+   * Поэтому тело ответа несёт класс .infobody — тот самый, которым
+   * рисует абзацы окно за «i»: текст переехал, а не пересказан другим
+   * шрифтом. Своим у .faqa остаётся ровно то, чего у окна нет:
+   * раскрытие и кегль, который в окне приходил от .modal .body.
+   *
+   * Сброса системного вида у кнопок здесь нет намеренно: он стоит один
+   * раз, на голом button (область 82).
+   * ================================================================ */
+
+  /* Вопрос — кнопка на всю ширину. Заголовок ПЕРЕНОСИТСЯ, а не
+     обрезается: обрезанный прячет ровно то, ради чего строку читают
+     (довод .nitem). Высота — не меньше 44, как у всего нажимаемого. */
+  .faqq{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
+    border:0;border-top:1px solid var(--line-2);background:none;color:var(--ink);
+    font:inherit;font-size:14.5px;line-height:1.45;padding:12px 0;min-height:44px;cursor:pointer}
+  .faqbody > .faqq:first-child{border-top:0;padding-top:2px}
+  .faqq .h{flex:1 1 auto;min-width:0;font-weight:500}
+  .faqq.on .h{color:var(--accent)}
+  .faqq .caret{flex:0 0 auto;color:var(--muted);font-size:11px;line-height:1.9}
+  .faqq:hover .h{color:var(--accent)}
+  .faqq:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+  /* Ответ — СОСЕД кнопки, а не её содержимое: <button> внутри <button>
+     браузер перевешивает, и внешняя кнопка съедает нажатие (область 25).
+     Кегль и цвет — те же, что у .modal .body, где этот текст живёт в
+     окне: одинаковый текст обязан читаться одинаково в обоих домах. */
+  .faqa{display:none;padding:0 0 14px;font-size:14px;color:var(--ink-2);line-height:1.55}
+  .faqa.open{display:block}
+  .faqa b{color:var(--ink)}
+
+  /* «Смотрите также» — ссылки внутри ответа. Каждая на своей строке:
+     на 320 px две в ряд не помещаются, а перенос посреди вопроса
+     читается как две разные ссылки. */
+  .faqsee{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line-2)}
+  .faqsee b{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:2px}
+  .faqlink{display:block;width:100%;text-align:left;background:none;border:0;padding:9px 0;
+    min-height:44px;color:var(--accent);font:inherit;font-size:14px;line-height:1.4;cursor:pointer}
+  .faqlink:hover{text-decoration:underline}
+  .faqlink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+  /* Строка «Все вопросы и ответы» под ответом в окне. Отделена
+     чертой — это переход, а не продолжение текста. */
+  .faqall{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
+  .faqall .faqlink{padding:6px 0;font-weight:600}
   /* ------------------------------------------------------- 5. ТЕЛЕФОН -- */
   /* своя полоса прокрутки: видна во время прокрутки и гаснет сама */
   .sbar{display:none}
@@ -1536,6 +1586,10 @@ function detectLang(){
  * impossible to get wrong.                                          */
 var NOUN = {
   unit:        { en:['unit','units'],               ru:['единица','единицы','единиц'] },
+  /* ++++++ FAQ ++++++ «Нашлось 4 вопроса из 27» — подпись под полем
+     поиска раздела. Существительное склоняет тот же nq(), которым
+     подписаны все пять прежних списков; второго счётчика не заводится. */
+  question:    { en:['question','questions'],       ru:['вопрос','вопроса','вопросов'] },
   product:     { en:['product','products'],         ru:['товар','товара','товаров'] },
   person:      { en:['person','people'],            ru:['человек','человека','человек'] },
   transaction: { en:['transaction','transactions'], ru:['выдача','выдачи','выдач'] },
@@ -1677,8 +1731,8 @@ var STR = {
 'err.prodName':   { en:'Enter a product name or model.', ru:'Введите название или модель товара.' },
 'err.prodQty':    { en:'Total quantity must be a positive whole number.',
                     ru:'Общее количество должно быть целым положительным числом.' },
-'err.prodCost':   { en:'Cost per unit must be a non-negative number, e.g. 36.84.',
-                    ru:'Себестоимость за штуку должна быть неотрицательным числом, например 36.84.' },
+'err.prodCost':   { en:'Cost per unit must be a non-negative number, e.g. 100 or 100.50.',
+                    ru:'Себестоимость за штуку должна быть неотрицательным числом, например 100 или 100.50.' },
 'err.prodSell':   { en:'Selling price must be a non-negative number, e.g. 50 or 50.50.',
                     ru:'Цена продажи должна быть неотрицательным числом, например 50 или 50.50.' },
 'err.prodGone':   { en:'That product no longer exists.', ru:'Этого товара больше нет.' },
@@ -2095,7 +2149,6 @@ var STR = {
 'v.ePayment':    { en:'payment',     ru:'платёж' },
 
 /* ---------------- «Сегменты»: оболочка и общие слова ---------------- */
-'app.railSub':   { en:'Dubai &rarr; Tajikistan',            ru:'Дубай &rarr; Таджикистан' },
 /* ++++++ NAV ++++++ два новых пункта панели. Прежние tab.transactions,
    tab.payments, tab.expenses и tab.more остаются живыми: их печатают
    вкладки внутри «Денег» и заголовки разделов. */
@@ -2115,6 +2168,514 @@ var STR = {
 /* ++++++ INFO ++++++ подпись иконки «i». Единственная: своей подписи у
    раздела нет, иначе их стало бы десять и они разошлись бы. */
 'info.aria':     { en:'Explanation',                        ru:'Пояснение' },
+/* ============================================== ++++++ FAQ ++++++ ==
+ * СЛОВАРЬ РАЗДЕЛА «ВОПРОСЫ И ОТВЕТЫ».
+ *
+ * Здесь только НОВОЕ: устройство раздела, двадцать семь вопросов и
+ * семнадцать ответов, которых не было нигде. Двадцать прежних ответов
+ * НЕ ПЕРЕПИСАНЫ и сюда не скопированы — они остаются в словаре там, где
+ * лежали, и читает их склад.
+ *
+ * КОМУ ЭТО НАПИСАНО. Человеку, который открыл программу впервые и слов
+ * «партия», «себестоимость», «замороженный курс» не знает. Поэтому
+ * каждый трудный ответ начинается с примера с числами, а не с
+ * определения, и ни один не рассказывает, как программа устроена
+ * внутри.
+ *
+ * ЧТО ЭКРАНИРУЕТСЯ, А ЧТО НЕТ. Вопрос печатается через esc() — в нём не
+ * должно быть ни разметки, ни мнемоник, иначе на экране появится
+ * «&laquo;». Ответ попадает в innerHTML как есть, и <b> в нём —
+ * авторский, как во всех прежних пояснениях.
+ * ================================================================== */
+
+/* ---- устройство раздела ---- */
+'faq.title':     { en:'Questions & answers',                ru:'Вопросы и ответы' },
+'faq.rowSub':    { en:'how it all works, with examples',    ru:'как всё устроено, с примерами' },
+'faq.see':       { en:'See also:',                          ru:'Смотрите также:' },
+'faq.all':       { en:'All questions & answers',            ru:'Все вопросы и ответы' },
+/* Приглашение короткое НАМЕРЕННО: на 320 px «Поиск по вопросам и
+   ответам» обрезалось на середине — увидено снимком, а не замером. */
+'srch.phFaq':    { en:'Search questions',                    ru:'Поиск по вопросам' },
+
+/* ---- разделы, в порядке показа ---- */
+'faq.t.goods':   { en:'Goods and stock',                    ru:'Товары и склад' },
+'faq.t.people':  { en:'People and debts',                   ru:'Люди и долги' },
+'faq.t.tx':      { en:'Handouts',                           ru:'Выдачи' },
+'faq.t.pay':     { en:'Payments',                           ru:'Оплаты' },
+'faq.t.exp':     { en:'Expenses',                           ru:'Расходы' },
+'faq.t.money':   { en:'Money and currencies',               ru:'Деньги и валюты' },
+'faq.t.sync':    { en:'Syncing between devices',            ru:'Обмен между устройствами' },
+'faq.t.backup':  { en:'Backup and trash',                   ru:'Копия и корзина' },
+'faq.t.app':     { en:'The app and updates',                ru:'Программа и обновления' },
+
+/* ---- вопросы: двадцать семь, по одному на запись склада ---- */
+'faq.q.goodsStock':  { en:'Where does the stock figure come from?',
+                       ru:'Откуда берётся остаток на складе?' },
+'faq.q.lot':         { en:'What does the trip result show?',
+                       ru:'Что показывает итог поездки?' },
+'faq.q.report':      { en:'What is in the full report on what is left?',
+                       ru:'Что показывает «Полный отчёт» по остаткам?' },
+'faq.q.peopleDebt':  { en:'How is a debt worked out, and what do the words next to a name mean?',
+                       ru:'Как получается долг человека и что означает надпись рядом с ним?' },
+'faq.q.earn':        { en:'How are the earnings on one person counted?',
+                       ru:'Как считается заработок на человеке?' },
+'faq.q.txWhat':      { en:'What happens when I hand goods out?',
+                       ru:'Что происходит, когда я выдаю товар?' },
+'faq.q.txDisc':      { en:'Where does the discount on a handout come from?',
+                       ru:'Откуда на выдаче берётся скидка?' },
+'faq.q.txRet':       { en:'What do I do when goods come back?',
+                       ru:'Что делать, если товар вернули?' },
+'faq.q.payWhat':     { en:'How do I record a payment, and why is it not tied to a product?',
+                       ru:'Как записать оплату и почему она не привязана к товару?' },
+'faq.q.payFill':     { en:'What does the button "use the whole balance" do?',
+                       ru:'Что делает кнопка «Внести весь остаток»?' },
+'faq.q.exp':         { en:'What are other expenses, and what do they change?',
+                       ru:'Что такое прочие расходы и на что они влияют?' },
+'faq.q.moneyProfit': { en:'How is profit counted, and how is it different from net profit?',
+                       ru:'Как считается прибыль и чем она отличается от чистой прибыли?' },
+'faq.q.summaryMoney':{ en:'What are the figures on the Summary made of?',
+                       ru:'Из чего складываются цифры на «Сводке»?' },
+'faq.q.moneySec':    { en:'Why does the same amount look different in different places?',
+                       ru:'Почему одна и та же сумма в разных местах выглядит по-разному?' },
+'faq.q.moneyFrozen': { en:'What is a frozen exchange rate?',
+                       ru:'Что такое замороженный курс?' },
+'faq.q.cur':         { en:'What changes when I correct a rate?',
+                       ru:'Что меняется, если исправить курс?' },
+'faq.q.moneyBase':   { en:'What happens if I change the main currency?',
+                       ru:'Что произойдёт, если сменить основную валюту?' },
+'faq.q.moneyVat':    { en:'What is VAT per currency, and when does it appear in a purchase?',
+                       ru:'Что такое НДС у валюты и когда он появляется в приходе?' },
+'faq.q.sync':        { en:'How do the same records end up on two devices?',
+                       ru:'Как одни и те же записи оказываются на двух устройствах?' },
+'faq.q.syncWhat':    { en:'What exactly travels between devices, and what stays put?',
+                       ru:'Что именно ездит между устройствами, а что остаётся?' },
+'faq.q.backup':      { en:'Where is my data kept?',
+                       ru:'Где лежат мои данные?' },
+'faq.q.backupWhy':   { en:'Why do I need a backup when there is a copy in the cloud?',
+                       ru:'Зачем нужна резервная копия, если есть копия в облаке?' },
+'faq.q.trash':       { en:'How long does a deleted record wait in the trash?',
+                       ru:'Сколько удалённая запись лежит в корзине?' },
+'faq.q.trashWhat':   { en:'What happens to a record when I delete it?',
+                       ru:'Что происходит с записью, когда я её удаляю?' },
+'faq.q.wipe':        { en:'How is "clear this device" different from "delete data everywhere"?',
+                       ru:'Чем «Очистить это устройство» отличается от «Удалить данные везде»?' },
+'faq.q.look':        { en:'Where do I change the language and the theme?',
+                       ru:'Где поменять язык и тему?' },
+'faq.q.update':      { en:'How does the app update itself?',
+                       ru:'Как программа обновляется?' },
+
+/* ---- ТОВАРЫ И СКЛАД ---- */
+'faq.a.goodsStock1': { en:'Goods come in as a <b>purchase</b>: how many pieces arrived and how much ' +
+                          'was paid for them. Say 20 kettles arrived for 4000 dollars — that is one ' +
+                          'purchase. A second purchase of the same goods is simply added to the ' +
+                          'first: 10 more kettles for 2200, and the product now has 30 pieces and ' +
+                          'two purchases behind it.',
+                       ru:'Товар появляется <b>приходом</b>: столько-то штук пришло и столько-то за ' +
+                          'них заплачено. Например, привезли 20 чайников за 4000 долларов — это один ' +
+                          'приход. Второй приход того же товара просто добавляется к первому: ещё ' +
+                          '10 чайников за 2200, и у товара становится 30 штук и два прихода за спиной.' },
+'faq.a.goodsStock2': { en:'The stock figure is «how much came in minus how much was handed out». ' +
+                          'Hand 12 kettles out and 18 are left. Whether the person has paid or not ' +
+                          'makes no difference here: the goods are already with them.',
+                       ru:'Остаток — это «сколько пришло минус сколько выдали». Выдали 12 чайников — ' +
+                          'на складе 18. Заплатил человек или нет, на остаток не влияет: товар уже ' +
+                          'у него.' },
+'faq.a.goodsStock3': { en:'The app will not let you hand out more than there is. Try to give 20 out ' +
+                          'of 18 and it refuses and says how many are left. Goods that come back go ' +
+                          'onto the shelf again and can be handed out a second time.',
+                       ru:'Больше, чем есть, программа выдать не даст: попробуете выдать 20 из 18 — ' +
+                          'откажет и скажет, сколько осталось. Возвращённый товар снова ложится на ' +
+                          'склад, и его можно выдать ещё раз.' },
+
+/* ---- ЛЮДИ И ДОЛГИ ---- */
+'faq.a.peopleDebt1': { en:'A debt is «what he took minus what he paid». Took 900 dollars worth, paid ' +
+                          '400 — the debt is 500. Paid nothing — the debt is the whole 900. Paid ' +
+                          '1000 — there is no debt, and the extra 100 is recorded as an overpayment.',
+                       ru:'Долг — это «на сколько он взял минус сколько заплатил». Взял на 900 ' +
+                          'долларов, заплатил 400 — долг 500. Ничего не заплатил — долг все 900. ' +
+                          'Заплатил 1000 — долга нет, а лишние 100 записаны как переплата.' },
+'faq.a.peopleDebt2': { en:'The words next to a name are worked out by the app and cannot be set by ' +
+                          'hand: <b>Unpaid</b>, <b>Balance remaining</b>, <b>Paid</b>, <b>Taken, no ' +
+                          'debt</b> (took goods at no charge), <b>Credit</b> (paid more than they ' +
+                          'took) and <b>No items</b>.',
+                       ru:'Надпись рядом с именем программа выводит сама, руками её поставить ' +
+                          'нельзя: <b>Не оплачено</b>, <b>Остаток долга</b>, <b>Оплачено</b>, ' +
+                          '<b>Взял, долга нет</b> (товар отдали бесплатно), <b>Переплата</b> ' +
+                          '(заплатил больше, чем взял) и <b>Товар не брали</b>.' },
+'faq.a.peopleDebt3': { en:'A debt is counted over all time, not per month: it is a state, not an ' +
+                          'event of one month. That is why the period chosen on the Summary does ' +
+                          'not move it.',
+                       ru:'Долг считается за всё время, а не за месяц: это состояние, а не событие ' +
+                          'одного месяца. Поэтому период, выбранный на «Сводке», его не двигает.' },
+
+/* ---- ВЫДАЧИ ---- */
+'faq.a.txWhat1':     { en:'Three things at once. The pieces leave the shelf, the person gets a debt ' +
+                          'for the amount of the handout, and the price you gave it at is written ' +
+                          '<b>into the handout itself</b>.',
+                       ru:'Три вещи сразу. Штуки уходят со склада, у человека появляется долг на ' +
+                          'сумму выдачи, а цена, по которой отдали, записывается <b>в саму ' +
+                          'выдачу</b>.' },
+'faq.a.txWhat2':     { en:'That written price never changes afterwards. Raise the price of the ' +
+                          'product from 50 to 60 and past handouts stay at 50: they have already ' +
+                          'happened, and the person owes what he owed.',
+                       ru:'Записанная цена потом не меняется. Поднимете цену товара с 50 до 60 — ' +
+                          'прошлые выдачи останутся по 50: они уже произошли, и человек должен ' +
+                          'столько, сколько был должен.' },
+'faq.a.txWhat3':     { en:'Handed out 3 kettles at 50: the debt is 150 and the shelf has 3 fewer. ' +
+                          'Whether he pays tomorrow or in a month changes neither of those two.',
+                       ru:'Выдали 3 чайника по 50 — долг 150, на складе на 3 меньше. Заплатит он ' +
+                          'завтра или через месяц, на эти две цифры не влияет.' },
+'faq.a.txDisc1':     { en:'The discount is not stored anywhere — it is worked out again every time: ' +
+                          '«the usual price of the product minus the price of this handout», times ' +
+                          'the quantity. Usual price 50, given at 45, four pieces — the discount is 20.',
+                       ru:'Скидка нигде не хранится — она считается заново каждый раз: «обычная ' +
+                          'цена товара минус цена этой выдачи», умноженная на количество. Обычная ' +
+                          'цена 50, отдали по 45, штук четыре — скидка 20.' },
+'faq.a.txDisc2':     { en:'In the handout form you can type the per cent instead of the price: 10% ' +
+                          'off 50 gives 45, and typing 45 shows 10%. They are two views of one ' +
+                          'number — only the price is saved.',
+                       ru:'В форме выдачи можно набрать процент вместо цены: 10% от 50 дадут 45, а ' +
+                          'набранные 45 покажут 10%. Это два вида одного числа — сохраняется только ' +
+                          'цена.' },
+'faq.a.txDisc3':     { en:'A discount is never subtracted from profit: profit is already counted at ' +
+                          'the price of the handout. The Summary has a separate line for it, «Given ' +
+                          'away as discounts», and that line is for reference only.',
+                       ru:'Из прибыли скидка не вычитается: прибыль и так посчитана по цене выдачи. ' +
+                          'На «Сводке» для неё есть отдельная строка «Отдано скидками», и она ' +
+                          'справочная.' },
+'faq.a.txRet1':      { en:'A handout has a <b>Return</b> on it. Two kettles out of four came back: ' +
+                          'the two go onto the shelf again, and the debt drops by their price — at ' +
+                          'the price of <b>that handout</b>, not the price of today.',
+                       ru:'У выдачи есть <b>«Возврат»</b>. Вернули 2 чайника из 4 — эти два снова ' +
+                          'ложатся на склад, а долг уменьшается на их цену, причём по цене <b>той ' +
+                          'самой выдачи</b>, а не сегодняшней.' },
+'faq.a.txRet2':      { en:'A return has a date of its own, and it changes the figures of the period ' +
+                          'it belongs to. Handed out in July, returned in August — July stays as it ' +
+                          'was, and the minus lands on August.',
+                       ru:'У возврата своя дата, и уменьшает он цифры того периода, в который ' +
+                          'попал сам. Выдали в июле, вернули в августе — июль остаётся как был, ' +
+                          'минус ложится на август.' },
+'faq.a.txRet3':      { en:'More than was handed out cannot come back: the app refuses and says how ' +
+                          'many are still out. A return can be deleted too — then the pieces leave ' +
+                          'the shelf again and the debt returns.',
+                       ru:'Вернуть больше, чем выдали, нельзя: программа откажет и скажет, сколько ' +
+                          'ещё на руках. Возврат можно и удалить — тогда штуки снова уйдут со ' +
+                          'склада, а долг вернётся.' },
+
+/* ---- ОПЛАТЫ ---- */
+'faq.a.payWhat1':    { en:'A payment is recorded <b>on a person</b> and lowers their whole debt, ' +
+                          'whatever goods it was made of. One payment closes the debt for kettles ' +
+                          'and for dishes at once — that is how money actually comes in.',
+                       ru:'Оплата записывается <b>на человека</b> и уменьшает весь его долг, каким ' +
+                          'бы товаром он ни набран. Одним платежом закрывают долг и за чайники, и ' +
+                          'за посуду сразу — так деньги и приходят.' },
+'faq.a.payWhat2':    { en:'That is why there is no «received» line per product anywhere: splitting ' +
+                          'one payment between products would be a guess. On the Summary «Received» ' +
+                          'stands in the card «Settlements with people, all time» and is never ' +
+                          'narrowed by the chosen product.',
+                       ru:'Поэтому строки «получено» по товару нет нигде: делить один платёж между ' +
+                          'товарами значило бы гадать. На «Сводке» «Получено» стоит в карточке ' +
+                          '«Расчёты с людьми · за всё время» и выбранным товаром не сужается.' },
+'faq.a.payWhat3':    { en:'A payment can be typed in any of your currencies. It is converted into ' +
+                          'the main one at the rate of that day, and the rate is remembered with ' +
+                          'the payment: correcting the rate later does not move it.',
+                       ru:'Оплату можно набрать в любой из ваших валют: она переводится в основную ' +
+                          'по курсу того дня, и курс запоминается вместе с платежом — правка курса ' +
+                          'потом его не двигает.' },
+'faq.a.payFill1':    { en:'It fills in exactly as much as closes the debt, in the currency the form ' +
+                          'is on. The debt is 500 dollars and the box is empty — the button puts 500 ' +
+                          'in. There are already 200 in the box — it <b>adds</b> the missing 300, ' +
+                          'it does not wipe what you typed.',
+                       ru:'Она подставляет ровно столько, чтобы долг закрылся, — в той валюте, в ' +
+                          'которой открыта форма. Долг 500 долларов, поле пустое — кнопка поставит ' +
+                          '500. В поле уже набрано 200 — она <b>добавит</b> недостающие 300, а не ' +
+                          'сотрёт набранное.' },
+'faq.a.payFill2':    { en:'Sometimes a foreign currency cannot hit the debt exactly: one euro cent is ' +
+                          '1.1 dollar cents, and there is nothing smaller. Then the button puts in the ' +
+                          'nearest amount that <b>covers</b> the debt in full, and the line under ' +
+                          'the box says the overpayment is a couple of cents. Leaving a debt of two ' +
+                          'cents would be worse: the person would stay a debtor over nothing.',
+                       ru:'Иногда в чужой валюте попасть в долг ровно нельзя: один цент евро — ' +
+                          'это 1,1 цента доллара, и мельче не бывает. Тогда кнопка ставит ближайшую сумму, ' +
+                          'которой долг <b>закрывается полностью</b>, а строка под полем говорит, ' +
+                          'что вышла переплата в пару центов. Оставить долг в два цента было бы хуже: ' +
+                          'человек остался бы должником ни за что.' },
+
+/* ---- ДЕНЬГИ И ВАЛЮТЫ ---- */
+'faq.a.moneyProfit1':{ en:'Profit is «what was handed out, at the prices it was handed out at, minus ' +
+                          'what those goods cost you». Handed out 900 worth of goods that cost you ' +
+                          '600 — the profit is 300.',
+                       ru:'Прибыль — это «на сколько выдали товара, по ценам самих выдач, минус во ' +
+                          'сколько этот товар обошёлся вам». Выдали на 900, товар стоил 600 — ' +
+                          'прибыль 300.' },
+'faq.a.moneyProfit2':{ en:'«Cost you» is the average price of what was on the shelf <b>on the day of ' +
+                          'the handout</b>. So a purchase made today does not rewrite the profit of ' +
+                          'a month that closed long ago.',
+                       ru:'«Обошёлся вам» — это средняя цена того, что лежало на складе <b>в день ' +
+                          'выдачи</b>. Поэтому приход, сделанный сегодня, не переписывает прибыль ' +
+                          'месяца, который давно закрыт.' },
+'faq.a.moneyProfit3':{ en:'Profit is counted on what was <b>handed out</b>, not on the money ' +
+                          'received. The person has not paid yet and the profit is already there; ' +
+                          'the money side is a separate line, «Owed to me».',
+                       ru:'Прибыль считается от <b>выданного</b>, а не от полученных денег. Человек ' +
+                          'ещё не заплатил, а прибыль уже посчитана; денежная сторона стоит ' +
+                          'отдельной строкой — «Должны мне».' },
+'faq.a.moneyProfit4':{ en:'<b>Net profit</b> is that profit minus the other expenses of the same ' +
+                          'period — delivery, customs, commission, money transfer. Profit 300, ' +
+                          'expenses 120, net profit 180. Nothing else is subtracted from it.',
+                       ru:'<b>Чистая прибыль</b> — это та же прибыль минус прочие расходы того же ' +
+                          'периода: доставка, растаможка, комиссия, перевод денег. Прибыль 300, ' +
+                          'расходов 120 — чистая прибыль 180. Больше из неё не вычитается ничего.' },
+'faq.a.moneySec1':   { en:'Because the places answer different questions. In the list of handouts ' +
+                          'the top line is <b>what you typed</b> — 100 dollars — and the line under ' +
+                          'it is the same amount in the main currency. There is no rate on that ' +
+                          'screen at all, so correcting a rate does not move it by a cent.',
+                       ru:'Потому что места отвечают на разные вопросы. В списке выдач сверху ' +
+                          'стоит <b>то, что вы набрали</b> — 100 долларов, — а под ним та же сумма ' +
+                          'в основной валюте. Курса на том экране нет вовсе, поэтому правка курса ' +
+                          'не двигает эту строку ни на цент.' },
+'faq.a.moneySec2':   { en:'On the Summary the amounts are converted into the currency you picked on ' +
+                          'the tile in the corner, and each record is converted at <b>its own</b> ' +
+                          'rate — the one saved with it on its day.',
+                       ru:'На «Сводке» суммы пересчитаны в валюту, которую вы выбрали плашкой в ' +
+                          'углу, и каждая запись пересчитана <b>своим</b> курсом — тем, что ' +
+                          'сохранён вместе с ней в её день.' },
+'faq.a.moneySec3':   { en:'In the main currency the two agree exactly. In another currency they can ' +
+                          'differ by a cent or two: rounding happens once in every conversion, and ' +
+                          'the two roads make different numbers of conversions.',
+                       ru:'В основной валюте эти два числа совпадают точно. В другой валюте они ' +
+                          'могут разойтись на цент-другой: округление случается в каждом пересчёте, ' +
+                          'а пересчётов на двух дорогах разное число.' },
+'faq.a.moneySec4':   { en:'On a person card and in the list of people the amount carries all your ' +
+                          'currencies under it, and there the conversion is at <b>today’s</b> ' +
+                          'rate. That answers «how much is this now», not «how much was it worth ' +
+                          'then» — a debt is owed today, whatever the rate was when it was made.',
+                       ru:'На карточке человека и в списке людей под суммой стоят все ваши валюты, ' +
+                          'и там пересчёт идёт по <b>сегодняшнему</b> курсу. Это ответ на вопрос ' +
+                          '«сколько это сейчас», а не «сколько это стоило тогда»: долг отдают ' +
+                          'сегодня, каким бы ни был курс в день выдачи.' },
+'faq.a.moneyFrozen1':{ en:'When you record a handout, a payment, a purchase or an expense, the app ' +
+                          'saves the rates of that day next to the record.',
+                       ru:'Когда вы записываете выдачу, оплату, приход или расход, программа ' +
+                          'сохраняет рядом с записью курсы того дня.' },
+'faq.a.moneyFrozen2':{ en:'That is why correcting a rate today does not rewrite the past. Bought in ' +
+                          'March at 3.67 and corrected the rate to 3.90 in September — on the ' +
+                          'Summary the March purchase is still counted at 3.67, and September at ' +
+                          '3.90. Without that, one correction would move every figure of every ' +
+                          'month that has already been read and acted on.',
+                       ru:'Поэтому правка курса сегодня не переписывает прошлое. Купили в марте по ' +
+                          '3,67, а в сентябре исправили курс на 3,90 — на «Сводке» мартовская ' +
+                          'закупка так и останется посчитанной по 3,67, а сентябрьская по 3,90. ' +
+                          'Иначе одна правка сдвинула бы цифры всех месяцев, которые вы уже ' +
+                          'прочитали и по которым уже приняли решения.' },
+'faq.a.moneyFrozen3':{ en:'Stored amounts live in the main currency and a rate never moves them at ' +
+                          'all: a rate decides only how an amount is <b>shown</b>. A record made ' +
+                          'before this app learned to save rates has no saved rate and is read at ' +
+                          'the current one.',
+                       ru:'Хранятся суммы в основной валюте, и курс не двигает их вовсе: курс ' +
+                          'решает только то, как сумму <b>показать</b>. У записи, сделанной ещё до ' +
+                          'того, как программа научилась запоминать курсы, сохранённого курса нет, ' +
+                          'и читается она по нынешнему.' },
+'faq.a.moneyBase1':  { en:'The main currency is the one the app <b>keeps</b> every amount in. ' +
+                          'Changing it asks you one question: what to do with what is already ' +
+                          'written down.',
+                       ru:'Основная валюта — та, в которой программа <b>хранит</b> все суммы. ' +
+                          'Меняя её, вы отвечаете на один вопрос: что сделать с тем, что уже ' +
+                          'записано.' },
+'faq.a.moneyBase2':  { en:'<b>Convert amounts</b> — there is exactly as much money as there was, it ' +
+                          'is just written in another currency: 110 euros at a rate of 1.1 ' +
+                          'become 100 dollars. This is what you want almost always.',
+                       ru:'<b>Пересчитать суммы</b> — денег остаётся ровно столько же, они просто ' +
+                          'записаны в другой валюте: 110 евро при курсе 1,1 станут 100 ' +
+                          'долларами. Почти всегда нужно именно это.' },
+'faq.a.moneyBase3':  { en:'<b>Re-label only</b> — the numbers stay as they are and start being read ' +
+                          'as another currency: the same 110 become 110 dollars. It is right in one ' +
+                          'case only — the amounts were in dollars from the start and the wrong ' +
+                          'currency was set.',
+                       ru:'<b>Только переименовать</b> — числа остаются как есть и начинают ' +
+                          'читаться как другая валюта: те же 110 станут 110 долларами. Это верно в ' +
+                          'одном случае — если суммы с самого начала были в долларах, а валюта ' +
+                          'стояла неверная.' },
+'faq.a.moneyBase4':  { en:'Converting rounds every stored amount, so «there and back» does not ' +
+                          'return the old numbers to the cent. One step back is kept: while the ' +
+                          'records have not been touched since, «Currencies and rates» shows a card ' +
+                          '«Undo the conversion».',
+                       ru:'Пересчёт округляет каждую сохранённую сумму, поэтому «туда и обратно» не ' +
+                          'вернёт прежних чисел до цента. Один шаг назад программа держит: пока ' +
+                          'записи с тех пор не трогали, в «Валютах и курсах» стоит карточка ' +
+                          '«Отменить пересчёт».' },
+'faq.a.moneyVat1':   { en:'Tax belongs to the country you buy in, and the country is named by the ' +
+                          'currency. In one country a purchase comes with tax, in another there is ' +
+                          'no tax at all. So the rate is set <b>for each currency separately</b>, ' +
+                          'in the window where you choose which currencies you use.',
+                       ru:'Налог принадлежит стране, в которой вы покупаете, а страну называет ' +
+                          'валюта. В одной стране покупка идёт с налогом, в другой налога нет ' +
+                          'вовсе. Поэтому ставка задаётся <b>у каждой валюты отдельно</b> — в окне, ' +
+                          'где вы выбираете, какими валютами пользуетесь.' },
+'faq.a.moneyVat2':   { en:'In the purchase form the VAT box appears only for a currency that has a ' +
+                          'rate set, and only when the purchase is typed in boxes and a price per ' +
+                          'box. Typed by hand there is nothing to charge tax on, so there is no box.',
+                       ru:'В форме прихода поле НДС появляется только у той валюты, которой задана ' +
+                          'ставка, и только когда приход набирают коробками и ценой за коробку. ' +
+                          'При ручном вводе начислять не на что, и поля нет вовсе.' },
+'faq.a.moneyVat3':   { en:'The rate a purchase was counted at is remembered <b>inside that ' +
+                          'purchase</b>. Change it later and past purchases stay counted at the old ' +
+                          'one. An empty box is not a zero: the app refuses to save while nothing ' +
+                          'is typed there, because an empty box says nothing and a zero would say ' +
+                          '«the invoice came without tax».',
+                       ru:'Ставка, которой посчитан приход, запоминается <b>в самом приходе</b>. ' +
+                          'Поменяете её потом — прошлые приходы останутся посчитанными по прежней. ' +
+                          'Пустое поле — не ноль: программа не даст сохранить, пока в нём ничего ' +
+                          'нет, потому что пустое поле не говорит ничего, а ноль сказал бы ' +
+                          '«накладная пришла без налога».' },
+
+/* ---- ОБМЕН ---- */
+'faq.a.syncWhat1':   { en:'Every record travels: products with their purchases, people, handouts, ' +
+                          'returns, payments, expenses and the names of trips. So do the settings ' +
+                          'the figures depend on — the main currency, the rates, which currencies ' +
+                          'you use and the VAT rates.',
+                       ru:'Ездят все записи: товары со своими приходами, люди, выдачи, возвраты, ' +
+                          'оплаты, расходы и названия поездок. Ездят и настройки, от которых ' +
+                          'зависят цифры: основная валюта, курсы, набор валют и ставки НДС.' },
+'faq.a.syncWhat2':   { en:'What stays on its own device is what does not touch a single figure: the ' +
+                          'language, the theme, the currency you read the Summary in, and the ' +
+                          'currencies the forms remember for you. Two devices may be read in two ' +
+                          'different currencies and still hold the same records.',
+                       ru:'Остаётся на своём устройстве то, что не касается ни одной цифры: язык, ' +
+                          'тема, валюта, в которой вы читаете «Сводку», и валюты, запомненные ' +
+                          'формами. Два устройства могут читаться в двух разных валютах и держать ' +
+                          'при этом одни и те же записи.' },
+'faq.a.syncWhat3gd': { en:'Photos of products travel on their own, into the same hidden folder on ' +
+                          'your Drive. Invoices travel <b>when you ask</b>: an invoice weighs ' +
+                          'megabytes, and pulling every one of them onto a phone would spend your ' +
+                          'traffic on files you may never open. Tap an invoice and it comes.',
+                       ru:'Фотографии товаров ездят сами — в ту же скрытую папку вашего Диска. ' +
+                          'Накладные едут <b>по нажатию</b>: инвойс весит мегабайты, и тянуть их ' +
+                          'все на телефон значит тратить трафик на файлы, которые можно ни разу не ' +
+                          'открыть. Нажмёте на накладную — она приедет.' },
+'faq.a.syncWhat3gh': { en:'Photos and invoices do <b>not</b> travel: they stay on the device where ' +
+                          'they were added, and on the other device the record shows a note instead ' +
+                          'of a picture. The exported backup is what carries them.',
+                       ru:'Фотографии и накладные <b>не ездят</b>: они остаются на том устройстве, ' +
+                          'где их добавили, а на другом запись покажет пометку вместо картинки. ' +
+                          'Переносит их выгруженная копия.' },
+'faq.a.syncWhat4':   { en:'Arguments are settled by the records, not by the clock. If a record was ' +
+                          'changed only here, the other device’s clock decides nothing. If both ' +
+                          'sides changed the same record differently, the app asks which version to ' +
+                          'keep instead of quietly picking one.',
+                       ru:'Спор решается по записям, а не по часам. Если запись правили только ' +
+                          'здесь, часы другого устройства не решают ничего. Если обе стороны ' +
+                          'правили одну запись по-разному, программа спросит, какую версию ' +
+                          'оставить, а не выберет молча.' },
+
+/* ---- КОПИЯ И КОРЗИНА ---- */
+'faq.a.backupWhy1gd':{ en:'Google Drive keeps the <b>current</b> state, not the history. Delete a ' +
+                          'record and it travels to the Drive deleted as well. A backup is a ' +
+                          'snapshot of the day you downloaded it, and it is the only way back to ' +
+                          'that day.',
+                       ru:'Google Диск хранит <b>нынешнее</b> состояние, а не историю. Удалите ' +
+                          'запись — она уедет удалённой и туда. Резервная копия — это снимок того ' +
+                          'дня, когда вы её скачали, и вернуться к тому дню можно только из неё.' },
+'faq.a.backupWhy1gh':{ en:'The repository keeps the <b>current</b> state, not the history. Delete a ' +
+                          'record and it travels there deleted as well. A backup is a snapshot of ' +
+                          'the day you downloaded it, and it is the only way back to that day.',
+                       ru:'Репозиторий хранит <b>нынешнее</b> состояние, а не историю. Удалите ' +
+                          'запись — она уедет удалённой и туда. Резервная копия — это снимок того ' +
+                          'дня, когда вы её скачали, и вернуться к тому дню можно только из неё.' },
+'faq.a.backupWhy2':  { en:'A backup is the one thing that survives everything at once: a mistake, a ' +
+                          'lost phone, a signed-out account. It is an ordinary file — put it where ' +
+                          'you keep things that matter.',
+                       ru:'Копия — единственное, что переживает всё сразу: и ошибку, и потерянный ' +
+                          'телефон, и отменённый вход. Это обычный файл — положите его туда, где ' +
+                          'храните важное.' },
+'faq.a.backupWhy3':  { en:'The app reminds you about a copy once a week and says when the records ' +
+                          'have moved since the last one. Importing a copy <b>replaces everything</b>, ' +
+                          'so before it does the app says what date the file was made on — a copy ' +
+                          'from last year looks exactly like a copy from yesterday until it says so.',
+                       ru:'Программа напоминает о копии раз в неделю и говорит, если записи с ' +
+                          'прошлой копии менялись. Импорт копии <b>заменяет всё</b>, поэтому перед ' +
+                          'этим программа называет, какого числа сделан файл: прошлогодняя копия ' +
+                          'выглядит точно как вчерашняя, пока об этом не сказано.' },
+'faq.a.trashWhat1':  { en:'It goes to the trash, it does not disappear. The app then behaves as if ' +
+                          'it were gone: the product leaves the stock, the handout stops counting ' +
+                          'in the debt and in the profit.',
+                       ru:'Она уходит в корзину, а не исчезает. Программа дальше ведёт себя так, ' +
+                          'будто её нет: товар пропадает со склада, выдача перестаёт считаться в ' +
+                          'долге и в прибыли.' },
+'faq.a.trashWhat2':  { en:'What has no meaning without it goes along. Delete a person and their ' +
+                          'handouts and payments go with them; delete a product and its handouts go ' +
+                          'with it. Restoring brings the whole group back at once, with the same ' +
+                          'amounts — and if the stock has been given away meanwhile, the app ' +
+                          'refuses and says what is missing rather than restoring half of it.',
+                       ru:'Вместе с ней уходит то, что без неё не имеет смысла. Удалите человека — ' +
+                          'уйдут его выдачи и оплаты; удалите товар — уйдут его выдачи. ' +
+                          'Восстановление возвращает всю группу разом и теми же суммами, а если за ' +
+                          'это время склад разошёлся, программа откажется и скажет, чего не ' +
+                          'хватает, вместо того чтобы вернуть половину.' },
+'faq.a.trashWhat3':  { en:'A record waits in the trash for {n} and can be brought back with one tap ' +
+                          'all that time. After that it leaves for good on its own, at the next start.',
+                       ru:'Запись ждёт в корзине {n} и всё это время возвращается одним нажатием. ' +
+                          'Потом уходит навсегда сама, при следующем запуске.' },
+'faq.a.trashWhat4':  { en:'Photos and invoices are not touched while the record is in the trash — ' +
+                          'they are still there when it comes back. Only «Delete for good» destroys ' +
+                          'them, and that deletion travels to your other devices.',
+                       ru:'Фотографии и накладные, пока запись в корзине, не трогаются — они на ' +
+                          'месте и вернутся вместе с ней. Уничтожает их только «Удалить навсегда», ' +
+                          'и это удаление уезжает на другие ваши устройства.' },
+'faq.a.wipe1gd':     { en:'«Clear this device» removes the records <b>from here only</b>. On Google ' +
+                          'Drive and on your other devices they stay, and signing in with the same ' +
+                          'account brings them back.',
+                       ru:'«Очистить это устройство» убирает записи <b>только отсюда</b>. На Google ' +
+                          'Диске и на других ваших устройствах они остаются, и вход той же учётной ' +
+                          'записью возвращает их обратно.' },
+'faq.a.wipe1gh':     { en:'«Clear this device» removes the records <b>from here only</b>. In the ' +
+                          'repository and on your other devices they stay.',
+                       ru:'«Очистить это устройство» убирает записи <b>только отсюда</b>. В ' +
+                          'репозитории и на других ваших устройствах они остаются.' },
+'faq.a.wipe2gd':     { en:'That is why clearing also signs you out: otherwise the records would come ' +
+                          'back on the very first sync, and the button would look broken.',
+                       ru:'Поэтому очистка ещё и отменяет вход: иначе записи вернулись бы при ' +
+                          'первом же обмене, и кнопка выглядела бы сломанной.' },
+'faq.a.wipe2gh':     { en:'The connection to the repository stays, so the next sync brings the ' +
+                          'records back. If that is not what you want, press «Forget the settings» ' +
+                          'first.',
+                       ru:'Подключение к репозиторию при этом остаётся, поэтому следующий обмен ' +
+                          'принесёт записи обратно. Если этого не нужно, сперва нажмите «Забыть ' +
+                          'настройки».' },
+'faq.a.wipe3':       { en:'«Delete data everywhere» cannot be undone: the records disappear here, in ' +
+                          'the cloud and on every device signed in with this account. The app asks ' +
+                          'you to type the word DELETE and offers to download a backup first — take ' +
+                          'the offer.',
+                       ru:'«Удалить данные везде» отменить нельзя: записи исчезнут и здесь, и в ' +
+                          'облаке, и на всех устройствах, где вы вошли этой учётной записью. ' +
+                          'Программа попросит напечатать слово УДАЛИТЬ и предложит сперва скачать ' +
+                          'копию — предложением стоит воспользоваться.' },
+'faq.a.wipe4':       { en:'Both actions keep your settings: the main currency, the rates you typed, ' +
+                          'the VAT rates and the language. Only the records go.',
+                       ru:'Оба действия сохраняют настройки: основную валюту, набранные вами курсы, ' +
+                          'ставки НДС и язык. Уходят только записи.' },
+
+/* ---- ПРОГРАММА И ОБНОВЛЕНИЯ ---- */
+'faq.a.update1':     { en:'At start-up the app quietly asks whether a new version has come out. If ' +
+                          'one has, a bar appears at the top. Nothing is ever installed on its own: ' +
+                          'a repair that lands in the middle of your work is worse than a repair a ' +
+                          'minute later.',
+                       ru:'При запуске программа тихо спрашивает, вышла ли новая версия. Вышла — ' +
+                          'наверху появляется полоса. Само по себе ничего не ставится никогда: ' +
+                          'починка, приехавшая посреди работы, хуже починки минутой позже.' },
+'faq.a.update2':     { en:'On a computer the app replaces itself by the «Update» button in «Account ' +
+                          '→ About the app». The previous version is kept, and one button goes ' +
+                          'back to it if something looks wrong.',
+                       ru:'На компьютере программа обновляет себя сама — кнопкой «Обновить» в ' +
+                          '«Аккаунт → О программе». Предыдущая версия при этом сохраняется, и ' +
+                          'одной кнопкой можно вернуться к ней, если что-то покажется не так.' },
+'faq.a.update3':     { en:'On a phone it works differently: there the update is a new app file, and ' +
+                          'it has to be installed over the old one. Your records are never touched ' +
+                          'by an update, on either device — the update replaces the program, not ' +
+                          'the data.',
+                       ru:'На телефоне иначе: там обновление — это новый файл приложения, и его ' +
+                          'надо поставить поверх прежнего. Записи обновление не трогает ни на одном ' +
+                          'из устройств — меняется программа, а не данные.' },
 'w.save':        { en:'Save',                               ru:'Сохранить' },
 'w.add':         { en:'Add',                                ru:'Добавить' },
 'w.empty':       { en:'Nothing here yet',                   ru:'Пока пусто' },
@@ -2513,12 +3074,9 @@ var STR = {
 'ppl.sub':       { en:'debts and payments',                 ru:'долги и оплаты' },
 'ppl.name':      { en:'Name',                               ru:'Имя' },
 'ppl.phone':     { en:'Phone',                              ru:'Телефон' },
-'ppl.phoneHint': { en:'Required. Nine digits is enough — +992 is added automatically.',
-                   ru:'Обязательно. Можно набрать 9 цифр — код +992 подставится сам.' },
+'ppl.phoneHint': { en:'Required. Write the number the way you use it.',
+                   ru:'Обязательно. Запишите номер так, как вы им пользуетесь.' },
 'ppl.city':      { en:'City',                               ru:'Город' },
-'ppl.cityNone':  { en:'Not set',                            ru:'Не указан' },
-'ppl.cityOther': { en:'Other city…',                        ru:'Другой город…' },
-'ppl.cityWhich': { en:'Which city',                         ru:'Какой город' },
 'ppl.shop':      { en:'Shop',                               ru:'Магазин' },
 'ppl.shopHint':  { en:'Optional — where exactly they pick the goods up.',
                    ru:'Необязательно — где именно забирает товар.' },
@@ -2832,19 +3390,14 @@ var STR = {
                       'на телефоне и на компьютере.' },
 
 /* ---------------- города Таджикистана ---------------- */
-'city.g.rrp':    { en:'Dushanbe and districts of republican subordination',
-                   ru:'Душанбе и районы республиканского подчинения' },
-'city.g.sughd':  { en:'Sughd region',                       ru:'Согдийская область' },
-'city.g.khatlon':{ en:'Khatlon region',                     ru:'Хатлонская область' },
-'city.g.gbao':   { en:'Gorno-Badakhshan',                   ru:'ГБАО' },
 
 /* ---------------- подсказки в полях ---------------- */
-'ph.person':     { en:'Name',                               ru:'Имя' },
-'ph.product':    { en:'WADI AL MULUK…',                     ru:'WADI AL MULUK…' },
+'ph.person':     { en:'Person name',                        ru:'Имя человека' },
+'ph.phone':      { en:'Phone number',                       ru:'Номер телефона' },
+'ph.product':    { en:'Product name',                       ru:'Название товара' },
 'ph.city':       { en:'City name',                          ru:'Название города' },
-'ph.shop':       { en:'Shop or stall',                      ru:'Магазин или бутик' },
-'ph.payNote':    { en:'cash',                               ru:'наличные' },
-'ph.costNum':    { en:'36.84',                              ru:'36.84' },
+'ph.shop':       { en:'Shop',                               ru:'Магазин' },
+'ph.payNote':    { en:'Note',                               ru:'Примечание' },
 
 /* ---------------- новые сообщения и ошибки ---------------- */
 'msg.invAdded':  { en:'Added: {n}',                         ru:'Добавлено: {n}' },
@@ -2855,15 +3408,15 @@ var STR = {
                    ru:'Укажите, сколько коробок в партии (целое число, 1 и больше).' },
 'err.invPerBox': { en:'Enter how many units are in one box (a whole number, 1 or more).',
                    ru:'Укажите, сколько штук в одной коробке (целое число, 1 и больше).' },
-'err.invPrice':  { en:'Enter the invoice price for one box, e.g. 421 or 421.00.',
-                   ru:'Укажите цену одной коробки по инвойсу, например 421 или 421.00.' },
+'err.invPrice':  { en:'Enter the invoice price for one box, e.g. 100 or 100.50.',
+                   ru:'Укажите цену одной коробки по инвойсу, например 100 или 100.50.' },
 'err.linePrefix':{ en:'Item {n}: {msg}',                    ru:'Позиция {n}: {msg}' },
 'err.lineDup':   { en:'Items {a} and {b} have the same name — merge them into one.',
                    ru:'Позиции {a} и {b} названы одинаково — объедините их в одну.' },
 'err.phoneReq':  { en:'Enter a phone number — without it the person cannot be reached.',
                    ru:'Введите телефон — без него человека не найти.' },
-'err.phoneShort':{ en:'The phone number is too short: at least 9 digits, e.g. 92 773 3331.',
-                   ru:'Телефон слишком короткий: нужно минимум 9 цифр, например 92 773 3331.' },
+'err.phoneShort':{ en:'The phone number is too short: at least 5 digits.',
+                   ru:'Телефон слишком короткий: нужно минимум 5 цифр.' },
 'err.phoneDup':  { en:'That phone number already belongs to “{name}”.',
                    ru:'Этот телефон уже записан за «{name}».' },
 /* ++++++ ATTACHMENTS ++++++ photos, invoices, the product card.
@@ -2885,8 +3438,8 @@ var STR = {
 'att.desc':        { en:'Description / notes',      ru:'Описание / заметки' },
 'att.descHint':    { en:'Optional, in your own words: colour, packaging, supplier, anything worth remembering.',
                      ru:'Не обязательно, своими словами: цвет, упаковка, поставщик — всё, что стоит помнить.' },
-'att.descPh':      { en:'Silver bottle, blue box. Supplier: …',
-                     ru:'Серебристый флакон, синяя коробка. Поставщик: …' },
+'att.descPh':      { en:'Description of the product',
+                     ru:'Описание товара' },
 'att.descTitle':   { en:'Description',              ru:'Описание' },
 'att.descEmpty':   { en:'Nothing written yet — open <b>Edit product</b> to add a description.',
                      ru:'Пока ничего не записано — нажмите <b>Изменить товар</b>, чтобы добавить описание.' },
@@ -3192,7 +3745,7 @@ var STR = {
 'lot.name':      { en:'Name and date',                      ru:'Имя и дата' },
 'lot.nameTitle': { en:'Name of the trip',                   ru:'Имя поездки' },
 'lot.nameField': { en:'Name',                               ru:'Название' },
-'lot.namePh':    { en:'Dubai, August',                      ru:'Дубай, август' },
+'lot.namePh':    { en:'Trip name',                          ru:'Название поездки' },
 'lot.dateField': { en:'Date of the trip',                   ru:'Дата поездки' },
 'lot.noteField': { en:'Note',                               ru:'Заметка' },
 'lot.noteTitle': { en:'Note',                               ru:'Заметка' },
@@ -3371,8 +3924,6 @@ var STR = {
 'v.expBadAmount': { en:'expense #{n} has an invalid amount',
                     ru:'у расхода №{n} некорректная сумма' },
 
-'err.cityWhich': { en:'Type the city name or pick one from the list.',
-                   ru:'Напишите название города или выберите его из списка.' },
 
 /* ++++++ GDRIVE ++++++ продуктовый режим: вход через Google и обмен
    через скрытую папку Диска. Приставка `gd.` — НЕ `sy.`: та принадлежит
@@ -3732,7 +4283,10 @@ function trimNum(n){
  *  строк в окне выбора, порядок полей курса и порядок в каждом селекте.
  *  Список из требования 1.3, и он НЕ является списком «разрешённых»:
  *  собственную валюту заводят формой внизу того же окна. */
-var CUR_POPULAR = ['USD', 'AED', 'TJS', 'RUB', 'EUR', 'CNY', 'TRY', 'KZT', 'GBP', 'UZS'];
+/* ++++++ NEUTRAL ++++++ ТОТ ЖЕ ДЕСЯТОК, НО ПО АЛФАВИТУ. Это список, из
+   которого окно первого запуска предлагает выбрать; порядка показа он
+   больше НЕ задаёт — показ идёт по выбору человека (curOrder + prefer). */
+var CUR_POPULAR = ['AED', 'CNY', 'EUR', 'GBP', 'KZT', 'RUB', 'TJS', 'TRY', 'USD', 'UZS'];
 
 /** Код валюты, приведённый к виду хранения, или '' — «это не код».
  *  Принимает то же, что принимает validate(): 1–6 букв и цифр. Форма
@@ -3772,14 +4326,28 @@ function curUniq(list){
  *  затем всё прочее по алфавиту. Требование 1.3 просит именно этого, и
  *  порядок обязан быть УСТОЙЧИВЫМ: список, переставляющийся сам собой от
  *  порядка ключей в объекте, читается как ошибка программы. */
-function curOrder(list){
+function curOrder(list, prefer){
+  /* ++++++ NEUTRAL ++++++ ПОРЯДОК ДОКУМЕНТА НЕ ПЕРЕСТАВЛЯЕТСЯ. Prefer
+     (основная валюта) идёт первой — её человек выбрал сам, — а остальные
+     остаются в том порядке, в каком лежат у него в настройках. Сортировки
+     здесь нет и быть не должно: результат этой функции пишется в документ
+     (validate()), и алфавит затёр бы выбор человека при первой загрузке —
+     ровно то, чего решение 6 не хочет. Алфавит живёт в curAlpha(), и его
+     читает окно выбора, где он и задуман (решение 5). */
   var got = curUniq(list), out = [], rest = [], i;
-  for (i = 0; i < CUR_POPULAR.length; i++)
-    if (got.indexOf(CUR_POPULAR[i]) > -1) out.push(CUR_POPULAR[i]);
+  var pref = curUniq(prefer || []);
+  for (i = 0; i < pref.length; i++)
+    if (got.indexOf(pref[i]) > -1) out.push(pref[i]);
   for (i = 0; i < got.length; i++)
-    if (CUR_POPULAR.indexOf(got[i]) === -1) rest.push(got[i]);
-  rest.sort();
+    if (out.indexOf(got[i]) === -1) rest.push(got[i]);
   return out.concat(rest);
+}
+
+/** ++++++ NEUTRAL ++++++ ПО АЛФАВИТУ — для СПИСКА-КАНДИДАТА окна выбора
+ *  и только для него. Порядок показа активных валют это не решает: там
+ *  порядок документа (curOrder). */
+function curAlpha(list){
+  return curUniq(list).sort();
 }
 
 /** Все валюты, о которых документ вообще знает: база, всё с курсом и всё
@@ -3797,7 +4365,10 @@ function curKnown(s){
  *  её обратно было бы нечем (решение владельца 2026-09-02: «только в
  *  окне выбора»). */
 function curPickCodes(s){
-  return curOrder(CUR_POPULAR.concat(curKnown(s)));
+  /* ++++++ NEUTRAL ++++++ ЗДЕСЬ АЛФАВИТ, И ЗДЕСЬ ЕМУ МЕСТО: это список,
+     ИЗ КОТОРОГО выбирают, а не порядок показа выбранного. Своя валюта
+     встаёт в общий ряд, а не в хвост (решение 5). */
+  return curAlpha(CUR_POPULAR.concat(curKnown(s)));
 }
 
 /** ЕДИНСТВЕННЫЙ ОТВЕТ НА ВОПРОС «КАКИЕ ВАЛЮТЫ АКТИВНЫ».
@@ -3818,7 +4389,11 @@ function curActiveOf(s){
   if (Object.prototype.toString.call(raw) !== '[object Array]') list = curMigrate(s);
   else list = curUniq(raw);
   if (base && list.indexOf(base) === -1) list = [base].concat(list);
-  list = curOrder(list);
+  /* ++++++ NEUTRAL ++++++ первой стоит ОСНОВНАЯ валюта человека: её он
+     выбрал сам. Остальные остаются в том порядке, в каком лежат в
+     документе: этот список ПИШЕТСЯ в документ, и переставлять его значит
+     менять настройки человека без его ведома. */
+  list = curOrder(list, base ? [base] : []);
   return list.length ? list : (base ? [base] : []);
 }
 
@@ -4184,6 +4759,13 @@ function vatEntryOf(raw){
  *  мигрированном документе сюда не заходит вовсе (ключ есть). */
 function vatMigrate(s){
   var out = {};
+  /* ++++++ NEUTRAL ++++++ У СВЕЖЕГО ПРОФИЛЯ НАЛОГА НЕТ ВОВСЕ. Здесь любому
+     документу без ключа писалась ставка 5% на AED — валюту, которой
+     человек не выбирал. Признак «ещё ничего не выбрано» тот же, что у
+     валют: пустая базовая (curSetupDone). Документ, у которого база есть,
+     свою прежнюю ставку получает как получал — иначе владелец потерял бы
+     настройку, которой пользуется. */
+  if (!curSetupDone(s)) return out;
   var pct = vatPctOk(s.vatPct) ? s.vatPct : 5;
   out.AED = { on: s.vatOn !== false, pct: pct };
   return out;
@@ -5244,8 +5826,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.12.0';
-var APP_BUILD = '2026-09-07T09:59:52.961Z';
+var APP_VERSION = '1.13.0';
+var APP_BUILD = '2026-09-08T12:58:55.040Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -10032,6 +10614,9 @@ var ui = {
   edit:{ product:null, person:null, tx:null, pay:null },
   /* строки поиска по спискам; '' = показывать всё */
   txQuery:'', payQuery:'', peopleQuery:'', sumPeopleQuery:'', sumStockQuery:'',
+  /* ++++++ FAQ ++++++ шестая строка поиска — по вопросам и ответам.
+     Живёт там же, где пять прежних: это взгляд, а не запись. */
+  faqQuery:'',
   /* фильтр по статусу оплаты — КЛЮЧ статуса (unpaid|partial|paid) или '' */
   peopleStatus:'', sumStatus:'',
   report:{ productId:'', from:'', to:'' },
@@ -11501,9 +12086,14 @@ function validate(obj){
      Читаются УЖЕ ПРОВЕРЕННЫЕ out.settings.vatPct/vatOn, а не сырые: у
      миграции не должно быть своего мнения о том, годится ли старое
      число. */
+  /* ++++++ NEUTRAL ++++++ базовая валюта передаётся сюда, и это несущее:
+     по ней миграция узнаёт свежий профиль. Без неё «свежим» выглядит
+     ЛЮБОЙ документ, и владелец теряет свою ставку — поймано центральной
+     проверкой набора, а не чтением. */
   out.settings.curVat = vatMapOf({ curVat: s.curVat,
                                    vatPct: out.settings.vatPct,
-                                   vatOn: out.settings.vatOn });
+                                   vatOn: out.settings.vatOn,
+                                   baseCurrency: out.settings.baseCurrency });
 
   function arr(name){
     var a = obj[name];
@@ -13436,25 +14026,33 @@ function confirmBox(title, html, okLabel, danger){
   }).then(function(k){ return k === 'ok'; });
 }
 
-/* ================================================ ++++++ INFO ++++++ ==
- * ПОЯСНЕНИЯ ЖИВУТ В ОДНОМ МЕСТЕ И ПОКАЗЫВАЮТСЯ ОДНИМ ОКНОМ.
+/* ================================================= ++++++ FAQ ++++++ ==
+ * ПОЯСНЕНИЯ ЖИВУТ В ОДНОМ МЕСТЕ И ЧИТАЮТСЯ ОТТУДА ВСЕМИ.
  *
  * Правило, из которого следует всё: пояснение — это ОТВЕТ НА ВОПРОС, а
  * не часть экрана. Двадцать текстов, которые раньше стояли на экранах
- * абзацами, читают один раз, а место они занимали постоянно — столько
- * же, сколько органы управления, ради которых экран и открывают.
+ * абзацами, читают один раз, а место они занимали постоянно.
  *
- * Три вещи, и ни одной четвёртой:
- *   INFO       — реестр: ключ раздела -> заголовок и текст, с вариантами
- *                по состоянию (вошёл / не вошёл, продуктовая / личная).
+ * С этой задачи у ответа ОДИН ДОМ — склад FAQ, и читают его четверо:
+ *   FAQ        — склад: вопрос, раздел, ответ, связанные вопросы и то,
+ *                есть ли у записи иконка. Варианты по состоянию (вошёл
+ *                или нет, продуктовая сборка или личная) — внутри
+ *                записи, и решает их не она сама, а acctWho() и
+ *                modeIsProduct(), те же, на которые смотрят экраны.
  *   infoBtn()  — иконка. ОДНА на всё приложение, своей у раздела нет.
  *   infoOpen() — окно. Тот же dialog(), что у всех листов, поэтому
- *                Escape, нажатие мимо окна и «Назад» на Android работают
- *                без единой новой строки.
+ *                Escape, нажатие мимо окна и «Назад» на Android
+ *                работают без единой новой строки.
+ *   faqScreenHTML() — раздел «Аккаунт → Вопросы и ответы»: те же
+ *                вопросы, тот же поиск, что у пяти списков, и ссылки
+ *                между ответами.
  *
- * НИЧЕГО НЕ ХРАНИТСЯ. Ни поля в документе, ни ключа в localStorage, ни
- * даже поля в ui: две модульные переменные, как prodEditAnchor, —
- * наполовину открытому окну нечего делать в резервной копии.
+ * ВТОРОГО РЕЕСТРА БЫТЬ НЕ ДОЛЖНО. Раздел, который повторял бы тексты
+ * окна, разошёлся бы с ним при первой правке — и разошёлся бы молча:
+ * оба выглядели бы правильными, а показывали бы разное.
+ *
+ * НИЧЕГО НЕ ХРАНИТСЯ. Ни поля в документе, ни ключа в localStorage:
+ * две модульные переменные у окна и одна у раздела, как prodEditAnchor.
  *
  * ЧТО ОСТАЛОСЬ НА ЭКРАНЕ И ПОЧЕМУ. Подсказки полей (их четырнадцать),
  * предупреждения, состояния, вычисления и тексты окон подтверждения. Их
@@ -13474,133 +14072,590 @@ function infoBtn(key){
  *  из словаря, и попадает в тот же innerHTML, что и раньше. */
 function infoP(html){ return '<p class="ip">' + html + '</p>'; }
 
-/* РЕЕСТР. Ключ — раздел. title и html — ФУНКЦИИ, потому что обе идут
-   через tr() и обе зависят от состояния: строка заморозила бы язык
-   первой отрисовки (та же причина, по которой SEARCH[key].title —
-   функция).
+/* ============================================== ++++++ FAQ ++++++ ==
+ * ЯДРО РАЗДЕЛА «ВОПРОСЫ И ОТВЕТЫ».
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: у пояснения ОДИН ДОМ. Не «реестр
+ * для иконки плюс список для раздела», а один склад, из которого читают
+ * все четверо — окно за «i», список раздела, поиск и ссылки «смотрите
+ * также». Две копии одного текста расходятся при первой же правке, и
+ * расходятся молча: обе выглядят правильными, а показывают разное.
+ *
+ * Поэтому прежний реестр INFO не остаётся рядом — он СТАНОВИТСЯ частью
+ * этого склада: десять его записей лежат здесь со своими title/html,
+ * слово в слово прежними, и infoOpen() читает их отсюда.
+ *
+ * ЧТО В ЗАПИСИ:
+ *   key    — ключ. У десяти прежних он тот же, что был: его печатает
+ *            data-arg иконки, и его знают чужие наборы.
+ *   topic  — раздел списка. Порядок разделов — FAQ_TOPICS.
+ *   icon   — печатается ли «i» на экране. У новых ответов её нет: они не
+ *            про один экран, и вешать их некуда.
+ *   q()    — ВОПРОС, как его задаёт человек. Функция, а не строка: идёт
+ *            через tr(), а строка заморозила бы язык первой отрисовки
+ *            (та же причина, что у SEARCH[key].title).
+ *   title()— заголовок ОКНА. Отдельно от вопроса, потому что окно
+ *            открывают с экрана, и заголовком там служит имя раздела —
+ *            так было до этой задачи, и так остаётся. Нет title —
+ *            заголовком становится вопрос.
+ *   html() — ОТВЕТ. Абзацы через infoP(), разметка внутри — авторская,
+ *            из словаря.
+ *   see    — ключи связанных вопросов, необязательно.
+ *
+ * НИ ОДНА ЗАПИСЬ НЕ РЕШАЕТ САМА, вошёл ли владелец и какая это сборка:
+ * она спрашивает acctWho() и modeIsProduct() — те же две функции, на
+ * которые смотрят экраны. Второй ответ на этот вопрос разошёлся бы с
+ * первым при первой же правке.
+ *
+ * НИЧЕГО НЕ ХРАНИТСЯ И НИЧЕГО НЕ СЧИТАЕТСЯ: ни поля в документе, ни
+ * ключа в localStorage, ни одной денежной функции. Раздел читают, а не
+ * работают в нём.
+ * ================================================================== */
 
-   Ни одна запись не решает сама, вошёл ли владелец и какая это сборка:
-   она спрашивает acctWho() и modeIsProduct() — те же две функции, на
-   которые смотрят экраны. Второй ответ на этот вопрос разошёлся бы с
-   первым при первой же правке. */
-var INFO = {
+/* Разделы и их ПОРЯДОК. Порядок повторяет форму программы: сначала то,
+   что покупают и выдают, потом деньги, потом устройство самой
+   программы. Раздел без единого вопроса не печатается вовсе — пустая
+   группа обещает ответы, которых нет. */
+var FAQ_TOPICS = ['goods', 'people', 'tx', 'pay', 'exp', 'money', 'sync', 'backup', 'app'];
 
-  /* «Сводка» -> «Деньги» */
-  'summary.money': {
-    title: function(){ return tr('tab.summary'); },
-    /* ++++++ DISCOUNT ++++++ третий абзац: чем считается скидка, что она
-       не вычитается из прибыли, что наценки в неё не входят и что цифра
-       пересчитается, если поменять цену товара. */
-    html: function(){ return infoP(tr('sum.identities')) + infoP(tr('sum.byMovingAvg')) +
-                             infoP(tr('sum.discInfo')); }
+var FAQ = [
+
+/* ---------------------------------------------------------------- *
+ * ТОВАРЫ И СКЛАД
+ * ---------------------------------------------------------------- */
+{
+  key: 'goods.stock', topic: 'goods', icon: false,
+  q: function(){ return tr('faq.q.goodsStock'); },
+  html: function(){ return infoP(tr('faq.a.goodsStock1')) + infoP(tr('faq.a.goodsStock2')) +
+                           infoP(tr('faq.a.goodsStock3')); },
+  see: ['tx.what', 'money.profit', 'lot']
+},
+
+/* Карточка поездки. ++++++ TRIPS ++++++ формула итога, граница его
+   точности и — отдельным абзацем — то, что деньги по поездке не
+   считаются ВОВСЕ. Последнее надо сказать вслух: иначе владелец будет
+   искать цифру, которой нет по решению, а не по недоделке. */
+{
+  key: 'lot', topic: 'goods', icon: true,
+  q: function(){ return tr('faq.q.lot'); },
+  title: function(){ return tr('lot.result'); },
+  html: function(){ return infoP(tr('lot.infoResult')) + infoP(tr('lot.infoPure')) +
+                           infoP(tr('lot.infoMoney')) + infoP(tr('lot.hint')); },
+  see: ['money.profit', 'exp']
+},
+
+/* Лист «Полный отчёт» */
+{
+  key: 'report', topic: 'goods', icon: true,
+  q: function(){ return tr('faq.q.report'); },
+  title: function(){ return tr('rem.title'); },
+  html: function(){ return infoP(tr('rem.hint')); },
+  see: ['goods.stock', 'summary.money']
+},
+
+/* ---------------------------------------------------------------- *
+ * ЛЮДИ И ДОЛГИ
+ * ---------------------------------------------------------------- */
+{
+  key: 'people.debt', topic: 'people', icon: false,
+  q: function(){ return tr('faq.q.peopleDebt'); },
+  html: function(){ return infoP(tr('faq.a.peopleDebt1')) + infoP(tr('faq.a.peopleDebt2')) +
+                           infoP(tr('faq.a.peopleDebt3')); },
+  see: ['pay.what', 'earn']
+},
+
+/* ++++++ PERSON EARN ++++++ карточка человека, карточка «Заработок».
+   Три абзаца: что внутри цифры, чего в ней НЕТ (прочие расходы — и
+   потому она не равна «Чистой прибыли»), и по какому правилу считана
+   каждая из пяти строк. */
+{
+  key: 'earn', topic: 'people', icon: true,
+  q: function(){ return tr('faq.q.earn'); },
+  title: function(){ return tr('earn.title'); },
+  html: function(){ return infoP(tr('earn.info1')) + infoP(tr('earn.info2')) + infoP(tr('earn.info3')); },
+  see: ['money.profit', 'people.debt', 'exp']
+},
+
+/* ---------------------------------------------------------------- *
+ * ВЫДАЧИ
+ * ---------------------------------------------------------------- */
+{
+  key: 'tx.what', topic: 'tx', icon: false,
+  q: function(){ return tr('faq.q.txWhat'); },
+  html: function(){ return infoP(tr('faq.a.txWhat1')) + infoP(tr('faq.a.txWhat2')) +
+                           infoP(tr('faq.a.txWhat3')); },
+  see: ['goods.stock', 'people.debt', 'tx.discount']
+},
+{
+  key: 'tx.discount', topic: 'tx', icon: false,
+  q: function(){ return tr('faq.q.txDisc'); },
+  html: function(){ return infoP(tr('faq.a.txDisc1')) + infoP(tr('faq.a.txDisc2')) +
+                           infoP(tr('faq.a.txDisc3')); },
+  see: ['tx.what', 'money.profit']
+},
+{
+  key: 'tx.return', topic: 'tx', icon: false,
+  q: function(){ return tr('faq.q.txRet'); },
+  html: function(){ return infoP(tr('faq.a.txRet1')) + infoP(tr('faq.a.txRet2')) +
+                           infoP(tr('faq.a.txRet3')); },
+  see: ['tx.what', 'backup.trash']
+},
+
+/* ---------------------------------------------------------------- *
+ * ОПЛАТЫ
+ * ---------------------------------------------------------------- */
+{
+  key: 'pay.what', topic: 'pay', icon: false,
+  q: function(){ return tr('faq.q.payWhat'); },
+  html: function(){ return infoP(tr('faq.a.payWhat1')) + infoP(tr('faq.a.payWhat2')) +
+                           infoP(tr('faq.a.payWhat3')); },
+  see: ['people.debt', 'pay.fill']
+},
+{
+  key: 'pay.fill', topic: 'pay', icon: false,
+  q: function(){ return tr('faq.q.payFill'); },
+  html: function(){ return infoP(tr('faq.a.payFill1')) + infoP(tr('faq.a.payFill2')); },
+  see: ['pay.what', 'money.sections']
+},
+
+/* ---------------------------------------------------------------- *
+ * РАСХОДЫ
+ * ---------------------------------------------------------------- */
+{
+  key: 'exp', topic: 'exp', icon: true,
+  q: function(){ return tr('faq.q.exp'); },
+  title: function(){ return tr('tab.expenses'); },
+  html: function(){ return infoP(tr('exp.hint')); },
+  see: ['money.profit', 'lot']
+},
+
+/* ---------------------------------------------------------------- *
+ * ДЕНЬГИ И ВАЛЮТЫ
+ * ---------------------------------------------------------------- */
+{
+  key: 'money.profit', topic: 'money', icon: false,
+  q: function(){ return tr('faq.q.moneyProfit'); },
+  html: function(){ return infoP(tr('faq.a.moneyProfit1')) + infoP(tr('faq.a.moneyProfit2')) +
+                           infoP(tr('faq.a.moneyProfit3')) + infoP(tr('faq.a.moneyProfit4')); },
+  see: ['summary.money', 'exp', 'earn']
+},
+
+/* «Сводка» -> «Деньги». ++++++ DISCOUNT ++++++ третий абзац: чем
+   считается скидка, что она не вычитается из прибыли, что наценки в неё
+   не входят и что цифра пересчитается, если поменять цену товара. */
+{
+  key: 'summary.money', topic: 'money', icon: true,
+  q: function(){ return tr('faq.q.summaryMoney'); },
+  title: function(){ return tr('tab.summary'); },
+  html: function(){ return infoP(tr('sum.identities')) + infoP(tr('sum.byMovingAvg')) +
+                           infoP(tr('sum.discInfo')); },
+  see: ['money.profit', 'tx.discount', 'report']
+},
+{
+  key: 'money.sections', topic: 'money', icon: false,
+  q: function(){ return tr('faq.q.moneySec'); },
+  html: function(){ return infoP(tr('faq.a.moneySec1')) + infoP(tr('faq.a.moneySec2')) +
+                           infoP(tr('faq.a.moneySec3')) + infoP(tr('faq.a.moneySec4')); },
+  see: ['money.frozen', 'cur']
+},
+{
+  key: 'money.frozen', topic: 'money', icon: false,
+  q: function(){ return tr('faq.q.moneyFrozen'); },
+  html: function(){ return infoP(tr('faq.a.moneyFrozen1')) + infoP(tr('faq.a.moneyFrozen2')) +
+                           infoP(tr('faq.a.moneyFrozen3')); },
+  see: ['cur', 'money.base', 'money.sections']
+},
+
+/* Раздел «Валюты и курсы» */
+{
+  key: 'cur', topic: 'money', icon: true,
+  q: function(){ return tr('faq.q.cur'); },
+  title: function(){ return tr('acct.cur'); },
+  html: function(){
+    return infoP(tr('cur.sectionNote', {
+             summary: esc(secWanted('summary').join(', ')),
+             tx: esc(secWanted('transactions').join(', ')) })) +
+           infoP(tr('cur.rateShows'));
   },
+  see: ['money.frozen', 'money.base', 'money.vat']
+},
+{
+  key: 'money.base', topic: 'money', icon: false,
+  q: function(){ return tr('faq.q.moneyBase'); },
+  html: function(){ return infoP(tr('faq.a.moneyBase1')) + infoP(tr('faq.a.moneyBase2')) +
+                           infoP(tr('faq.a.moneyBase3')) + infoP(tr('faq.a.moneyBase4')); },
+  see: ['money.frozen', 'cur']
+},
+{
+  key: 'money.vat', topic: 'money', icon: false,
+  q: function(){ return tr('faq.q.moneyVat'); },
+  html: function(){ return infoP(tr('faq.a.moneyVat1')) + infoP(tr('faq.a.moneyVat2')) +
+                           infoP(tr('faq.a.moneyVat3')); },
+  see: ['cur', 'goods.stock']
+},
 
-  /* Лист «Полный отчёт» */
-  'report': {
-    title: function(){ return tr('rem.title'); },
-    html: function(){ return infoP(tr('rem.hint')); }
+/* ---------------------------------------------------------------- *
+ * ОБМЕН МЕЖДУ УСТРОЙСТВАМИ
+ * ---------------------------------------------------------------- */
+/* ДВЕ сборки и ДВА состояния входа, и ни одна ветка не знает о другой:
+   личная не произносит слова Google, продуктовая — GitHub. Вошедшему не
+   показывается «Если войти в Google…»: у этого текста свой ключ,
+   gd.whatIn, где условие вычеркнуто. */
+{
+  key: 'sync', topic: 'sync', icon: true,
+  q: function(){ return tr('faq.q.sync'); },
+  title: function(){ return tr(modeIsProduct() ? 'gd.title' : 'sy.title'); },
+  html: function(){
+    if (!modeIsProduct()) return infoP(tr('sy.what'));
+    if (acctWho()) return infoP(tr('gd.whatIn')) + infoP(tr('as.filesGo'));
+    return infoP(tr('gd.what')) + infoP(tr('gd.worksWithout'));
   },
-
-  /* «Деньги» -> «Расходы» */
-  'exp': {
-    title: function(){ return tr('tab.expenses'); },
-    html: function(){ return infoP(tr('exp.hint')); }
+  see: ['sync.what', 'backup.why']
+},
+{
+  key: 'sync.what', topic: 'sync', icon: false,
+  q: function(){ return tr('faq.q.syncWhat'); },
+  html: function(){
+    var h = infoP(tr('faq.a.syncWhat1')) + infoP(tr('faq.a.syncWhat2'));
+    h += infoP(tr(modeIsProduct() ? 'faq.a.syncWhat3gd' : 'faq.a.syncWhat3gh'));
+    return h + infoP(tr('faq.a.syncWhat4'));
   },
+  see: ['sync', 'backup.why', 'backup.wipe']
+},
 
-  /* Карточка партии */
-  'lot': {
-    title: function(){ return tr('lot.result'); },
-    /* ++++++ TRIPS ++++++ формула итога, граница его точности и — отдельным
-       абзацем — то, что деньги по поездке не считаются ВОВСЕ. Последнее
-       надо сказать вслух: иначе владелец будет искать цифру, которой нет
-       по решению, а не по недоделке. */
-    html: function(){ return infoP(tr('lot.infoResult')) + infoP(tr('lot.infoPure')) +
-                             infoP(tr('lot.infoMoney')) + infoP(tr('lot.hint')); }
+/* ---------------------------------------------------------------- *
+ * КОПИЯ И КОРЗИНА
+ * ---------------------------------------------------------------- */
+/* Раздел «Резервная копия». Три блока подряд — один ответ, в том же
+   порядке. Строка состояния «Хранилище: работает» осталась на экране:
+   это не рассказ, а то, что происходит сейчас. */
+{
+  key: 'backup', topic: 'backup', icon: true,
+  q: function(){ return tr('faq.q.backup'); },
+  title: function(){ return tr('acct.backup'); },
+  html: function(){
+    var h = infoP(tr('store.where', {key: STORAGE_KEY}));
+    h += infoP(attOn()
+      ? tr('att.storeLine', {db: esc(ATT_DB), n: attCount(), size: fmtBytes(attBytes())})
+      : tr('att.storeOff'));
+    if (attOn() && attCount()) h += infoP(tr('att.storeWarn'));
+    h += infoP(tr('store.phoneWarn'));
+    return h;
   },
-
-  /* «Корзина». ОБА предложения, всегда: на экране их разводило
-     состояние, и владелец видел половину рассказа. */
-  'trash': {
-    title: function(){ return tr('trash.title'); },
-    html: function(){
-      var days = nq(TRASH_DAYS, 'day');
-      return infoP(tr('trash.emptyHint', { n: days })) +
-             infoP(tr('trash.note30', { n: days }));
-    }
+  see: ['backup.why', 'backup.trash']
+},
+{
+  key: 'backup.why', topic: 'backup', icon: false,
+  q: function(){ return tr('faq.q.backupWhy'); },
+  html: function(){
+    var h = infoP(tr(modeIsProduct() ? 'faq.a.backupWhy1gd' : 'faq.a.backupWhy1gh'));
+    return h + infoP(tr('faq.a.backupWhy2')) + infoP(tr('faq.a.backupWhy3'));
   },
+  see: ['backup', 'sync.what', 'backup.wipe']
+},
 
-  /* Раздел «Валюты и курсы» */
-  'cur': {
-    title: function(){ return tr('acct.cur'); },
-    html: function(){
-      return infoP(tr('cur.sectionNote', {
-               summary: esc(secWanted('summary').join(', ')),
-               tx: esc(secWanted('transactions').join(', ')) })) +
-             infoP(tr('cur.rateShows'));
-    }
+/* «Корзина». ОБА предложения, всегда: на экране их разводило
+   состояние, и владелец видел половину рассказа. */
+{
+  key: 'trash', topic: 'backup', icon: true,
+  q: function(){ return tr('faq.q.trash'); },
+  title: function(){ return tr('trash.title'); },
+  html: function(){
+    var days = nq(TRASH_DAYS, 'day');
+    return infoP(tr('trash.emptyHint', { n: days })) +
+           infoP(tr('trash.note30', { n: days }));
   },
-
-  /* ++++++ ACTIVE CURRENCIES ++++++ запись «Курсы» стояла здесь и
-     объясняла карточку «Прочие валюты», которой больше нет: валюты
-     заводят и выключают в окне выбора, и объяснять нечего. Пояснение
-     всего раздела («что правка курса двигает, а что нет») осталось на
-     месте — это соседняя запись, и её текст не тронут. */
-
-  /* Раздел «Резервная копия». Три блока подряд — один попап, в том же
-     порядке. Строка состояния «Хранилище: работает» осталась на экране:
-     это не рассказ, а то, что происходит сейчас. */
-  'backup': {
-    title: function(){ return tr('acct.backup'); },
-    html: function(){
-      var h = infoP(tr('store.where', {key: STORAGE_KEY}));
-      h += infoP(attOn()
-        ? tr('att.storeLine', {db: esc(ATT_DB), n: attCount(), size: fmtBytes(attBytes())})
-        : tr('att.storeOff'));
-      if (attOn() && attCount()) h += infoP(tr('att.storeWarn'));
-      h += infoP(tr('store.phoneWarn'));
-      return h;
-    }
+  see: ['backup.trash', 'tx.return']
+},
+{
+  key: 'backup.trash', topic: 'backup', icon: false,
+  q: function(){ return tr('faq.q.trashWhat'); },
+  html: function(){
+    var days = nq(TRASH_DAYS, 'day');
+    return infoP(tr('faq.a.trashWhat1')) + infoP(tr('faq.a.trashWhat2')) +
+           infoP(tr('faq.a.trashWhat3', { n: days })) + infoP(tr('faq.a.trashWhat4'));
   },
-
-  /* ++++++ PERSON EARN ++++++ карточка человека, карточка «Заработок».
-     Три абзаца: что внутри цифры, чего в ней НЕТ (прочие расходы — и
-     потому она не равна «Чистой прибыли»), и по какому правилу считана
-     каждая из пяти строк. Последнее сказано и на самих строках; здесь —
-     почему так. */
-  'earn': {
-    title: function(){ return tr('earn.title'); },
-    html: function(){ return infoP(tr('earn.info1')) + infoP(tr('earn.info2')) + infoP(tr('earn.info3')); }
+  see: ['trash', 'backup.wipe']
+},
+{
+  key: 'backup.wipe', topic: 'backup', icon: false,
+  q: function(){ return tr('faq.q.wipe'); },
+  html: function(){
+    var h = infoP(tr(modeIsProduct() ? 'faq.a.wipe1gd' : 'faq.a.wipe1gh'));
+    h += infoP(tr(modeIsProduct() ? 'faq.a.wipe2gd' : 'faq.a.wipe2gh'));
+    return h + infoP(tr('faq.a.wipe3')) + infoP(tr('faq.a.wipe4'));
   },
-  /* Раздел «Внешний вид» */
-  'look': {
-    title: function(){ return tr('acct.look'); },
-    html: function(){ return infoP(tr('look.themeNote')); }
-  },
+  see: ['backup.trash', 'backup.why', 'sync.what']
+},
 
-  /* Обмен. ДВЕ сборки и ДВА состояния входа, и ни одна ветка не знает о
-     другой: личная не произносит слова Google, продуктовая — GitHub.
-     Вошедшему не показывается «Если войти в Google…»: у этого текста
-     есть свой ключ, gd.whatIn, где условие вычеркнуто. */
-  'sync': {
-    title: function(){ return tr(modeIsProduct() ? 'gd.title' : 'sy.title'); },
-    html: function(){
-      if (!modeIsProduct()) return infoP(tr('sy.what'));
-      if (acctWho()) return infoP(tr('gd.whatIn')) + infoP(tr('as.filesGo'));
-      return infoP(tr('gd.what')) + infoP(tr('gd.worksWithout'));
-    }
+/* ---------------------------------------------------------------- *
+ * ПРОГРАММА И ОБНОВЛЕНИЯ
+ * ---------------------------------------------------------------- */
+/* Раздел «Внешний вид» */
+{
+  key: 'look', topic: 'app', icon: true,
+  q: function(){ return tr('faq.q.look'); },
+  title: function(){ return tr('acct.look'); },
+  html: function(){ return infoP(tr('look.themeNote')); },
+  see: ['app.update']
+},
+{
+  key: 'app.update', topic: 'app', icon: false,
+  q: function(){ return tr('faq.q.update'); },
+  html: function(){ return infoP(tr('faq.a.update1')) + infoP(tr('faq.a.update2')) +
+                           infoP(tr('faq.a.update3')); },
+  see: ['backup.why', 'look']
+}
+
+];
+
+/* ------------------------------------------------------------------ *
+ * ВЫБОРКИ. Всё чистое: ни одна ничего не пишет и ничего не рисует.
+ * ------------------------------------------------------------------ */
+
+/** Запись по ключу или null. Склад — МАССИВ, поэтому ключ вида
+ *  «constructor» здесь не отзывается функцией из прототипа (R20): его
+ *  просто нет среди key, и ответ — null. */
+function faqOf(key){
+  var i;
+  for (i = 0; i < FAQ.length; i++) if (FAQ[i].key === key) return FAQ[i];
+  return null;
+}
+
+/** Заголовок ОКНА. Нет своего — заголовком служит вопрос: у ответа,
+ *  которого нет на экране, второго имени и не бывает. */
+function faqTitle(e){ return e.title ? e.title() : e.q(); }
+
+/** Есть ли у записи иконка «i». Спрашивается ОТСЮДА, а не по списку
+ *  мест печати: список разошёлся бы со складом. */
+function faqHasIcon(key){
+  var e = faqOf(key);
+  return !!(e && e.icon);
+}
+
+/** Разметка -> текст, по которому ищут. Теги снимаются, мнемоники
+ *  разворачиваются: иначе «&laquo;» осталось бы словом, по которому
+ *  что-нибудь однажды найдётся. */
+function faqPlain(html){
+  return String(html === null || html === undefined ? '' : html)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&laquo;|&raquo;|&quot;/g, '"')
+    .replace(/&minus;|&mdash;|&ndash;/g, '-')
+    .replace(/&middot;/g, '.')
+    .replace(/&rsquo;|&lsquo;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+/** Всё, по чему ищется запись: ВОПРОС И ОТВЕТ вместе. Отвечает на
+ *  требование «поиск идёт и по формулировке вопроса, и по тексту
+ *  ответа»: слово, встреченное только внутри ответа, обязано находить
+ *  вопрос, в котором его нет. */
+function faqHay(e){ return faqPlain(e.q()) + ' ' + faqPlain(e.html()); }
+
+/** Записи, подходящие под запрос. Пустой запрос — все: список раздела
+ *  и результат поиска строятся ОДНОЙ функцией, и «ничего не набрано»
+ *  здесь не особый случай, а край общего. Сравнение — существующие
+ *  normQ()/qMatch(): второго нормализатора в файле быть не должно. */
+function faqHits(q){
+  var out = [], i;
+  for (i = 0; i < FAQ.length; i++)
+    if (qMatch(q, [faqHay(FAQ[i])])) out.push(FAQ[i]);
+  return out;
+}
+
+/** Список по разделам: [[тема, [записи]], …]. Пустая тема НЕ попадает
+ *  сюда вовсе — заголовок без единого вопроса обещает ответы, которых
+ *  нет (область 44). */
+function faqGroups(list){
+  var out = [], i, j, t, bag;
+  for (i = 0; i < FAQ_TOPICS.length; i++){
+    t = FAQ_TOPICS[i]; bag = [];
+    for (j = 0; j < list.length; j++) if (list[j].topic === t) bag.push(list[j]);
+    if (bag.length) out.push([t, bag]);
   }
-};
+  return out;
+}
 
-/** Открыть пояснение раздела. Единственный вход; ветка data-act="info"
- *  состоит из одного её вызова. */
+/** Связанные вопросы — ТОЛЬКО существующие. Мёртвой ссылки не бывает
+ *  по построению: ключ, которого нет на складе, отсюда не выходит. */
+function faqSee(e){
+  var out = [], i;
+  if (!e || !e.see) return out;
+  for (i = 0; i < e.see.length; i++) if (faqOf(e.see[i])) out.push(e.see[i]);
+  return out;
+}
+/* ++++++ FAQ CORE END ++++++ */
+
+/* ============================================== ++++++ FAQ ++++++ ==
+ * ЧИТАТЕЛИ СКЛАДА: экран раздела, поиск, ссылки и окно за «i».
+ *
+ * Ни один из них не заводит своего текста и своего поиска: экран,
+ * окно, поиск и ссылки читают ОДИН склад (faq.js) и сравнивают строки
+ * ОДНИМ normQ()/qMatch(), которым ищет весь остальной файл.
+ *
+ * ЧТО ЗДЕСЬ НЕ ПОЯВИЛОСЬ, И ЭТО НАМЕРЕННО:
+ *   · нет второго механизма окон — окно за «i» осталось тем же
+ *     dialog(), поэтому Escape, нажатие мимо, «Назад» на Android и
+ *     возврат фокуса работают без единой новой строки;
+ *   · нет тринадцатого частичного перерисовщика — список раздела
+ *     перерисовывает существующий liveSearch(), тот же, что у пяти
+ *     списков поиска: у него ровно та задача, ради которой он написан —
+ *     не переписывать поле, в котором стоит каретка;
+ *   · нет своего хранения — ни поля в документе, ни ключа в
+ *     localStorage. Что раскрыто, живёт в модульной переменной, как
+ *     newsOpen и prodEditAnchor: наполовину прочитанному разделу нечего
+ *     делать в резервной копии.
+ * ================================================================== */
+
+/* Какие вопросы раскрыты. МОДУЛЬНАЯ переменная, не ui и не state. */
+var faqOpen = {};
+
+/** id узла вопроса. Точка в ключе заменяется дефисом: getElementById её
+ *  переварит, а querySelector прочитал бы «.stock» как класс — и адрес
+ *  молча перестал бы находиться. */
+function faqDomId(key){ return 'faq-' + String(key).replace(/\./g, '-'); }
+
+/** Прокрутить к вопросу. Через getBoundingClientRect, а не
+ *  scrollIntoView: место считается явно и потому проверяемо. */
+function faqScrollTo(key){
+  var n = document.getElementById(faqDomId(key));
+  if (!n) return;
+  window.scrollTo(0, (n.getBoundingClientRect().top + (window.pageYOffset || 0)) - 12);
+}
+
+/** Блок «Смотрите также». Печатается, только когда есть что показать, и
+ *  ведёт ТОЛЬКО на существующие вопросы: faqSee() отсеивает остальные,
+ *  поэтому мёртвой ссылки не бывает по построению. */
+function faqSeeHTML(e){
+  var keys = faqSee(e), h, i, o;
+  if (!keys.length) return '';
+  h = '<div class="faqsee"><b>' + esc(tr('faq.see')) + '</b>';
+  for (i = 0; i < keys.length; i++){
+    o = faqOf(keys[i]);
+    h += '<button type="button" class="faqlink" data-act="faq-go" data-arg="' +
+         esc(keys[i]) + '">' + esc(o.q()) + '</button>';
+  }
+  return h + '</div>';
+}
+
+/** Один вопрос. Раскрытие — СОСЕД кнопки, а не её содержимое: <button>
+ *  внутри <button> браузер перевешивает, и внешняя кнопка съедает
+ *  нажатие (область 25). Тот же приём, что у списка изменений. */
+function faqItemHTML(e){
+  var on = own(faqOpen, e.key);
+  return '<button type="button" class="faqq' + (on ? ' on' : '') + '" id="' + faqDomId(e.key) + '"' +
+      ' data-act="faq-item" data-arg="' + esc(e.key) + '"' +
+      ' aria-expanded="' + (on ? 'true' : 'false') + '">' +
+      '<span class="h">' + esc(e.q()) + '</span>' +
+      '<span class="caret">' + (on ? '&#9650;' : '&#9660;') + '</span></button>' +
+    /* .infobody — ТОТ ЖЕ класс, которым рисует абзацы окно за «i»:
+       один текст, один вид, а не второй набор свойств о том же. */
+    '<div class="faqa infobody' + (on ? ' open' : '') + '">' + e.html() + faqSeeHTML(e) + '</div>';
+}
+
+/** Список раздела. ОДИН путь на оба случая: без запроса берутся все
+ *  записи, с запросом — подошедшие, и группируются они одинаково.
+ *  Отсюда же выходит требование «у найденного виден его раздел»: он и
+ *  есть заголовок группы, а не вторая подпись рядом с вопросом. */
+function faqListHTML(){
+  var hits = faqHits(ui.faqQuery), groups, h = '', i, j, items;
+  if (!hits.length) return noHits('faqQuery');
+  groups = faqGroups(hits);
+  for (i = 0; i < groups.length; i++){
+    items = '';
+    for (j = 0; j < groups[i][1].length; j++) items += faqItemHTML(groups[i][1][j]);
+    h += '<section class="card"><div class="t">' + esc(tr('faq.t.' + groups[i][0])) +
+         '</div><div class="b faqbody">' + items + '</div></section>';
+  }
+  return h;
+}
+
+/** Экран раздела. Поле поиска — существующий searchBar(), список —
+ *  СОСЕД блока поиска, а не его потомок: вложенный, он оказался бы
+ *  внутри узла, который переписывает liveSearch(), и каретка терялась бы
+ *  на каждой букве (область 12). */
+function faqScreenHTML(){
+  return searchBar('faqQuery', tr('srch.phFaq')) +
+         '<div id="faqQueryBox">' + faqListHTML() + '</div>';
+}
+
+/** Открыть раздел — из окна за «i» или по ссылке. Запрос снимается, а
+ *  нужный вопрос раскрывается: человек шёл по ссылке, а не искал, и
+ *  чужой запрос спрятал бы от него ровно то, ради чего он нажал. */
+function faqOpenScreen(key){
+  var e = key ? faqOf(key) : null;
+  ui.faqQuery = '';
+  faqOpen = {};
+  if (e) faqOpen[e.key] = true;
+  navGoAcct('faq');                    /* ++++++ BACK STACK ++++++ снимок экрана */
+  if (e) faqScrollTo(e.key);
+}
+
+/** Ссылка «смотрите также» ВНУТРИ раздела. Полная отрисовка, а не
+ *  liveSearch(): поле поиска очищается, и его текст обязан обновиться. */
+function faqGo(key){
+  var e = faqOf(key);
+  if (!e) return;                      /* ключа нет — молчим, а не рисуем пустое */
+  ui.faqQuery = '';
+  faqOpen = {};
+  faqOpen[e.key] = true;
+  render();
+  faqScrollTo(e.key);
+}
+
+/** Раскрыть или свернуть вопрос. Перерисовывается ОДИН узел —
+ *  существующим liveSearch(): полная отрисовка пересобрала бы поле
+ *  поиска вместе со всем экраном. */
+function faqToggle(key){
+  if (!faqOf(key)) return;
+  if (own(faqOpen, key)) delete faqOpen[key]; else faqOpen[key] = true;
+  liveSearch('faqQuery');
+}
+
+/** Уйти из окна за «i» в раздел. Листы снимаются СВОИМ done() — голый
+ *  remove() оставил бы фон запертым и обработчик Escape на документе, —
+ *  а переход ставится МИКРОЗАДАЧЕЙ следом: dialog() снимает узел и
+ *  отпирает фон уже после .then() вызывающего, и отпирание вернуло бы
+ *  прежнюю прокрутку поверх нашей. Из окна, открытого поверх листа,
+ *  уходят оба: брошенный лист остался бы висеть над разделом. */
+function faqFromInfo(key){
+  var root = $('modalRoot'), kids = [], i, n;
+  if (root) for (i = 0; i < root.children.length; i++) kids.push(root.children[i]);
+  for (i = kids.length - 1; i >= 0; i--){
+    n = kids[i];
+    if (n.__done) n.__done(null);
+    else { n.remove(); sheetLock(); }
+  }
+  Promise.resolve().then(function(){ faqOpenScreen(key); });
+}
+
+/** Строка «Все вопросы и ответы» под ответом в окне. Печатается всегда:
+ *  раздел есть всегда, и «почитать дальше» — это то, ради чего он
+ *  заведён. */
+function faqAllHTML(key){
+  return '<div class="faqall"><button type="button" class="faqlink" data-act="faq-all"' +
+    ' data-arg="' + esc(key) + '">' + esc(tr('faq.all')) + '</button></div>';
+}
+/* ++++++ FAQ VIEW END ++++++ */
+
+/** Открыть пояснение. Единственный вход; ветка data-act="info" состоит
+ *  из одного её вызова.
+ *
+ *  ++++++ FAQ ++++++ ИЗМЕНИЛОСЬ РОВНО ДВА: откуда берётся запись
+ *  (склад «Вопросов и ответов» вместо своего реестра) и то, что под
+ *  ответом печатается ссылка в раздел. Открытие, закрытие, возврат
+ *  фокуса и «одно окно за раз» — те же до буквы. */
 function infoOpen(key){
-  var e = own(INFO, key) ? INFO[key] : null;
+  var e = faqOf(key);
   if (!e) return;                    /* ключа нет — молчим, а не рисуем пустое */
   /* ОДНО ОКНО ЗА РАЗ, и открытое закрывается ПРАВИЛЬНО. */
   if (infoNode && infoNode.__done) infoNode.__done(null);
   var from = document.activeElement;
   var mine = null;
-  dialog({ title: e.title(), html: '<div class="infobody">' + e.html() + '</div>',
+  dialog({ title: faqTitle(e), html: '<div class="infobody">' + e.html() + faqAllHTML(key) + '</div>',
            closeX: true, bare: true, info: true })
     .then(function(){
       /* нас уже сменило другое окно — фокус ему, не нам */
@@ -14799,7 +15854,7 @@ function resetProductForm(){
   prodEditAnchorDrop();
 }
 function resetPersonForm(){
-  ui.form.person = { name:'', phone:'', city:'', cityOther:'', shop:'', note:'', editId:'' };
+  ui.form.person = { name:'', phone:'', city:'', shop:'', note:'', editId:'' };
   ui.edit.person = null;
 }
 /* ++++++ DISCOUNT ++++++ discErrDrop() — единственная правка сброса
@@ -15368,45 +16423,30 @@ function discSyncPair(source){
    весь остаток файла, ничего об этом не сказав. */
 
 /* ---- телефон и города (v8) ---- */
-var CITIES = [
-  ['city.g.rrp', ['Душанбе','Вахдат','Гиссар','Турсунзаде','Рудаки','Варзоб','Шахринав',
-    'Файзабад','Рогун','Нурек','Рашт','Нурабад','Лахш','Сангвор']],
-  ['city.g.sughd', ['Худжанд','Бустон','Гулистон','Истиклол','Истаравшан','Исфара','Канибадам',
-    'Пенджикент','Гафуров','Спитамен','Зафарабад','Джаббор Расулов','Айни','Ашт','Мастчох',
-    'Шахристан','Деваштич']],
-  ['city.g.khatlon', ['Бохтар','Куляб','Леваканд','Дангара','Восе','Фархор','Хамадони','Шахритус',
-    'Кабодиён','Яван','Джайхун','Кушониён','Балхи','Пяндж','Дусти','Вахш','Хуросон','Темурмалик',
-    'Ховалинг','Муминабад']],
-  ['city.g.gbao', ['Хорог','Мургаб','Ишкашим','Рушан','Вандж','Дарваз','Шугнан','Рошткала']]
-];
-var CITY_OTHER = '__other__';
-function cityKnown(name){
-  var found = false;
-  CITIES.forEach(function(g){ g[1].forEach(function(c){ if (c === name) found = true; }); });
-  return found;
-}
-function citySelect(fPath, value){
-  var h = '<select data-f="' + fPath + '"><option value="">' + tr('ppl.cityNone') + '</option>';
-  CITIES.forEach(function(g){
-    h += '<optgroup label="' + tr(g[0]) + '">';
-    g[1].forEach(function(c){
-      h += '<option value="' + esc(c) + '"' + (c === value ? ' selected' : '') + '>' + esc(c) + '</option>';
-    });
-    h += '</optgroup>';
-  });
-  h += '<option value="' + CITY_OTHER + '"' + (value === CITY_OTHER ? ' selected' : '') + '>' +
-    tr('ppl.cityOther') + '</option>';
-  return h + '</select>';
-}
-/** один вид номера: +992 92 773 3331. Девять цифр — местный номер. */
-function normPhone(raw){
-  var d = String(raw || '').replace(/\D/g,'');
-  if (!d) return '';
-  if (d.length === 9) d = '992' + d;
-  if (d.length === 12 && d.slice(0,3) === '992'){
-    return '+992 ' + d.slice(3,5) + ' ' + d.slice(5,8) + ' ' + d.slice(8);
+/* ++++++ NEUTRAL ++++++ СПИСКА ГОРОДОВ БОЛЬШЕ НЕТ. Он состоял из городов
+   одной страны, и всякому, кто живёт в другой, приходилось выбирать
+   «Другой город…», чтобы набрать своё. Город теперь обычное поле, а
+   записи не тронуты: он всегда хранился строкой (решение 7). */
+
+/** ++++++ NEUTRAL ++++++ НОМЕР ХРАНИТСЯ ТАК, КАК ЕГО НАБРАЛИ. Код страны
+ *  программа не подставляет и формата не навязывает: она не знает, в
+ *  какой стране живёт человек, и решать за него не имеет права
+ *  (требование владельца 2026-09-07). Снимаются только краевые пробелы.
+ *
+ *  СРАВНИВАТЬ ДВА НОМЕРА СТРОКОЙ ПОСЛЕ ЭТОГО НЕЛЬЗЯ: пока номер
+ *  приводился к одному виду, «79001234567» и «+7 900 123 45 67» были одной
+ *  строкой, и на этом стояла защита от двух записей на один номер. Для
+ *  сравнения есть phoneKey() — только цифры. */
+function phoneKey(raw){
+  var s = String(raw || ''), out = '', i, c;
+  for (i = 0; i < s.length; i++){
+    c = s.charAt(i);
+    if (c >= '0' && c <= '9') out += c;
   }
-  return '+' + d;
+  return out;
+}
+function normPhone(raw){
+  return String(raw || '').trim();
 }
 function phoneDigits(raw){ return String(raw || '').replace(/\D/g,'').length; }
 function personSub(p){
@@ -15637,7 +16677,7 @@ function currencyCodes(){
   return out;
 }
 function money2(fPath, value, curPath, curValue, codes){
-  return '<span class="pair">' + input({ f:fPath, value:value, mode:'decimal', ph:'0.00' }) +
+  return '<span class="pair">' + input({ f:fPath, value:value, mode:'decimal' }) +
     curSelect(curPath, curValue, codes) + '</span>';
 }
 function btn(label, act, cls, arg){
@@ -15763,7 +16803,9 @@ function avaHTML(size){
 }
 
 function renderNav(){
-  var rail = '<div class="brand">' + tr(modeTitleKey()) + '<small>' + tr('app.railSub') + '</small></div>';
+  /* ++++++ NEUTRAL ++++++ подписи под названием нет: она называла страны
+     владельца, а заменять её другими странами он запретил прямо. */
+  var rail = '<div class="brand">' + tr(modeTitleKey()) + '</div>';
   NAV.forEach(function(t){
     rail += '<button type="button" data-act="tab" data-arg="' + t[0] + '"' +
       (ui.tab === t[0] ? ' class="on"' : '') +
@@ -16819,7 +17861,7 @@ function formProduct(){
   if (vatFormShow()){
     h += '<div class="f" style="margin:13px 0 0"><div class="two">' +
       '<label class="f" style="margin:0"><span>' + tr('vat.field') + '</span>' +
-      input({ f:'product.vatPct', value:f.vatPct, mode:'decimal', id:'pVat', ph:'5' }) +
+      input({ f:'product.vatPct', value:f.vatPct, mode:'decimal', id:'pVat' }) +
       '</label><div style="flex:1 1 0"></div></div>' +
       '<small class="hint">' + tr('vat.formHint', {cur: esc(f.cur)}) + '</small></div>';
   }
@@ -16850,18 +17892,18 @@ function lineCard(l, i, f){
   if (f.mode === 'inv'){
     h += '<div class="f"><div class="two">' +
       '<label class="f" style="margin:0"><span>' + tr('inv.boxes') + '</span>' +
-        input({ f:'product.lines.' + i + '.boxes', value:l.boxes, mode:'numeric', ph:'4' }) + '</label>' +
+        input({ f:'product.lines.' + i + '.boxes', value:l.boxes, mode:'numeric' }) + '</label>' +
       '<label class="f" style="margin:0"><span>' + tr('inv.perBox') + '</span>' +
-        input({ f:'product.lines.' + i + '.perBox', value:l.perBox, mode:'numeric', ph:'12' }) + '</label>' +
+        input({ f:'product.lines.' + i + '.perBox', value:l.perBox, mode:'numeric' }) + '</label>' +
       '</div></div>';
     h += field({ label: tr('inv.boxPriceCur', {cur: esc(f.cur)}),
-      control: input({ f:'product.lines.' + i + '.boxPrice', value:l.boxPrice, mode:'decimal', ph:'421.00' }) });
+      control: input({ f:'product.lines.' + i + '.boxPrice', value:l.boxPrice, mode:'decimal' }) });
   } else {
     h += '<div class="f"><div class="two">' +
       '<label class="f" style="margin:0"><span>' + tr('inv.qty') + '</span>' +
-        input({ f:'product.lines.' + i + '.qty', value:l.qty, mode:'numeric', ph:'48' }) + '</label>' +
+        input({ f:'product.lines.' + i + '.qty', value:l.qty, mode:'numeric' }) + '</label>' +
       '<label class="f" style="margin:0"><span>' + tr('inv.costCur', {cur: esc(f.cur)}) + '</span>' +
-        input({ f:'product.lines.' + i + '.cost', value:l.cost, mode:'decimal', ph: tr('ph.costNum') }) + '</label>' +
+        input({ f:'product.lines.' + i + '.cost', value:l.cost, mode:'decimal' }) + '</label>' +
       '</div></div>';
   }
   h += field({ label: tr('w.sellPerUnit'),
@@ -17584,14 +18626,13 @@ function formPerson(){
   h += field({ label: tr('ppl.name') + ' *',
     control: input({ f:'person.name', value:f.name, ph: tr('ph.person') }),
     hintId:'personTwin', hint: personTwinText() });
+  /* ++++++ NEUTRAL ++++++ подсказка НАЗЫВАЕТ поле, а не показывает номер
+     владельца; город — обычное поле, а не список городов одной страны. */
   h += field({ label: tr('ppl.phone') + ' *',
-    control: input({ f:'person.phone', value:f.phone, type:'tel', mode:'tel', ph:'92 773 3331' }),
+    control: input({ f:'person.phone', value:f.phone, type:'tel', mode:'tel', ph: tr('ph.phone') }),
     hint: tr('ppl.phoneHint') });
-  h += field({ label: tr('ppl.city'), control: citySelect('person.city', f.city) });
-  if (f.city === CITY_OTHER){
-    h += field({ label: tr('ppl.cityWhich'),
-      control: input({ f:'person.cityOther', value:f.cityOther, ph: tr('ph.city') }) });
-  }
+  h += field({ label: tr('ppl.city'),
+    control: input({ f:'person.city', value:f.city, ph: tr('ph.city') }) });
   h += field({ label: tr('ppl.shop'),
     control: input({ f:'person.shop', value:f.shop, ph: tr('ph.shop') }),
     hint: tr('ppl.shopHint') });
@@ -17678,7 +18719,7 @@ function formRet(){
   h += '<div class="body">' + tr('ret.priceLine', {price: baseOne(t.unitPriceCents)}) + '</div>';
   h += '<div class="f"><div class="two">' +
     '<label class="f" style="margin:0"><span>' + tr('inv.qty') + '</span>' +
-      input({ f:'ret.qty', value:f.qty, mode:'numeric', ph:'1' }) + '</label>' +
+      input({ f:'ret.qty', value:f.qty, mode:'numeric' }) + '</label>' +
     '<label class="f" style="margin:0"><span>' + tr('ret.date') + '</span>' +
       input({ f:'ret.date', value:f.date, type:'date' }) + '</label></div>' +
     '<small class="hint">' + tr('ret.avail', {n: units(left)}) + '</small></div>';
@@ -17873,6 +18914,19 @@ var SEARCH = {
                     total:function(){ return actProducts().length; },
                     list:function(){ return stockListHTML(); } }
 };
+/* ++++++ FAQ ++++++ шестое поле поиска. Отдельным присваиванием, а не
+   внутри литерала SEARCH: так пять прежних записей остаются побайтово
+   теми же, и это видно с одного взгляда.
+
+   Своего поиска задача не заводит вовсе — берёт тот, что есть: поле,
+   счётчик «нашлось N из M», кнопка очистки, пустое состояние и
+   перерисовка одного узла без потери каретки уже написаны и уже
+   проверены пятью списками. */
+SEARCH.faqQuery = { noun:'question', status:null,
+                    title:function(){ return tr('faq.title'); },
+                    hits:function(){ return faqHits(ui.faqQuery); },
+                    total:function(){ return FAQ.length; },
+                    list:function(){ return faqListHTML(); } };
 
 /* Три статуса из пяти. credit («Переплата») и none («Товар не брали») сюда не
    входят намеренно: они про людей без долга вовсе и видны при «Все». */
@@ -18029,7 +19083,7 @@ function formTx(){
       ph: actProducts().length ? tr('tx.pickProduct') : tr('sel.addProductFirst') }) });
   h += '<div class="f"><div class="two">' +
     '<label class="f" style="margin:0"><span>' + tr('inv.qty') + '</span>' +
-      input({ f:'tx.qty', value:f.qty, mode:'numeric', ph:'12' }) + '</label>' +
+      input({ f:'tx.qty', value:f.qty, mode:'numeric' }) + '</label>' +
     '<label class="f" style="margin:0"><span>' + tr('w.date') + '</span>' +
       input({ f:'tx.date', value:f.date, type:'date' }) + '</label></div></div>';
   /* ++++++ DISCOUNT ++++++ два поля в одном ряду, подсказка под ними —
@@ -18042,7 +19096,7 @@ function formTx(){
     '<label class="f" style="margin:0"><span>' + tr('w.unitPrice') + '</span>' +
       money2('tx.price', f.price, 'tx.cur', f.cur) + '</label>' +
     '<label class="f" style="margin:0"><span>' + tr('disc.pctField') + '</span>' +
-      input({ d:true, id:'txDiscIn', value: txDiscText(), mode:'decimal', ph:'0',
+      input({ d:true, id:'txDiscIn', value: txDiscText(), mode:'decimal',
               dis: uCents === null }) + '</label></div>' +
     '<small class="hint" id="txHint">' + txHintText() + '</small></div>';
   h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'tx.record')) +
@@ -18427,7 +19481,7 @@ function ratePairCardHTML(){
     h += '<label class="f" style="margin:0"><span>' +
       tr('rp.field', { anchor: esc(curAnchor(state.settings)), cur: esc(c) }) + '</span>' +
       input({ f:'rate.' + c, value: ratePairFieldValue(c), mode:'decimal',
-              id:'rate' + c, ph:'0.00' }) + '</label>';
+              id:'rate' + c }) + '</label>';
   });
   h += '</div></div><small class="hint" id="rateNote">' + ratePairNoteText() + '</small>' +
     '<div class="btns">' + saveBtn(tr('rp.save')) + '</div></form></div></section>';
@@ -19642,6 +20696,9 @@ function viewAcct(){
   if (ui.acct === 'backup') return backHead(tr('acct.backup'), '', infoBtn('backup')) + acctBackup();
   if (ui.acct === 'trash')  return backHead(tr('trash.title'), '', infoBtn('trash')) + acctTrash();
   if (ui.acct === 'look')   return backHead(tr('acct.look'), '', infoBtn('look')) + acctLook();
+  /* ++++++ FAQ ++++++ седьмой раздел. Иконки «i» у него нет и быть не
+     должно: он сам и есть то, куда она ведёт. */
+  if (ui.acct === 'faq')    return backHead(tr('faq.title')) + faqScreenHTML();
   if (ui.acct === 'about')  return backHead(tr('up.title')) + acctAbout();
   /* ++++++ WHAT'S NEW ++++++ шестой раздел: список изменений, куда можно
      вернуться в любой день, а не только в минуту обновления. */
@@ -19800,6 +20857,8 @@ function acctRowsHTML(){
     row({ k: tr('trash.title'), sub: tr('acct.trashSub'),
           cnt: n ? String(n) : '', act:'acct', arg:'trash' }) +
     row({ k: tr('acct.look'),   sub: tr('acct.lookSub'),   act:'acct', arg:'look' }) +
+    /* ++++++ FAQ ++++++ */
+    row({ k: tr('faq.title'),   sub: tr('faq.rowSub'),    act:'acct', arg:'faq' }) +
     row({ k: tr('up.title'),    sub: tr('acct.aboutSub'),  act:'acct', arg:'about' }));
 }
 function acctOutHTML(){
@@ -19889,7 +20948,10 @@ function curPickRowsHTML(){
 function curPickOn(){
   var out = [], c;
   for (c in curPickDraft.on) if (own(curPickDraft.on, c)) out.push(c);
-  return curOrder(out);
+  /* ++++++ NEUTRAL ++++++ порядок ОКНА, а не порядок ключей объекта:
+     отсюда curBaseFor() берёт первую валюту, и список, переставившийся
+     сам собой, читался бы как ошибка программы (решение 6). */
+  return curAlpha(out);
 }
 
 /** ++++++ VAT IN PICKER ++++++ ОДИН УЗЕЛ И ОДНА КНОПКА, без render().
@@ -19964,11 +21026,11 @@ function curPickAddHTML(){
   return '<div class="f" style="margin-top:16px"><span>' + tr('cp.addTitle') + '</span>' +
     '<div class="two">' +
       '<label class="f" style="margin:0"><span>' + tr('cur.code') + '</span>' +
-        input({ f:'cp.code', value: curPickDraft.code, ph:'EUR', id:'cpCode' }) + '</label>' +
+        input({ f:'cp.code', value: curPickDraft.code, id:'cpCode' }) + '</label>' +
       '<label class="f" style="margin:0"><span>' +
         tr('cp.rate', { base: esc(curPickDraft.setup ? tr('cp.rateBaseLater')
                                                      : state.settings.baseCurrency) }) + '</span>' +
-        input({ f:'cp.rate', value: curPickDraft.rate, mode:'decimal', ph:'4.00', id:'cpRate' }) +
+        input({ f:'cp.rate', value: curPickDraft.rate, mode:'decimal', id:'cpRate' }) +
       '</label>' +
     '</div>' +
     '<div class="btns" style="margin-top:10px">' +
@@ -20147,7 +21209,11 @@ function curPickApply(convert){
   /* Набор — ровно отмеченное. Базу сюда БОЛЬШЕ НЕ ПОДМЕШИВАЕМ: она и так
      одна из отмеченных, а прежняя подмешка была третьим местом запрета —
      она возвращала в набор валюту, галочку с которой только что сняли. */
-  state.settings.curActive = list;
+  /* ++++++ NEUTRAL ++++++ порядок ТОТ ЖЕ, какой вернёт curActiveOf():
+     основная валюта первой. Без этого набор лежал бы в порядке окна, а
+     после перезагрузки переставлялся сам собой — то самое, что решение 6
+     называет ошибкой программы. Найдено живой проверкой. */
+  state.settings.curActive = curOrder(list, [base]);
   /* ++++++ VAT IN PICKER ++++++ ставки — из того же черновика, что и всё
      остальное в окне. Негодное сюда не дойдёт: curPickVatBad() проверяется
      до нажатия и держит «Сохранить» недоступной. */
@@ -21108,14 +22174,16 @@ function savePerson(){
   var name = String(f.name).trim();
   if (!name){ ui.err = tr('err.personName'); render(); return; }
   if (!String(f.phone).trim()){ ui.err = tr('err.phoneReq'); render(); return; }
-  if (phoneDigits(f.phone) < 9){ ui.err = tr('err.phoneShort'); render(); return; }
-  var city = f.city === CITY_OTHER ? String(f.cityOther).trim() : String(f.city).trim();
-  if (f.city === CITY_OTHER && !city){ ui.err = tr('err.cityWhich'); render(); return; }
+  /* ++++++ NEUTRAL ++++++ порог 5, а не 9: девять — длина местного номера
+     в одной стране. Дубликат ловится ПО ЦИФРАМ: формат больше не
+     приводится к одному виду, и сравнение строк потеряло бы защиту. */
+  if (phoneDigits(f.phone) < 5){ ui.err = tr('err.phoneShort'); render(); return; }
+  var city = String(f.city).trim();
   var phone = normPhone(f.phone);
-  var dup = null;
+  var dup = null, phoneK = phoneKey(phone);
   actPeople().forEach(function(x){
     if (x.id === f.editId) return;
-    if (phoneDigits(x.phone) && x.phone === phone) dup = x;
+    if (phoneKey(x.phone) && phoneKey(x.phone) === phoneK) dup = x;
   });
   if (dup){ ui.err = tr('err.phoneDup', {name: dup.name}); render(); return; }
   if (f.editId){
@@ -21355,8 +22423,7 @@ function startPersonEdit(id){
   if (!p) return;
   var c = p.city || '';
   ui.form.person = { name:p.name, phone:p.phone || '',
-    city: (c && !cityKnown(c)) ? CITY_OTHER : c,
-    cityOther: (c && !cityKnown(c)) ? c : '',
+    city: c,
     shop: p.shop || '', note: p.note || '', editId:p.id };
   ui.edit.person = p.id;
   ui.tab = 'people'; ui.seg.people = 'add'; ui.detail = null; ui.err = '';
@@ -22030,6 +23097,11 @@ function handleAct(act, arg, e, srcEl){
   /* ++++++ INFO ++++++ пояснение раздела. Ветка из одной строки: всё
      решает реестр. */
   if (act === 'info'){ infoOpen(arg); return; }
+  /* ++++++ FAQ ++++++ раздел «Вопросы и ответы». Каждая ветка — один
+     вызов: всё решает склад. */
+  if (act === 'faq-item'){ faqToggle(arg); return; }
+  if (act === 'faq-go'){ faqGo(arg); return; }
+  if (act === 'faq-all'){ faqFromInfo(arg); return; }
   if (act === 'tab'){ showTab(arg); return; }
   /* ++++++ MONEY TABS ++++++ */
   if (act === 'money'){
