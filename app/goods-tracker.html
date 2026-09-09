@@ -2033,6 +2033,13 @@ var STR = {
                        ru:'на всех устройствах и на Диске · отменить нельзя' },
 
 'wipe.deviceTitle':  { en:'Clear this device?', ru:'Очистить это устройство?' },
+/* ЛИЧНАЯ сборка: обмен идёт через репозиторий, и выхода не происходит —
+   gdForgetTokens() стоит внутри if (modeIsProduct()). Прежние две строки
+   называли Google Диск и обещали выход обеим сборкам сразу. */
+'wipe.deviceKeepGh': { en:'<b>Your data stays in the repository and on your other devices.</b> Records, photos and invoices leave this one.',
+                       ru:'<b>Ваши данные остаются в репозитории и на других ваших устройствах.</b> С этого уходят записи, фотографии и накладные.' },
+'wipe.deviceSignoutGh':{ en:'The connection to the repository stays, so the next sync brings the records back. To stop that, press «Disconnect» on the Account screen first.',
+                       ru:'Подключение к репозиторию остаётся, поэтому следующий обмен принесёт записи обратно. Чтобы этого не было, сперва нажмите «Отключить» на экране «Аккаунт».' },
 'wipe.deviceKeep':   { en:'<b>Your data stays on Google Drive and on your other devices.</b> Records, photos and invoices leave this one.',
                        ru:'<b>Данные останутся на Google Диске и на других устройствах.</b> Здесь исчезнут записи, фотографии и накладные.' },
 'wipe.deviceSignout':{ en:'You will be signed out of Google — otherwise the records come back on the first sync.',
@@ -2408,12 +2415,14 @@ var STR = {
                        ru:'Прибыль — это «на сколько выдали товара, по ценам самих выдач, минус во ' +
                           'сколько этот товар обошёлся вам». Выдали на 900, товар стоил 600 — ' +
                           'прибыль 300.' },
-'faq.a.moneyProfit2':{ en:'«Cost you» is the average price of what was on the shelf <b>on the day of ' +
-                          'the handout</b>. So a purchase made today does not rewrite the profit of ' +
-                          'a month that closed long ago.',
-                       ru:'«Обошёлся вам» — это средняя цена того, что лежало на складе <b>в день ' +
-                          'выдачи</b>. Поэтому приход, сделанный сегодня, не переписывает прибыль ' +
-                          'месяца, который давно закрыт.' },
+'faq.a.moneyProfit2':{ en:'«Cost of goods handed out» — what those goods cost you — is the average ' +
+                          'price of what was on the shelf <b>on the day of the handout</b>. So a ' +
+                          'purchase made today does not rewrite the profit of a month that closed ' +
+                          'long ago.',
+                       ru:'«Себестоимость выданного» — то, во сколько этот товар обошёлся вам, — ' +
+                          'это средняя цена того, что лежало на складе <b>в день выдачи</b>. ' +
+                          'Поэтому приход, сделанный сегодня, не переписывает прибыль месяца, ' +
+                          'который давно закрыт.' },
 'faq.a.moneyProfit3':{ en:'Profit is counted on what was <b>handed out</b>, not on the money ' +
                           'received. The person has not paid yet and the profit is already there; ' +
                           'the money side is a separate line, «Owed to me».',
@@ -2637,11 +2646,11 @@ var STR = {
                        ru:'Поэтому очистка ещё и отменяет вход: иначе записи вернулись бы при ' +
                           'первом же обмене, и кнопка выглядела бы сломанной.' },
 'faq.a.wipe2gh':     { en:'The connection to the repository stays, so the next sync brings the ' +
-                          'records back. If that is not what you want, press «Forget the settings» ' +
-                          'first.',
+                          'records back. If that is not what you want, press «Disconnect» on the ' +
+                          'Account screen first.',
                        ru:'Подключение к репозиторию при этом остаётся, поэтому следующий обмен ' +
-                          'принесёт записи обратно. Если этого не нужно, сперва нажмите «Забыть ' +
-                          'настройки».' },
+                          'принесёт записи обратно. Если этого не нужно, сперва нажмите ' +
+                          '«Отключить» на экране «Аккаунт».' },
 'faq.a.wipe3':       { en:'«Delete data everywhere» cannot be undone: the records disappear here, in ' +
                           'the cloud and on every device signed in with this account. The app asks ' +
                           'you to type the word DELETE and offers to download a backup first — take ' +
@@ -3318,12 +3327,16 @@ var STR = {
                      ru:'База {from} &rarr; {cur}, переименована и все курсы выражены заново' },
 'cur.logMore':     { en:'{n} in total; the last {shown} are shown',
                      ru:'всего {n}; показаны последние {shown}' },
-'cur.sectionNote':{ en:'Which currency each tab shows is decided by one table in the code: ' +
-                       'Summary and Products — {summary}; Handouts and Payments — {tx}; ' +
-                       'the person card — the base currency and the extra one.',
-                    ru:'Какие валюты показывает каждая вкладка, решает одна таблица в коде: ' +
-                       'Итог и Товар — {summary}; Выдачи и Оплаты — {tx}; ' +
-                       'карточка человека — базовая и дополнительная.' },
+'cur.sectionNote':{ en:'Each tab reads money its own way. The Summary is in the currency you pick ' +
+                       'yourself — right now {summary}. Handouts, Payments and Products show the ' +
+                       'amount <b>in the currency it was typed in</b>, with the main currency ' +
+                       'underneath; nothing is converted there. The person card shows the main ' +
+                       'currency and the extra one beside it.',
+                    ru:'Каждая вкладка читает деньги по-своему. «Сводка» — в валюте, которую вы ' +
+                       'выбираете сами, сейчас это {summary}. «Выдачи», «Оплаты» и «Товары» ' +
+                       'показывают сумму <b>в той валюте, в которой её набрали</b>, а под ней ' +
+                       'основную; пересчёта там нет. Карточка человека показывает основную ' +
+                       'валюту и рядом дополнительную.' },
 'bak.exportHint':{ en:'a .json file with the schema version',ru:'файл .json со схемой' },
 'bak.importHint':{ en:'replaces all data',                  ru:'заменит все данные' },
 'bak.dangerTitle':{ en:'Dangerous',                         ru:'Опасное' },
@@ -3384,10 +3397,21 @@ var STR = {
 'look.language': { en:'Interface language',                 ru:'Язык интерфейса' },
 'look.themeLight':{ en:'Light',                             ru:'Светлая' },
 'look.themeDark':{ en:'Dark',                               ru:'Тёмная' },
-'look.themeNote':{ en:'The theme is remembered together with the other settings and looks the same ' +
-                      'on a phone and on a computer.',
-                   ru:'Тема запоминается вместе с остальными настройками и одинаково выглядит ' +
-                      'на телефоне и на компьютере.' },
+'look.themeNote':{ en:'The language <b>is remembered</b> and is still there after a restart. The ' +
+                      'theme is <b>not</b>: it applies at once and holds while the app is open, ' +
+                      'but after a restart the light one is back.',
+                   ru:'Язык <b>запоминается</b> и после перезапуска остаётся тем же. Тема — ' +
+                      '<b>нет</b>: она применяется сразу и держится, пока программа открыта, но ' +
+                      'после перезапуска снова будет светлая.' },
+/* Вторая половина ответа: ни язык, ни тема не входят в SYNC_SETTINGS,
+   поэтому на второе устройство не едут ни тот, ни другая. Отдельным
+   абзацем, потому что вопрос «почему на телефоне иначе» задают отдельно
+   от «почему после перезапуска иначе». */
+'look.themeSync':{ en:'Neither of the two travels to your other device: both are settings of this ' +
+                      'copy of the app, and the exchange carries records and money settings.',
+                   ru:'На второе устройство не переезжает ни то, ни другое: и язык, и тема — ' +
+                      'настройки этой копии программы, а обмен возит записи и денежные ' +
+                      'настройки.' },
 
 /* ---------------- города Таджикистана ---------------- */
 
@@ -5826,8 +5850,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.13.0';
-var APP_BUILD = '2026-09-08T12:58:55.040Z';
+var APP_VERSION = '1.13.1';
+var APP_BUILD = '2026-09-09T05:56:13.598Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -14273,8 +14297,7 @@ var FAQ = [
   title: function(){ return tr('acct.cur'); },
   html: function(){
     return infoP(tr('cur.sectionNote', {
-             summary: esc(secWanted('summary').join(', ')),
-             tx: esc(secWanted('transactions').join(', ')) })) +
+             summary: esc(secWanted('summary').join(', ')) })) +
            infoP(tr('cur.rateShows'));
   },
   see: ['money.frozen', 'money.base', 'money.vat']
@@ -14396,7 +14419,7 @@ var FAQ = [
   key: 'look', topic: 'app', icon: true,
   q: function(){ return tr('faq.q.look'); },
   title: function(){ return tr('acct.look'); },
-  html: function(){ return infoP(tr('look.themeNote')); },
+  html: function(){ return infoP(tr('look.themeNote')) + infoP(tr('look.themeSync')); },
   see: ['app.update']
 },
 {
@@ -15833,7 +15856,13 @@ function newLine(sellCur){
         {busy:true}               the file is being read and downscaled
         {blob,thumb,name,size,url}  ready — written when the product is saved
      and it is thrown away by resetProductForm() together with the line. */
-  return { name:'', boxes:'', perBox:'12', boxPrice:'', qty:'', cost:'', sell:'',
+  /* ++++++ NEUTRAL ++++++ ПОЛЕ ПУСТОЕ, а не «12». Двенадцать штук в
+     коробке — число одной торговли; подставленное молча, оно уезжает в
+     приход к тому, у кого коробки другие, и считает неправильно, ничего
+     не спросив. Пустое поле безопасно по построению: readLine() отвечает
+     err.invPerBox и приход не сохраняется, пока число не набрано
+     (решение владельца 2026-09-08). */
+  return { name:'', boxes:'', perBox:'', boxPrice:'', qty:'', cost:'', sell:'',
            sellCur: sellCur || state.settings.lastSellCur,
            desc:'', photo:null };
 }
@@ -22400,7 +22429,7 @@ function startProductEdit(id){
   stagedFreeAll();
   ui.form.product = { mode:'man', cur:b, vatPct:'',
     date: (p.batches[p.batches.length - 1] || {}).date || todayISO(), editId:p.id,
-    lines: [{ name:p.name, boxes:'', perBox:'12', boxPrice:'',
+    lines: [{ name:p.name, boxes:'', perBox:'', boxPrice:'',
       qty: String(p.qty), cost: (st.avgCostCents / 100).toFixed(2),
       sell: (p.unitPriceCents / 100).toFixed(2), sellCur:b,
       /* ++++++ ATTACHMENTS ++++++ the text is prefilled; the picture is not
@@ -22895,9 +22924,13 @@ function wipeDevice(){
   /* ++++++ RESCUE ++++++ см. выше */
   /* ++++++ DIALOGS SAY ++++++ R25. Настройки остаются, и об этом сказано
      прежней фразой dlg.resetAlso — она не изменилась ни на букву. */
-  var body = '<div class="note info">' + tr('wipe.deviceKeep') + '</div>' +
+  /* Ветка по сборке — та же, что у ответа «backup.wipe» в складе FAQ, и
+     по той же причине: выход из Google бывает только в продуктовой. */
+  var body = '<div class="note info">' +
+      tr(modeIsProduct() ? 'wipe.deviceKeep' : 'wipe.deviceKeepGh') + '</div>' +
     wipeNumsHTML('') +
-    '<p>' + esc(tr('wipe.deviceSignout')) + ' ' + esc(tr('wipe.deviceBack')) + '</p>' +
+    '<p>' + esc(tr(modeIsProduct() ? 'wipe.deviceSignout' : 'wipe.deviceSignoutGh')) +
+      (modeIsProduct() ? ' ' + esc(tr('wipe.deviceBack')) : '') + '</p>' +
     '<p>' + tr('dlg.resetAlso') + '</p>' +
     wipeLossHTML() +
     (rescBlocked() ? '<p>' + tr('resc.eraseWarn') + '</p>' : '');
