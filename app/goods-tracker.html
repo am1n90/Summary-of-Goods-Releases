@@ -1993,6 +1993,21 @@ var STR = {
                           'people\'s balances and from the grand totals.</p>',
                       ru:'<p>Этот товар используется в выдачах: <b>{n}</b>, всего <b>{q}</b> шт.</p>' +
                           '<p>Эти выдачи тоже будут удалены, а суммы уйдут из балансов людей и из общих итогов.</p>' },
+/* ++++++ SILENT DROP ++++++ */
+'dlg.delAlsoTrashed':{ en:'<p>Another <b>{n}</b> for this one — in the Trash: this deletion leaves the Trash alone.</p>',
+                      ru:'<p>Ещё <b>{n}</b> по нему — в корзине: корзину это удаление не трогает.</p>' },
+/* Безличный порядок: числительное не тянет за собой глагол, поэтому
+   фраза верна и при «1 запись», и при «3 записи». Прежняя редакция
+   писалась под множественное и на единственном читалась «1 запись
+   ссылаются» — увидено живой проверкой, а не чтением. */
+'dlg.foreverOrphans':{ en:'<p>Going out of the Trash with them: <b>{n}</b>. Nothing there outlives what it points at.</p>',
+                      ru:'<p>Из корзины уйдёт вместе с ними <b>{n}</b>: без них эти записи не живут.</p>' },
+'sync.dropped':     { en:'The exchange brought a document that could not be read in full.',
+                      ru:'Обмен принёс документ, который прочитать целиком не удалось.' },
+/* Активных записей нет, а корзина не пуста. Отдельная фраза, а не
+   приписка к «нет выдач»: та говорила бы неправду первой строкой. */
+'dlg.delOnlyTrashed':{ en:'<p>No active records. <b>{n}</b> for this one — in the Trash: this deletion leaves the Trash alone.</p>',
+                      ru:'<p>Активных записей нет. <b>{n}</b> по нему — в корзине: корзину это удаление не трогает.</p>' },
 'dlg.delProdPlain': { en:'<p>This product has no transactions. It will simply be removed.</p>',
                       ru:'<p>По этому товару нет выдач. Он будет просто удалён.</p>' },
 'dlg.delPersonTitle':{ en:'Delete person "{name}"?', ru:'Удалить человека «{name}»?' },
@@ -2625,6 +2640,20 @@ var STR = {
                           'all that time. After that it leaves for good on its own, at the next start.',
                        ru:'Запись ждёт в корзине {n} и всё это время возвращается одним нажатием. ' +
                           'Потом уходит навсегда сама, при следующем запуске.' },
+/* ++++++ SILENT DROP ++++++ Пятый абзац. Прежние четыре обещали, что
+   запись «ждёт в корзине 30 дней», и это перестало быть полной правдой:
+   выдача уходит вместе со своим товаром, когда тот удаляют навсегда или
+   когда его срок вышел раньше. Молчать об этом нельзя — ложный ответ
+   хуже отсутствующего. */
+'faq.a.trashWhat5':  { en:'One record can leave earlier than its own {n}: a handout cannot ' +
+                          'outlive its product. Delete the product for good — or wait until its ' +
+                          'own time runs out — and the handout goes with it, because without the ' +
+                          'product it is not a record any more. The confirmation says how many ' +
+                          'such records go along.',
+                       ru:'Запись может уйти и раньше своих {n}: выдача не живёт без товара. ' +
+                          'Удалите товар навсегда — или дайте выйти его сроку — и выдача уйдёт ' +
+                          'вместе с ним, потому что без товара это уже не запись. Сколько таких ' +
+                          'записей уйдёт, окно говорит до нажатия.' },
 'faq.a.trashWhat4':  { en:'Photos and invoices are not touched while the record is in the trash — ' +
                           'they are still there when it comes back. Only «Delete for good» destroys ' +
                           'them, and that deletion travels to your other devices.',
@@ -5850,8 +5879,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.14.0';
-var APP_BUILD = '2026-09-10T05:59:31.579Z';
+var APP_VERSION = '1.15.0';
+var APP_BUILD = '2026-09-10T11:48:45.244Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -6973,6 +7002,73 @@ function trashCascade(doc, col, id){
     }
   }
   return out;
+}
+
+/** ++++++ SILENT DROP ++++++ Кто ОСИРОТЕЕТ, если удалить эти записи
+ *  навсегда, — то есть что уже лежит в корзине и ссылается на них.
+ *
+ *  ЗАЧЕМ ОТДЕЛЬНАЯ ФУНКЦИЯ, а не trashCascade(). Тот считается в момент
+ *  ПОМЕТКИ и намеренно пропускает то, что уже в корзине: у корзинной
+ *  записи своя группа, и утащить её в чужую значило бы решить за
+ *  владельца. Здесь вопрос другой и задаётся в другой момент — при
+ *  удалении НАВСЕГДА, — и пропуск корзинных здесь как раз и оставлял
+ *  висячую ссылку: выдача лежала в своей группе, её товар уносили из
+ *  чужой, надгробие получал только товар. Воспроизведено на живом
+ *  приложении 10.09.2026.
+ *
+ *  Берутся ТОЛЬКО корзинные. Активная запись на удаляемого родителя не
+ *  указывает: каскад пометки уносит активные в ту же группу, а вернуть
+ *  запись без родителя не даёт trashRestoreCheck. Если такая всё же
+ *  найдётся, документ сломан раньше и не этим удалением — трогать
+ *  активную запись владельца молча нельзя.
+ *
+ *  ЦИКЛ ПОВТОРЯЕТСЯ, пока находятся новые: выдача уносит свой возврат.
+ *  Сегодня хватило бы и одного прохода — TRASH_COLS перечисляет
+ *  родителей раньше детей, и это измерено, — но связь эта молчаливая:
+ *  переставь кто-нибудь returns выше transactions, и возврат перестал
+ *  бы уноситься, не дав ни одной красной проверки. Цикл делает порядок
+ *  константы неважным. Цена названа: собственной порчи у него нет,
+ *  и в guard-check.mjs это сказано вслух. */
+function trashOrphans(doc, ids){
+  var dead = {}, out = {}, i, j, k, list, r, added = true, orphan;
+  for (k in ids) if (trOwn(ids, k))
+    for (i = 0; i < ids[k].length; i++) dead[ids[k][i]] = true;
+
+  while (added){
+    added = false;
+    for (i = 0; i < TRASH_COLS.length; i++){
+      k = TRASH_COLS[i];
+      list = doc[k] || [];
+      for (j = 0; j < list.length; j++){
+        r = list[j];
+        if (!trashIs(r)) continue;            /* только корзинные */
+        if (trOwn(dead, r.id)) continue;      /* уже уносим */
+        orphan =
+          (k === 'transactions' && (trOwn(dead, r.productId) || trOwn(dead, r.personId))) ||
+          (k === 'payments' && trOwn(dead, r.personId)) ||
+          (k === 'returns' && trOwn(dead, r.txId));
+        if (!orphan) continue;
+        if (!trOwn(out, k)) out[k] = [];
+        out[k].push(r.id);
+        dead[r.id] = true;
+        added = true;
+      }
+    }
+  }
+  return out;
+}
+
+/** Слить сирот в план удаления. Возвращает, сколько добавлено. */
+function trashAddOrphans(doc, ids){
+  var extra = trashOrphans(doc, ids), i, k, n = 0;
+  for (i = 0; i < TRASH_COLS.length; i++){
+    k = TRASH_COLS[i];
+    if (!extra[k] || !extra[k].length) continue;
+    if (!trOwn(ids, k)) ids[k] = [];
+    ids[k] = ids[k].concat(extra[k]);
+    n += extra[k].length;
+  }
+  return n;
 }
 
 /** Сколько записей унесёт удаление, кроме самой выбранной — для строки
@@ -10774,21 +10870,10 @@ function loadFromStorage(){
   /* ++++++ COST HISTORY ++++++ документ принят — но принят не целиком.
      Настоящий текст ещё лежит в хранилище: его перезапишет первый же
      commit(), поэтому предложить его надо сейчас. */
-  var notes = [];
-  /* ++++++ PARTIAL IMPORT ++++++ первой: она о том, чего в документе больше
-     нет вообще, а не о том, что в нём пересчитано. */
-  if (res.dropped && res.dropped.length) notes.push(dropLine(res.dropped));
-  if (res.costGone && res.costGone.length) notes.push(costLine(res.costGone));
-  /* ++++++ COST RESCUE ++++++ в ту же полосу: документ принят не целиком,
-     и полоса у него ОДНА, сколько бы причин ни было. */
-  if (res.costFilled && res.costFilled.length) notes.push(costFixLine(res.costFilled, 'fixed'));
-  if (res.costCut && res.costCut.length) notes.push(costFixLine(res.costCut, 'cut'));
-  /* ++++++ VALIDATE READS ++++++ B1. В ту же полосу, что и остальные три:
-     документ, принятый не целиком, поднимает ОДНУ полосу, а не по одной на
-     причину. */
-  if (res.costDropped && res.costDropped.length) notes.push(costDropLine(res.costDropped));
-  /* ++++++ DATES SAID ++++++ вторая фраза в ту же полосу */
-  if (res.dateGuessed) notes.push(dateLine(res.dateGuessed));
+  /* ++++++ SILENT DROP ++++++ фразы собирает dropNotesOf() — она же
+     отвечает обмену. Порядок внутри прежний: первой идёт потеря записей
+     (о том, чего в документе больше нет вообще), затем пересчитанное. */
+  var notes = dropNotesOf(res);
   if (notes.length){
     loadNotes = notes;
     loadRaw = raw;
@@ -11018,6 +11103,35 @@ function loadNotePaint(){
   banner('load-notes', 'warn', loadNotes.join(' ') + ' ' + tr('load.stillOnDisk') +
     '<span class="rb"><button type="button" class="go" data-act="load-get">' +
     tr('load.get') + '</button></span>');
+}
+
+/** ++++++ SILENT DROP ++++++ То же, что loadNotePaint(), но для обмена.
+ *
+ *  ФРАЗЫ ТЕ ЖЕ И СОБИРАЕТ ИХ ОДНА ФУНКЦИЯ (dropNotesOf): два ответа на
+ *  вопрос «что сказать о принятом не целиком документе» разошлись бы при
+ *  первой же правке — довод тот же, что у expSplitCard() и
+ *  newsVersionsHTML().
+ *
+ *  ХВОСТ ДРУГОЙ, и это не мелочь. Загрузка обещает «в хранилище документ
+ *  пока лежит как был» и предлагает его скачать — после обмена это
+ *  неправда: save() уже прошёл. Поэтому здесь только сами потери. */
+function syncNotePaint(res){
+  var notes = dropNotesOf(res);
+  if (!notes.length) return;
+  banner('sync-notes', 'warn', tr('sync.dropped') + ' ' + notes.join(' '));
+}
+
+/** Что сказать о документе, принятом НЕ ЦЕЛИКОМ. Один сборщик на оба
+ *  входа — загрузку и обмен. */
+function dropNotesOf(res){
+  var notes = [];
+  if (res.dropped && res.dropped.length) notes.push(dropLine(res.dropped));
+  if (res.costGone && res.costGone.length) notes.push(costLine(res.costGone));
+  if (res.costFilled && res.costFilled.length) notes.push(costFixLine(res.costFilled, 'fixed'));
+  if (res.costCut && res.costCut.length) notes.push(costFixLine(res.costCut, 'cut'));
+  if (res.costDropped && res.costDropped.length) notes.push(costDropLine(res.costDropped));
+  if (res.dateGuessed) notes.push(dateLine(res.dateGuessed));
+  return notes;
 }
 
 /** Отдать документ, каким он лежит на диске. Именно на диске: `state` уже
@@ -14414,7 +14528,13 @@ var FAQ = [
   html: function(){
     var days = nq(TRASH_DAYS, 'day');
     return infoP(tr('faq.a.trashWhat1')) + infoP(tr('faq.a.trashWhat2')) +
-           infoP(tr('faq.a.trashWhat3', { n: days })) + infoP(tr('faq.a.trashWhat4'));
+           infoP(tr('faq.a.trashWhat3', { n: days })) +
+           /* ++++++ SILENT DROP ++++++ пятый абзац стоит СРАЗУ за
+              третьим, потому что уточняет именно его: «ждёт 30 дней»
+              верно не для всякой записи. Между утверждением и его
+              оговоркой не должно стоять чужого текста. */
+           infoP(tr('faq.a.trashWhat5', { n: days })) +
+           infoP(tr('faq.a.trashWhat4'));
   },
   see: ['trash', 'backup.wipe']
 },
@@ -20682,15 +20802,23 @@ function trashForeverAct(group){
     if (!own(ids, it.col)) ids[it.col] = [];
     ids[it.col].push(it.rec.id);
   }
-  trashForeverConfirm(tr('dlg.foreverTitle'), ids, g.n);
+  /* ++++++ SILENT DROP ++++++ вместе с группой уходят те корзинные
+     записи, что на неё ссылаются: иначе они остались бы висячими без
+     надгробия, и следующее чтение выбросило бы их молча. Число
+     называется в окне — решение владельца 10.09.2026. */
+  var orph = trashAddOrphans(state, ids);
+  trashForeverConfirm(tr('dlg.foreverTitle'), ids, g.n + orph, orph);
 }
 
 /** Общее подтверждение окончательного удаления — и для одной группы, и
  *  для второго шага очистки. */
-function trashForeverConfirm(title, ids, n){
+function trashForeverConfirm(title, ids, n, orph){
   var att = trashAttIds(state, ids);
   confirmBox(title,
     tr('dlg.foreverBody', { n: nq(n, 'record') }) +
+    /* ++++++ SILENT DROP ++++++ сироты названы ОТДЕЛЬНОЙ фразой: они
+       лежат в других группах корзины, и владелец их не выбирал. */
+    (orph ? tr('dlg.foreverOrphans', { n: nq(orph, 'record') }) : '') +
     (att.length ? tr('dlg.foreverFiles', { n: nq(att.length, 'file') }) : '') +
     tr('dlg.foreverNoUndo'),
     tr('dlg.foreverOk'), true).then(function(okd){
@@ -20719,6 +20847,11 @@ function trashPurgeBoot(loaded){
   if (!loaded) return 0;
   var plan = trashPurgeIds(state);
   if (!plan.n) return 0;
+  /* ++++++ SILENT DROP ++++++ у записи и её родителя сроки разные:
+     товар пролежал 30 дней, выдача — двадцать, и уборка унесла бы
+     только товар, оставив выдачу висячей. Спрашивать тут некого —
+     уборка идёт при запуске, — поэтому сироты уходят вместе. */
+  plan.n += trashAddOrphans(state, plan.ids);
   trashDropIds(plan.ids);
   return plan.n;
 }
@@ -22540,9 +22673,26 @@ function deleteProduct(id){
   if (!p) return;
   var linked = 0, lq = 0;
   actTx().forEach(function(t){ if (t.productId === id){ linked++; lq += t.qty; } });
+  /* ++++++ SILENT DROP ++++++ «выдач нет» считалось по АКТИВНЫМ, и окно
+     говорило неправду о документе: выдача могла лежать в корзине. Она
+     никуда не денется при пометке — у неё своя группа, — но знать о ней
+     владелец обязан до нажатия. Найдено воспроизведением 10.09.2026. */
+  var inTrash = 0;
+  (state.transactions || []).forEach(function(t){
+    if (t.productId === id && trashIs(t)) inTrash++;
+  });
+  /* Состояний ТРИ, а не два: «есть активные», «активных нет, но корзина
+     не пуста» и «нет ничего». Пока их было два, окно печатало «нет
+     выдач» и следующей строкой — «ещё 1 запись по нему в корзине»:
+     приписать правду к неправде значит оставить неправду первой
+     строкой, а читают её первой. */
+  var body;
+  if (linked) body = tr('dlg.delProdLinked', {n: linked, q: lq}) +
+    (inTrash ? tr('dlg.delAlsoTrashed', { n: nq(inTrash, 'record') }) : '');
+  else if (inTrash) body = tr('dlg.delOnlyTrashed', { n: nq(inTrash, 'record') });
+  else body = tr('dlg.delProdPlain');
   confirmBox(tr('dlg.delProdTitle', {name: esc(p.name)}),
-    (linked ? tr('dlg.delProdLinked', {n: linked, q: lq}) : tr('dlg.delProdPlain')) +
-      trashNoteHTML(),
+    body + trashNoteHTML(),
     tr('dlg.trashOk'), true).then(function(okd){
       if (!okd) return;
       /* ++++++ TRASH ++++++ файлы НЕ трогаются вовсе: запись остаётся в
@@ -22569,9 +22719,22 @@ function deletePerson(id){
   if (!p) return;
   var ltx = actTx().filter(function(t){ return t.personId === id; }).length;
   var lpay = actPay().filter(function(y){ return y.personId === id; }).length;
+  /* ++++++ SILENT DROP ++++++ та же неправда, что у товара. */
+  var inTrash = 0;
+  (state.transactions || []).forEach(function(t){
+    if (t.personId === id && trashIs(t)) inTrash++;
+  });
+  (state.payments || []).forEach(function(y){
+    if (y.personId === id && trashIs(y)) inTrash++;
+  });
+  /* те же три состояния, что у товара */
+  var body;
+  if (ltx + lpay) body = tr('dlg.delPersonLinked', {tx: ltx, pay: lpay}) +
+    (inTrash ? tr('dlg.delAlsoTrashed', { n: nq(inTrash, 'record') }) : '');
+  else if (inTrash) body = tr('dlg.delOnlyTrashed', { n: nq(inTrash, 'record') });
+  else body = tr('dlg.delPersonPlain');
   confirmBox(tr('dlg.delPersonTitle', {name: esc(p.name)}),
-    ((ltx + lpay) ? tr('dlg.delPersonLinked', {tx: ltx, pay: lpay}) : tr('dlg.delPersonPlain')) +
-      trashNoteHTML(),
+    body + trashNoteHTML(),
     tr('dlg.trashOk'), true).then(function(okd){
       if (!okd) return;
       trashMark(state, 'people', id, nowISO(), touch);
@@ -24192,6 +24355,12 @@ function syncEnv(){
       state = res.data;
       save();
       render();
+      /* ++++++ SILENT DROP ++++++ ПОСЛЕ render(): banner() пишет в
+         #alerts, и до первой отрисовки этого узла нет — то же правило,
+         по которому loadNotePaint() стоит в boot() после render().
+         Молчал ровно этот вход: загрузка о потерях говорит, импорт
+         говорит, обмен — нет; а на втором устройстве он единственный. */
+      syncNotePaint(res);
       done(null);
     },
     /* ++++++ TRANSPORT ++++++ куда возить — решает РЕЖИМ СБОРКИ, и
@@ -24971,7 +25140,12 @@ window.GoodsTracker = {
   /* ++++++ ERASE KEEPS ++++++ набор проверок спрашивает правило напрямую */
   eraseKeeps: eraseSettings,
   /* ++++++ PARTIAL IMPORT ++++++ набор проверок читает потери напрямую */
-  drop: { line: dropLine, list: dropList, SHOWN: DROP_SHOWN },
+  drop: { line: dropLine, list: dropList, SHOWN: DROP_SHOWN,
+          /* ++++++ SILENT DROP ++++++ набор спрашивает сборщик фраз,
+             полосу обмена и план сирот НАПРЯМУЮ: вызвать apply()
+             снаружи нечем, а проверять полосу по коду — значит
+             проверять текст, а не поведение. */
+          notes: dropNotesOf, syncPaint: syncNotePaint, orphans: trashOrphans },
   /* ++++++ TWO WINDOWS ++++++ набор проверок зовёт слушатель напрямую */
   xtab: { on: xtabOn, paint: xtabPaint, get stale(){ return xtabStale; } },
   /* ++++++ IMPORT SAYS ++++++ набор проверок спрашивает фразу напрямую */
