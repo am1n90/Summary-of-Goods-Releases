@@ -191,7 +191,7 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .row .v{flex:0 0 auto;text-align:right;font-weight:600;font-size:15px;white-space:nowrap}
   .row .v small,.row .v .conv{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
-  .row .chev{flex:0 0 auto;color:var(--muted);opacity:.6}
+  .row .chev,.ev .chev{flex:0 0 auto;color:var(--muted);opacity:.6}
   .row .v.pos{color:var(--good)} .row .v.neg{color:var(--bad)}
   /* ++++++ RATELOG FOLD ++++++ складной блок. Высота едет переходом, а не
      скриптом: переключение меняет ОДИН класс, и ни один узел не
@@ -687,6 +687,19 @@
   .ev .r{margin-left:auto;text-align:right;white-space:nowrap}
   .ev .r b{font-size:14.5px}
   .ev .r small,.ev .r .conv{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  /* ++++++ LEDGER DETAIL ++++++ строка «Истории» нажимается. Наложение —
+     пустая кнопка на всю строку, ПОД содержимым; содержимое пропускает
+     нажатие насквозь, а кнопки строки («Возврат», «Удалить») — нет.
+     Ни одного нового токена: наведение — тот же --surface-2, что у
+     button.row:hover; шеврон — то же правило, что у .row (выше). */
+  .ev{position:relative}
+  .ev .evhit{position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;width:100%;
+    margin:0;padding:0;border:0;border-radius:0;background:none;cursor:pointer}
+  .ev .evhit:hover{background:var(--surface-2)}
+  .ev .evhit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .ev .l,.ev .r,.ev .chev{position:relative;z-index:1;pointer-events:none}
+  .ev .evb{pointer-events:auto}
+  .ev .chev{order:1;align-self:center;display:flex}
 
   /* -------------------------------------------- 4. НАСЛЕДИЕ (не UI-мусор) --
      Эти классы печатает код, который переносится без изменений:
@@ -817,7 +830,13 @@
   .modal > .btns{flex:0 0 auto}
   /* min-height:0 — без него flex-элемент не даёт себя сжать ниже
      содержимого, и прокрутка не появляется вовсе. */
-  .modal > .body{flex:1 1 auto;min-height:0;overflow-y:auto;
+  /* ++++++ SHEET NO SIDEWAYS ++++++ overflow-x:hidden — не украшение.
+     overflow-y:auto делает и overflow-x «auto», а .modal .rows выпускает
+     строки на 16 px за края тела: слева это обрезалось молча, справа
+     давало горизонтальную полосу у фильтра статуса, выбора товара и окна
+     записи (с 2026-09-05, sheet-scroll). Широкое содержимое листа
+     прокручивается в СВОЕЙ обёртке (.remwrap), а не телом. */
+  .modal > .body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   /* Подзаголовок листа: стоит МЕЖДУ заголовком и телом, вне прокрутки.
      Тот же кегль и цвет, что у .modal .body, — это тот же текст, просто
@@ -3190,6 +3209,22 @@ var STR = {
 'led.payment':   { en:'Payment',                            ru:'Оплата' },
 'led.perUnit':   { en:'{v} per unit',                       ru:'{v} за шт' },
 'led.debtNow':   { en:'owed {sum}',                         ru:'долг {sum}' },
+/* ++++++ LEDGER DETAIL ++++++ окно записи из «Истории». Подписи, которые
+   уже есть (tx.qty, w.date, w.unitPrice, pay.amount, sum.costOfHandedOut,
+   earn.earned, led.retNote, led.payment, led.ret, w.close), берутся как
+   есть: одна подпись на одно понятие во всём приложении. */
+'led.d.open':     { en:'Record details',                     ru:'Подробности записи' },
+'led.d.take':     { en:'Handout',                            ru:'Выдача' },
+'led.d.sum':      { en:'Amount',                             ru:'Сумма' },
+'led.d.cur':      { en:'Entry currency',                     ru:'Валюта ввода' },
+'led.d.curNone':  { en:'not recorded',                       ru:'не записана' },
+'led.d.debtDown': { en:'Debt reduced by',                    ru:'Долг уменьшился на' },
+'led.d.parent':   { en:'From the handout',                   ru:'По выдаче' },
+'led.d.parentGone':{ en:'the handout could not be found',    ru:'выдача не найдена' },
+'led.d.noCost':   { en:'cannot be determined: this handout has no cost share',
+                    ru:'не удалось определить: у этой выдачи нет доли себестоимости' },
+'led.d.noEarn':   { en:'cannot be determined without the cost',
+                    ru:'не определить без себестоимости' },
 'led.creditNow': { en:'credit {sum}',                       ru:'переплата {sum}' },
 
 /* ---------------- выдачи и оплаты ---------------- */
@@ -3947,14 +3982,17 @@ var STR = {
                       'not tied to a month or a product. If a shipment was recorded ' +
                       'without a cost (an old backup, a repaired shipment log), its cost is zero ' +
                       'and earnings equal revenue: the program cannot tell &laquo;got it for ' +
-                      'free&raquo; from &laquo;cost not recorded&raquo;.',
+                      'free&raquo; from &laquo;cost not recorded&raquo;. The cost and ' +
+                      'earnings of a single handout are shown in its window &mdash; tap its ' +
+                      'line in the &laquo;History&raquo;.',
                    ru:'Выручка, себестоимость и заработок — за период с панели над карточкой; ' +
                       'выбранный там товар сужает и их. Оплачено, долг и получено — за всё ' +
                       'время: долг это состояние, а не событие месяца, а оплата не привязана ' +
                       'ни к месяцу, ни к товару. Если партия записана без стоимости ' +
                       '(старая копия, восстановленный журнал), её себестоимость ноль и ' +
                       'заработок равен выручке: отличить «получил бесплатно» от «стоимость не ' +
-                      'записана» программа не может.' },
+                      'записана» программа не может. Себестоимость и заработок одной ' +
+                      'выдачи видны в её окне — нажмите строку в «Истории».' },
 'rem.colDisc':   { en:'Discounts',                          ru:'Скидки' },
 'rem.colDiscSub':{ en:'all time',                           ru:'за всё время' },
 'err.expCat':    { en:'Choose a category.',                 ru:'Выберите категорию.' },
@@ -5879,8 +5917,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.15.0';
-var APP_BUILD = '2026-09-10T11:48:45.244Z';
+var APP_VERSION = '1.16.0';
+var APP_BUILD = '2026-09-10T17:31:00.841Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -18828,7 +18866,9 @@ function ledgerEvents(personId){
   });
   actPay().forEach(function(y){
     if (y.personId !== personId) return;
-    evts.push({ date:y.date, createdAt:y.createdAt, kind:'pay',
+    /* ++++++ LEDGER DETAIL ++++++ id оплаты — для окна записи; порядок ленты и
+       накопленный остаток его не читают */
+    evts.push({ date:y.date, createdAt:y.createdAt, kind:'pay', payId:y.id,
       text: tr('led.payment'), sub: y.note ? esc(y.note) : '', delta: -y.amountCents });
   });
   /* ++++++ GOODS RETURN ++++++ возврат — своя строка ленты: минус на цену
@@ -18870,6 +18910,171 @@ function ledgerEvents(personId){
   var run = 0;
   return evts.map(function(e){ run += e.delta; e.run = run; return e; });
 }
+/* ================================================================== *
+ * ++++++ LEDGER DETAIL ++++++  ОКНО ЗАПИСИ ИЗ «ИСТОРИИ»
+ *
+ * Строка «Истории» на карточке человека открывает маленькое окно с
+ * подробностями ОДНОЙ записи — выдачи, оплаты или возврата.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: ОКНО НИЧЕГО НЕ СЧИТАЕТ ЗАНОВО.
+ *   · себестоимость выдачи — ГОТОВАЯ доля ps[productId].cogsOf[txId],
+ *     которую разложил cogsAllocate() и читают computeReport(),
+ *     dcStats() и personEarn();
+ *   · сумма выдачи — qty × unitPriceCents, ТО ЖЕ выражение, что delta
+ *     строки ленты и выручка в personEarn();
+ *   · заработок — сумма минус себестоимость, та же разность, что
+ *     earnCents в personEarn(). Нет доли — нет и заработка: вычитать
+ *     из отсутствующего нечего;
+ *   · скидка — discTx(), та же, что метка в ленте и в списке выдач;
+ *   · уменьшение долга возвратом — qty × цена СВОЕЙ выдачи, то же, что
+ *     delta строки возврата.
+ *
+ * ВАЛЮТА — ОСНОВНАЯ, как у самой «Истории» («всё в AED»; решение
+ * владельца 2026-09-10). Сумма выдачи и оплаты печатается recV() — тем же
+ * вызовом, что в списках «Выдачи» и «Оплаты»: валюта ввода, под ней
+ * основная. Курсов окно не читает вовсе: хранимые суммы от курса не
+ * зависят, замороженные снимки не нужны.
+ *
+ * ОКНО НИЧЕГО НЕ ПИШЕТ: ни документа, ни ui, ни хранилища, и render() не
+ * зовёт — поэтому экран и прокрутка остаются ровно какими были. Окно —
+ * тот же dialog(), что у всех листов: крестик, нажатие мимо, Escape и
+ * «Назад» на Android закрывают его без единой новой строки.
+ * ================================================================== */
+
+/* открытое окно — одно за раз, та же идиома, что у infoOpen() */
+var ledNode = null;
+
+/** Значения одной записи — готовые, из тех же мест, что у соседних
+ *  экранов. Только чтение; ни одного округления и ни одного курса.
+ *
+ *  «Нельзя определить себестоимость» — ровно то условие, по которому
+ *  personEarn() считает noCostN: у выдачи нет доли в карте. Партия по
+ *  цене 0 сюда НЕ попадает — у неё доля есть, и она ноль: отличить
+ *  «бесплатно» от «не записано» по данным нельзя, и справка «Заработок»
+ *  говорит это вслух. Несколько партий доле не мешают: cogsAllocate()
+ *  приписывает её при любом их числе. */
+function ledDetail(kind, id, ps){
+  var t, p, s, y, x, has, total, cost;
+  if (kind === 'take'){
+    t = txById(id);
+    if (!t) return null;
+    p = productById(t.productId);
+    s = own(ps, t.productId) ? ps[t.productId] : null;
+    has = !!(s && own(s.cogsOf, t.id));         /* own(): id вроде «constructor» (R20) */
+    total = t.qty * t.unitPriceCents;
+    cost = has ? s.cogsOf[t.id] : null;
+    return { kind:'take', rec:t, name: p ? p.name : '', qty:t.qty, date:t.date,
+             unitCents:t.unitPriceCents, totalCents:total, disc: discTx(t),
+             costCents:cost, earnCents: cost === null ? null : total - cost,
+             retN: retQtyOf(t.id) };
+  }
+  if (kind === 'pay'){
+    y = payById(id);
+    if (!y) return null;
+    return { kind:'pay', rec:y, amountCents:y.amountCents, date:y.date, entry: recEntry(y) };
+  }
+  if (kind === 'ret'){
+    x = retById(id);
+    if (!x) return null;
+    t = txById(x.txId);
+    p = t ? productById(t.productId) : null;
+    return { kind:'ret', rec:x, name: p ? p.name : '', qty:x.qty, date:x.date,
+             downCents: t ? x.qty * t.unitPriceCents : null,
+             parent: t ? { date:t.date, qty:t.qty } : null };
+  }
+  return null;
+}
+
+/** Строки окна. ТОЛЬКО форматирование: значения приходят готовыми из
+ *  ledDetail(), деньги печатаются теми же вызовами, что на соседних
+ *  экранах — recV() как в «Выдачах» и «Оплатах», baseOne() и
+ *  discMarkHTML(…, baseOne) как в самой «Истории».
+ *
+ *  Где цифры нет, стоит прочерк, а ПРИЧИНА сказана словами второй
+ *  подписью: ноль читается как «стоило ничего», а это неправда.
+ *  Вторая подпись переносится (область 26), поэтому на 320 px фраза
+ *  видна целиком, а ячейка суммы не распирается. */
+function ledSheetHTML(d){
+  var pcs = function(n){ return units(n) + ' ' + tr('w.pcs'); };
+  var h = '';
+  if (d.kind === 'take'){
+    h += row({ cls:'wrap', k: tr('tx.qty'), v: pcs(d.qty),
+               sub: d.retN > 0 ? tr('led.retNote', {n: units(d.retN)}) : '' });
+    h += row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
+    h += row({ cls:'wrap', k: tr('w.unitPrice'), v: baseOne(d.unitCents),
+               sub2: discMarkHTML(d.disc, baseOne) });
+    h += row({ cls:'wrap', k: tr('led.d.sum'), v: recV(d.totalCents, d.rec, d.qty) });
+    h += d.costCents === null
+      ? row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: '—', sub2: tr('led.d.noCost') })
+      : row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: baseOne(d.costCents),
+              sub: tr('sum.atAvgCost') });
+    h += d.earnCents === null
+      ? row({ cls:'wrap', k: tr('earn.earned'), v: '—', sub2: tr('led.d.noEarn') })
+      : row({ cls:'wrap', k: tr('earn.earned'), v: baseOne(d.earnCents),
+              vcls: d.earnCents < 0 ? 'neg' : '' });
+  } else if (d.kind === 'pay'){
+    h += row({ cls:'wrap', k: tr('pay.amount'), v: recV(d.amountCents, d.rec) });
+    h += row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
+    h += row({ cls:'wrap', k: tr('led.d.cur'),
+               v: d.entry ? esc(d.entry.cur) : '<span class="muted">' + tr('led.d.curNone') + '</span>' });
+  } else {
+    h += row({ cls:'wrap', k: tr('tx.qty'), v: pcs(d.qty) });
+    h += row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
+    h += row({ cls:'wrap', k: tr('led.d.debtDown'),
+               v: d.downCents === null ? '—' : baseOne(d.downCents) });
+    h += d.parent
+      ? row({ cls:'wrap', k: tr('led.d.parent'), v: fmtDateLong(d.parent.date) + ' · ' + pcs(d.parent.qty) })
+      : row({ cls:'wrap', k: tr('led.d.parent'), v: '—', sub2: tr('led.d.parentGone') });
+  }
+  return h;
+}
+
+/** Открыть окно записи. Единственный вход; ветка data-act="led-open"
+ *  состоит из одного её вызова. arg — «take:<id>», «pay:<id>» или
+ *  «ret:<id>»; id режется по ПЕРВОМУ двоеточию, в роде его нет.
+ *
+ *  Одно окно за раз, и прежнее закрывается ПРАВИЛЬНО — своим done(), а
+ *  не снятием узла: снятый узел оставил бы за собой обработчик Escape.
+ *  Фокус возвращается на нажатую строку БЕЗ прокрутки: прокрутку
+ *  возвращает sheetLock(), и спорить с ним нельзя. */
+function ledOpen(arg){
+  var s = String(arg || ''), i = s.indexOf(':');
+  if (i < 1) return;
+  var d = ledDetail(s.slice(0, i), s.slice(i + 1), productStats());
+  if (!d) return;                         /* записи нет — молчим, а не рисуем пустое */
+  if (ledNode && ledNode.__done) ledNode.__done(null);
+  var from = document.activeElement, mine = null;
+  var title = d.kind === 'take' ? tr('led.d.take') : (d.kind === 'pay' ? tr('led.payment') : tr('led.ret'));
+  dialog({ title: title, sub: d.kind === 'pay' ? '' : esc(d.name || '—'),
+           html: '<div class="rows">' + ledSheetHTML(d) + '</div>',
+           closeX: true, buttons: [], cancelLabel: tr('w.close') })
+    .then(function(){
+      /* нас уже сменило другое окно — фокус ему, не нам */
+      if (ledNode !== mine) return;
+      ledNode = null;
+      if (from && from.focus && document.body.contains(from)) from.focus({ preventScroll: true });
+    });
+  /* dialog() добавляет узел синхронно — тот же приём, что у infoOpen() */
+  mine = $('modalRoot').lastChild;
+  ledNode = mine;
+}
+
+/** Нажимаемость строки «Истории»: пустая кнопка-наложение и шеврон.
+ *
+ *  Кнопка — СОСЕД содержимого строки, а не его родитель: внутри .ev живут
+ *  кнопки «Возврат» и «Удалить», а кнопка в кнопке недопустима (область
+ *  25). Наложение лежит ПОД содержимым, содержимое пропускает нажатие
+ *  насквозь, а кнопки строки — нет: они остаются своими. Текста у
+ *  наложения нет, поэтому innerText строки прежний до символа.
+ *  Настоящая кнопка даёт фокус и Enter без нового обработчика клавиш. */
+function ledTapHTML(e){
+  var id = e.kind === 'take' ? e.txId : (e.kind === 'ret' ? e.retId : e.payId);
+  if (!id) return '';
+  return '<button type="button" class="evhit" data-act="led-open" data-arg="' +
+    esc(e.kind + ':' + id) + '" aria-label="' + esc(tr('led.d.open')) + '"></button>' +
+    '<span class="chev" aria-hidden="true">' + chev() + '</span>';
+}
+/* ++++++ LEDGER DETAIL END ++++++ */
 /* ++++++ GOODS RETURN ++++++ форма живёт в ленте карточки человека, под
  * своей выдачей. Значения — в ui.form.ret (область 6: форма живёт в ui, не
  * в DOM), открытая выдача — в ui.retFor; ui не сохраняется и не
@@ -19013,7 +19218,9 @@ function viewPersonCard(){
       act = '<div class="evb"><button type="button" class="chipf" data-act="ret-delete" data-arg="' +
         esc(e.retId) + '">' + tr('w.delete') + '</button></div>';
     }
-    rows += '<div class="ev"><div class="l">' +
+    /* ++++++ LEDGER DETAIL ++++++ наложение и шеврон — СОСЕДИ содержимого строки,
+       см. ledTapHTML() */
+    rows += '<div class="ev">' + ledTapHTML(e) + '<div class="l">' +
       '<span class="tag ' + e.kind + '">' + tr(tag) + '</span>' +
       '<div class="txt">' + e.text + '</div>' +
       '<div class="d">' + fmtDateLong(e.date) + (e.sub ? ' · ' + e.sub : '') + extra + '</div>' +
@@ -23425,6 +23632,8 @@ function handleAct(act, arg, e, srcEl){
      копирования лежит РЯДОМ со строкой, а не внутри неё, и закрывающий
      closest('[data-act]') физически не может подняться от неё к
      открытию карточки. */
+  /* ++++++ LEDGER DETAIL ++++++ окно записи из «Истории»: только чтение */
+  if (act === 'led-open'){ ledOpen(arg); return; }
   if (act === 'rmd-copy'){ if (e && e.stopPropagation) e.stopPropagation(); rmdCopy(arg); return; }
   if (act === 'fltset'){
     var fp = arg.split(':');
