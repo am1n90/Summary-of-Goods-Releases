@@ -2815,6 +2815,24 @@ var STR = {
                            ru:'Время считается с момента, когда программа ушла с экрана: свернули окно, ' +
                               'заблокировали Windows или отправили компьютер в сон. После перезапуска ' +
                               'программа спрашивает всегда.' },
+'lock.gone':      { en:'The device lock has been removed, so there is nothing left to confirm it is you — ' +
+                       'as soon as you leave the app, it will not let you back in. Switch the lock off now, ' +
+                       'while you are still in, or restore the device lock.',
+                    ru:'Блокировку устройства сняли — подтвердить, что это вы, теперь нечем, и как только ' +
+                       'вы уйдёте из программы, она вас не впустит. Выключите замок сейчас, пока вы внутри, ' +
+                       'или верните блокировку устройства.' },
+'lock.gone.off':  { en:'Switch the lock off now',            ru:'Выключить замок сейчас' },
+'lock.goneBar':   { en:'The device lock is gone — as soon as you leave the app, the sign-in lock will not ' +
+                       'let you back in. Open «Sign-in lock» to switch it off, or restore the device lock.',
+                    ru:'Блокировка устройства пропала — как только вы уйдёте из программы, замок вас не ' +
+                       'впустит. Откройте «Вход в программу» и выключите его или верните блокировку ' +
+                       'устройства.' },
+'lock.goneOld':   { en:'The device lock has been removed — after a restart the sign-in lock will not let ' +
+                       'you in. Restore the device lock: switching the lock off without a check needs the ' +
+                       'new version of the app itself.',
+                    ru:'Блокировку устройства сняли — после перезапуска замок вас не впустит. Верните ' +
+                       'блокировку устройства: выключить замок без проверки умеет только новая версия ' +
+                       'самой программы.' },
 'lock.browser':   { en:'The lock works in the installed app. A page opened in a browser has no way to ' +
                        'ask the device.',
                     ru:'Замок работает в установленной программе. Страница, открытая в браузере, ' +
@@ -2888,12 +2906,27 @@ var STR = {
                     ru:'Обмен с другими устройствами при запуске идёт сразу, ещё до входа: когда вы ' +
                        'войдёте, данные уже будут свежими. Пока вход не подтверждён, ничего из них не ' +
                        'показывается.' },
-'lock.info5':     { en:'Switching the lock off, or changing how soon it asks again, needs a check too. ' +
-                       'Switching it off deletes nothing — not the records, not the settings, not the ' +
-                       'Google sign-in.',
+'lock.info5':     { en:'Switching the lock off, or changing how soon it asks again, needs a check too — ' +
+                       'with one exception, described below. Switching it off deletes nothing — not the ' +
+                       'records, not the settings, not the Google sign-in.',
                     ru:'Выключить замок или сменить, как скоро он спрашивает снова, тоже можно только ' +
-                       'после проверки. Выключение ничего не удаляет — ни записей, ни настроек, ни входа ' +
-                       'в Google.' },
+                       'после проверки — кроме одного случая, о нём ниже. Выключение ничего не удаляет — ' +
+                       'ни записей, ни настроек, ни входа в Google.' },
+'lock.info6':     { en:'<b>If the device lock is removed</b> after the app’s lock was switched on, there is ' +
+                       'nothing left to confirm it is you. While the app is open it says so, and in «Sign-in ' +
+                       'lock» the lock can be switched off without a check: you have already passed this ' +
+                       'session. Once you leave the app — minimise it, the screen goes off — or restart it, ' +
+                       'that is no longer possible: without a device lock the «ask again» delay stops ' +
+                       'holding, because anyone could open the phone itself. There is no switch-off button ' +
+                       'on the lock screen, on purpose: restore the device lock and the app opens after the ' +
+                       'check.',
+                    ru:'<b>Если блокировку устройства сняли</b> уже после включения замка, подтвердить, ' +
+                       'что это вы, становится нечем. Пока программа открыта, она об этом скажет, и в ' +
+                       '«Вход в программу» замок можно выключить без проверки: этот сеанс вы уже прошли. ' +
+                       'Стоит уйти из программы — свернуть её, погасить экран — или перезапустить её, и ' +
+                       'так уже нельзя: без блокировки устройства задержка «спрашивать снова» не держит, ' +
+                       'ведь сам телефон тогда откроет любой. На экране замка кнопки «выключить» нет ' +
+                       'намеренно: верните блокировку устройства, и программа откроется после проверки.' },
 'acct.look':     { en:'Appearance',                         ru:'Внешний вид' },
 'acct.lookSub':  { en:'language and theme',                 ru:'язык и тема' },
 'acct.aboutSub': { en:'version and update',                 ru:'версия и обновление' },
@@ -6062,8 +6095,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.17.0';
-var APP_BUILD = '2026-09-11T06:44:00.073Z';
+var APP_VERSION = '1.18.0';
+var APP_BUILD = '2026-09-11T21:43:06.683Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -14743,7 +14776,7 @@ var FAQ = [
   q: function(){ return tr('faq.q.lock'); },
   title: function(){ return tr('acct.lock'); },
   html: function(){ return infoP(tr('lock.info1')) + infoP(tr('lock.info2')) + infoP(tr('lock.info3')) +
-                           infoP(tr('lock.info4')) + infoP(tr('lock.info5')); },
+                           infoP(tr('lock.info4')) + infoP(tr('lock.info5')) + infoP(tr('lock.info6')); },
   see: ['look', 'sync.what']
 },
 {
@@ -23715,6 +23748,7 @@ function handleAct(act, arg, e, srcEl){
   /* ++++++ APP LOCK ++++++ вход, настройки устройства, раздел, вкл/выкл, задержка */
   if (act === 'lock-enter'){ lockEnter(); return; }
   if (act === 'lock-settings'){ lockOpenSettings(); return; }
+  if (act === 'lock-force-off'){ lockForceOff(); return; }
   if (act === 'lock-open'){ lockCan = null; lockSetErr = ''; navGoAcct('lock'); return; }
   if (act === 'lock-on'){
     var lkI = lockInfo();
@@ -25478,7 +25512,11 @@ function lockEnter(){
    поздно (запереть и сразу спросить систему). */
 window.GTLock = function(st){
   if (st === 'cover'){ lockCoverOn = true; lockPaint(); return 'ok'; }
-  if (st === 'uncover'){ lockCoverOn = false; lockPaint(); return 'ok'; }
+  /* Снятие заслонки — и вопрос о пропавшей блокировке. На Android оболочка
+     кладёт заслонку при каждом уходе, и при возврате visibilitychange
+     приходит РАНЬШЕ, чем она снята: lockGoneWatch() видел lockShut() и
+     молчал, а полоса не появлялась вовсе (найдено на телефоне 12.09.2026). */
+  if (st === 'uncover'){ lockCoverOn = false; lockPaint(); if (lockSt === '') lockGoneWatch(); return 'ok'; }
   if (st === 'locked'){
     lockCoverOn = false;
     if (lockSt === '') { lockSt = 'locked'; lockErr = ''; }
@@ -25503,11 +25541,12 @@ function lockBoot(){
     if (document.visibilityState !== 'visible') return;
     if (lockSt === 'locked' && (lockErr === 'none' || lockErr === 'policy')) lockEnter();
     if (lockCan !== null && ui.tab === 'acct' && ui.acct === 'lock'){ lockCan = null; render(); }
+    lockGoneWatch();
   });
 }
 /* ПОСЛЕ первой отрисовки: окно системы встаёт поверх уже нарисованного
    экрана замка, а не поверх пустоты. */
-function lockBootAfter(){ if (lockSt === 'locked') lockEnter(); }
+function lockBootAfter(){ if (lockSt === 'locked') lockEnter(); else lockGoneWatch(); }
 
 function lockOpenSettings(){
   var br = lockBr();
@@ -25551,6 +25590,23 @@ function acctLock(){
     '</div></div></section>';
   if (lockCan === null) lockCanAsk();
   var can = lockCan ? lockCan.can : '?';
+  /* ЛОВУШКА: замок включён, а система больше не может проверить —
+     блокировку устройства сняли ПОСЛЕ включения (решение владельца
+     11.09.2026). Человек сейчас ВНУТРИ: этот экран за воротами, вор туда
+     не попадёт, потому что этот сеанс он не проходил. Поэтому даём
+     выключить замок БЕЗ проверки — проверять нечем, — либо вернуть
+     блокировку. На экране замка после перезапуска такой кнопки НЕТ.
+     Кнопка — только если оболочка это УМЕЕТ (lockOffCan): ядро обновляется
+     само, оболочка нет, и в старой кнопка обещала бы то, чего не будет. */
+  if (i.on && can === 'none'){
+    var offOk = lockOffCan();
+    return '<section class="card"><div class="t">' + tr('lock.set.title') + '</div><div class="b">' +
+           '<div class="note warn">' + tr(offOk ? 'lock.gone' : 'lock.goneOld') + '</div>' +
+           (lockSetErr ? '<div class="note err">' + tr('lock.e.' + lockSetErr) + '</div>' : '') +
+           (offOk ? btn(tr('lock.gone.off'), 'lock-force-off', 'block') : '') +
+           btn(tr('lock.settings'), 'lock-settings', 'sec block') +
+           '</div></section>';
+  }
   /* Включить можно, только когда система умеет проверять (решение
      владельца 11.09.2026): замок программы не бывает крепче замка
      устройства, а своего пароля у нас нет. */
@@ -25559,7 +25615,9 @@ function acctLock(){
        '<div class="seg">' +
          lockSegBtn('lock-on', '0', !i.on, tr('lock.set.off'), lockSetBusy) +
          lockSegBtn('lock-on', '1', i.on, tr('lock.set.on'), lockSetBusy || !ready) +
-       '</div><div class="lockhint">' + tr((i.on ? 'lock.set.onNote.' : 'lock.set.offNote.') + lockPlat()) + '</div>';
+       '</div><div class="lockhint">' +
+       tr(lockPlat() === 'and' ? (i.on ? 'lock.set.onNote.and' : 'lock.set.offNote.and')
+                               : (i.on ? 'lock.set.onNote.win' : 'lock.set.offNote.win')) + '</div>';
   if (!i.on && can !== 'ok' && can !== '?')
     h += '<div class="note err">' + tr('lock.e.' + lockErrKey(can)) + '</div>' +
          btn(tr('lock.settings'), 'lock-settings', 'sec block');
@@ -25598,6 +25656,54 @@ function lockSetDo(on, delay, what){
   };
   if (!p || typeof p.then !== 'function'){ done(null); return; }
   p.then(done, function(){ done(null); });
+}
+
+/* Выход из ловушки «блокировку устройства сняли»: выключить замок БЕЗ
+   проверки. Оболочка соглашается ТОЛЬКО когда проверять и правда нечем
+   (lockCan==='none'), а зовём это лишь из раздела за воротами, куда вор
+   не попадёт. Если система вдруг снова умеет проверять ('needcheck') —
+   возвращаем обычный путь с проверкой. */
+function lockOffCan(){ var br = lockBr(); return !!br && typeof br.lockOff === 'function'; }
+function lockForceOff(){
+  var br = lockBr();
+  if (lockShut() || !lockOffCan() || lockSetBusy) return;
+  lockSetBusy = true; lockSetErr = '';
+  render();
+  var p = null;
+  try { p = br.lockOff(); } catch(e){ p = null; }
+  var done = function(r){
+    lockSetBusy = false;
+    if (r && r.ok){ lockSetErr = ''; lockCan = null; removeBanner('lockgone'); toast(tr('lock.offDone'), 'ok'); }
+    else if (r && r.err === 'needcheck'){ lockCan = null; }
+    else lockSetErr = lockErrKey(r && r.err);
+    render();
+  };
+  if (!p || typeof p.then !== 'function'){ done(null); return; }
+  p.then(done, function(){ done(null); });
+}
+
+/* ПРЕДУПРЕЖДЕНИЕ В СЕАНСЕ: если, пока программа открыта, блокировку
+   устройства убрали, после перезапуска замок не впустит. Говорим сразу и
+   ведём в раздел, где его можно выключить. Спрашиваем ТОЛЬКО в сеансе за
+   воротами (lockShut() === false): на экране замка вор этого не увидит. */
+function lockGoneWatch(){
+  if (lockShut()) return;
+  var i = lockInfo();
+  if (!i || !i.on){ removeBanner('lockgone'); return; }
+  var br = lockBr();
+  if (!br || typeof br.lockCan !== 'function') return;
+  var p = null;
+  try { p = br.lockCan(); } catch(e){ p = null; }
+  if (!p || typeof p.then !== 'function') return;
+  p.then(function(r){
+    if (r && r.can === 'none' && !lockShut())
+      /* Кнопка — своей строкой, как у полос обновления (.rb/.go): в строке
+         текста она прилипала к последнему слову (замечание владельца 12.09). */
+      banner('lockgone', 'warn', tr(lockOffCan() ? 'lock.goneBar' : 'lock.goneOld') +
+             '<span class="rb"><button type="button" class="go" data-act="lock-open">' +
+             tr('acct.lock') + '</button></span>');
+    else removeBanner('lockgone');
+  }, function(){});
 }
 /* ++++++ APP LOCK END ++++++ */
 
