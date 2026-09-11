@@ -1342,6 +1342,24 @@
   @media (max-width:359px){
     .rmdact{padding-left:calc(var(--pad) + 6px)}
   }
+  /* ++++++ APP LOCK ++++++ ворота: один класс прячет ВСЕ контейнеры,
+     в которые рисует программа, — и главный экран, и полосы, и окна.
+     display:none, а не прозрачность: скрытого нет и для экранного
+     диктора. Экран замка — отдельный узел поверх всего. */
+  html.gt-locked #rail,html.gt-locked #bar,html.gt-locked #alerts,
+  html.gt-locked #app,html.gt-locked #modalRoot{display:none!important}
+  #lockRoot{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);padding:24px;overflow:auto}
+  .lockbox{width:100%;max-width:380px;text-align:center}
+  .lockico{width:64px;height:64px;margin:0 auto 14px;color:var(--accent)}
+  .lockico svg{width:64px;height:64px}
+  .lockbox h1{font-size:21px;line-height:1.25;margin:0 0 8px;color:var(--ink)}
+  .locksub{margin:0 0 18px;color:var(--muted);font-size:14.5px;line-height:1.45}
+  .lockbox .note{text-align:left}
+  .lockbtns{display:flex;flex-direction:column;gap:10px}
+  .lockhint{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.45}
+  .card .b .seg+.lockhint{margin-top:10px}
+  .card .b .lockhint+.note,.card .b .note+.btn{margin-top:12px}
 </style>
 </head>
 <body>
@@ -2749,6 +2767,133 @@ var STR = {
                    ru:'скачать, восстановить, стереть данные' },
 'acct.trashSub': { en:'deleted records are kept for 30 days',
                    ru:'удалённые записи хранятся 30 дней' },
+/* ++++++ APP LOCK ++++++ замок на вход */
+'acct.lock':      { en:'Sign-in lock',                       ru:'Вход в программу' },
+'lock.rowOff':    { en:'off — opens without a check',        ru:'выключен — открывается без проверки' },
+'lock.rowOn':     { en:'on · asks again {d}',                ru:'включён · спрашивает снова {d}' },
+'lock.rowNone':   { en:'in the installed app only',          ru:'только в установленной программе' },
+'lock.d.now':     { en:'at once',                            ru:'сразу' },
+'lock.d.1m':      { en:'after a minute',                     ru:'через минуту' },
+'lock.d.5m':      { en:'after five minutes',                 ru:'через пять минут' },
+'lock.d.1h':      { en:'after an hour',                      ru:'через час' },
+'lock.s.now':     { en:'At once',                            ru:'Сразу' },
+'lock.s.1m':      { en:'1 min',                              ru:'1 мин' },
+'lock.s.5m':      { en:'5 min',                              ru:'5 мин' },
+'lock.s.1h':      { en:'1 hour',                             ru:'1 час' },
+'lock.set.title': { en:'Lock',                               ru:'Замок' },
+'lock.set.off':   { en:'Off',                                ru:'Выключен' },
+'lock.set.on':    { en:'On',                                 ru:'Включён' },
+'lock.set.offNote.and':{ en:'The app opens without a check. Switch the lock on and it will ask for your ' +
+                            'fingerprint, face or phone PIN — the check is done by the phone itself.',
+                         ru:'Программа открывается без проверки. Включите замок — и она будет спрашивать ' +
+                            'отпечаток, лицо или PIN телефона. Проверяет сам телефон.' },
+'lock.set.offNote.win':{ en:'The app opens without a check. Switch the lock on and it will ask for your ' +
+                            'PIN, fingerprint or face through Windows Hello — the check is done by the ' +
+                            'computer itself.',
+                         ru:'Программа открывается без проверки. Включите замок — и она будет спрашивать ' +
+                            'PIN, отпечаток или лицо через Windows Hello. Проверяет сам компьютер.' },
+'lock.set.onNote.and':{ en:'The app asks for your fingerprint, face or phone PIN when it starts and when ' +
+                           'you come back to it. Switching the lock off or changing the delay also needs ' +
+                           'a check.',
+                        ru:'Программа спрашивает отпечаток, лицо или PIN телефона при запуске и при ' +
+                           'возвращении. Выключить замок или сменить задержку тоже можно только после ' +
+                           'проверки.' },
+'lock.set.onNote.win':{ en:'The app asks for your PIN, fingerprint or face (Windows Hello) when it starts ' +
+                           'and when you come back to it. Switching the lock off or changing the delay ' +
+                           'also needs a check.',
+                        ru:'Программа спрашивает PIN, отпечаток или лицо (Windows Hello) при запуске и при ' +
+                           'возвращении. Выключить замок или сменить задержку тоже можно только после ' +
+                           'проверки.' },
+'lock.set.delay': { en:'Ask again',                          ru:'Спрашивать снова' },
+'lock.set.delayNote.and':{ en:'Counted from the moment the app left the screen: you minimised it or the ' +
+                              'screen went off. After a restart the app always asks.',
+                           ru:'Время считается с момента, когда программа ушла с экрана: свернули её или ' +
+                              'погас экран. После перезапуска программа спрашивает всегда.' },
+'lock.set.delayNote.win':{ en:'Counted from the moment the app left the screen: the window minimised, ' +
+                              'Windows locked or the computer went to sleep. After a restart the app ' +
+                              'always asks.',
+                           ru:'Время считается с момента, когда программа ушла с экрана: свернули окно, ' +
+                              'заблокировали Windows или отправили компьютер в сон. После перезапуска ' +
+                              'программа спрашивает всегда.' },
+'lock.browser':   { en:'The lock works in the installed app. A page opened in a browser has no way to ' +
+                       'ask the device.',
+                    ru:'Замок работает в установленной программе. Страница, открытая в браузере, ' +
+                       'спросить устройство не может.' },
+'lock.oldShell':  { en:'The lock needs a newer version of the app itself: install the new installer (on ' +
+                       'the phone — the new APK). Nothing is lost.',
+                    ru:'Для замка нужна новая версия самой программы: поставьте новый установщик (на ' +
+                       'телефоне — новый APK). Данные при этом не теряются.' },
+'lock.sub':       { en:'Confirm it is you: fingerprint, face or device PIN.',
+                    ru:'Подтвердите, что это вы: отпечаток, лицо или PIN устройства.' },
+'lock.enter':     { en:'Unlock',                             ru:'Войти' },
+'lock.checking':  { en:'Waiting for the device…',            ru:'Ждём ответа устройства…' },
+'lock.settings':  { en:'Open device settings',               ru:'Открыть настройки устройства' },
+'lock.reason':    { en:'Confirm it is you',                  ru:'Подтвердите, что это вы' },
+'lock.e.cancel':  { en:'The check was cancelled. Tap «Unlock» to try again.',
+                    ru:'Проверка отменена. Нажмите «Войти», чтобы попробовать ещё раз.' },
+'lock.e.none':    { en:'This device has no lock set up — no PIN, fingerprint or face — so the system ' +
+                       'cannot confirm it is you. Set one up in the device settings and come back: the ' +
+                       'app opens after the check. Your records are intact.',
+                    ru:'На этом устройстве не настроена блокировка — ни PIN, ни отпечатка, ни лица, — ' +
+                       'поэтому система не может подтвердить, что это вы. Задайте её в настройках ' +
+                       'устройства и вернитесь: программа откроется после проверки. Записи целы.' },
+'lock.e.policy':  { en:'The organisation that manages this computer has switched this check off, so the ' +
+                       'system cannot confirm it is you. Ask whoever manages the computer, or look at the ' +
+                       'sign-in options. Your records are intact.',
+                    ru:'Эту проверку отключила организация, которая управляет компьютером, поэтому ' +
+                       'система не может подтвердить, что это вы. Обратитесь к тому, кто управляет ' +
+                       'компьютером, или посмотрите параметры входа. Записи целы.' },
+'lock.e.busy':    { en:'The sensor is not available right now. Try again, or use the device PIN in the ' +
+                       'same window.',
+                    ru:'Датчик сейчас недоступен. Попробуйте ещё раз или введите PIN устройства в том же ' +
+                       'окне.' },
+'lock.e.lockout': { en:'Too many unsuccessful attempts: the system has paused the sensor. Use the device ' +
+                       'PIN in the same window, or wait a little.',
+                    ru:'Слишком много неудачных попыток: система временно отключила датчик. Введите PIN ' +
+                       'устройства в том же окне или немного подождите.' },
+'lock.e.fail':    { en:'The system could not complete the check. Try again; if it happens again, look at ' +
+                       'the device settings.',
+                    ru:'Система не смогла выполнить проверку. Попробуйте ещё раз; если повторится — ' +
+                       'загляните в настройки устройства.' },
+'lock.onDone':    { en:'Lock is on',                         ru:'Замок включён' },
+'lock.offDone':   { en:'Lock is off — nothing was lost',     ru:'Замок выключен — ничего не потеряно' },
+'lock.delayDone': { en:'Saved',                              ru:'Сохранено' },
+'faq.q.lock':     { en:'What does the sign-in lock protect against, and what not?',
+                    ru:'От чего защищает замок на вход, а от чего нет?' },
+'lock.info1':     { en:'The lock keeps out whoever picks up your phone or sits down at your computer: ' +
+                       'without your fingerprint, face or device PIN the records do not open. The check is ' +
+                       'done by the device itself — the app never sees your fingerprint or face and keeps ' +
+                       'no password of its own.',
+                    ru:'Замок не пускает в программу того, кто взял ваш телефон или сел за компьютер: без ' +
+                       'вашего отпечатка, лица или PIN устройства записи не откроются. Проверяет само ' +
+                       'устройство — программа не видит ни отпечатка, ни лица и своего пароля не хранит.' },
+'lock.info2':     { en:'It is <b>a lock on the door, not a safe</b>: the records on the device are not ' +
+                       'encrypted. Someone who takes the phone apart or gets at the computer’s files can ' +
+                       'read them around the lock. That is why the app’s lock works on top of the ' +
+                       'device’s own lock, not instead of it — and cannot be switched on while the device ' +
+                       'has no lock set up.',
+                    ru:'Это <b>замок на двери, а не сейф</b>: сами записи на устройстве не зашифрованы. ' +
+                       'Тот, кто разберёт телефон или доберётся до файлов компьютера, прочтёт их в обход ' +
+                       'замка. Поэтому замок программы работает поверх блокировки самого устройства, а не ' +
+                       'вместо неё, — и включить его нельзя, пока блокировка устройства не настроена.' },
+'lock.info3':     { en:'Before you unlock, the screen shows only the app’s name, and the records are not ' +
+                       'visible in the phone’s list of recent apps. On the computer the lock closes a ' +
+                       'minimised window; a window left open on the screen is guarded by the Windows lock, ' +
+                       'not by the app.',
+                    ru:'До входа на экране только название программы, и в списке недавних приложений ' +
+                       'телефона записей не видно. На компьютере замок закрывает свёрнутое окно; окно, ' +
+                       'оставленное открытым на экране, сторожит блокировка Windows, а не программа.' },
+'lock.info4':     { en:'Syncing with your other devices starts at once, before you unlock: by the time you ' +
+                       'are in, the data is already fresh. Until you unlock, none of it is shown.',
+                    ru:'Обмен с другими устройствами при запуске идёт сразу, ещё до входа: когда вы ' +
+                       'войдёте, данные уже будут свежими. Пока вход не подтверждён, ничего из них не ' +
+                       'показывается.' },
+'lock.info5':     { en:'Switching the lock off, or changing how soon it asks again, needs a check too. ' +
+                       'Switching it off deletes nothing — not the records, not the settings, not the ' +
+                       'Google sign-in.',
+                    ru:'Выключить замок или сменить, как скоро он спрашивает снова, тоже можно только ' +
+                       'после проверки. Выключение ничего не удаляет — ни записей, ни настроек, ни входа ' +
+                       'в Google.' },
 'acct.look':     { en:'Appearance',                         ru:'Внешний вид' },
 'acct.lookSub':  { en:'language and theme',                 ru:'язык и тема' },
 'acct.aboutSub': { en:'version and update',                 ru:'версия и обновление' },
@@ -5917,8 +6062,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.16.0';
-var APP_BUILD = '2026-09-10T17:31:00.841Z';
+var APP_VERSION = '1.17.0';
+var APP_BUILD = '2026-09-11T06:44:00.073Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -14591,6 +14736,16 @@ var FAQ = [
  * ПРОГРАММА И ОБНОВЛЕНИЯ
  * ---------------------------------------------------------------- */
 /* Раздел «Внешний вид» */
+/* ++++++ APP LOCK ++++++ что замок защищает и чего НЕ защищает — сказано
+   прямо: обещать больше, чем есть, нельзя (требование задания). */
+{
+  key: 'lock', topic: 'app', icon: true,
+  q: function(){ return tr('faq.q.lock'); },
+  title: function(){ return tr('acct.lock'); },
+  html: function(){ return infoP(tr('lock.info1')) + infoP(tr('lock.info2')) + infoP(tr('lock.info3')) +
+                           infoP(tr('lock.info4')) + infoP(tr('lock.info5')); },
+  see: ['look', 'sync.what']
+},
 {
   key: 'look', topic: 'app', icon: true,
   q: function(){ return tr('faq.q.look'); },
@@ -21083,6 +21238,8 @@ function viewAcct(){
   if (ui.acct === 'backup') return backHead(tr('acct.backup'), '', infoBtn('backup')) + acctBackup();
   if (ui.acct === 'trash')  return backHead(tr('trash.title'), '', infoBtn('trash')) + acctTrash();
   if (ui.acct === 'look')   return backHead(tr('acct.look'), '', infoBtn('look')) + acctLook();
+  /* ++++++ APP LOCK ++++++ */
+  if (ui.acct === 'lock')   return backHead(tr('acct.lock'), '', infoBtn('lock')) + acctLock();
   /* ++++++ FAQ ++++++ седьмой раздел. Иконки «i» у него нет и быть не
      должно: он сам и есть то, куда она ведёт. */
   if (ui.acct === 'faq')    return backHead(tr('faq.title')) + faqScreenHTML();
@@ -21244,6 +21401,8 @@ function acctRowsHTML(){
     row({ k: tr('trash.title'), sub: tr('acct.trashSub'),
           cnt: n ? String(n) : '', act:'acct', arg:'trash' }) +
     row({ k: tr('acct.look'),   sub: tr('acct.lookSub'),   act:'acct', arg:'look' }) +
+    /* ++++++ APP LOCK ++++++ */
+    row({ k: tr('acct.lock'),   sub: esc(lockRowSub()),    act:'lock-open' }) +
     /* ++++++ FAQ ++++++ */
     row({ k: tr('faq.title'),   sub: tr('faq.rowSub'),    act:'acct', arg:'faq' }) +
     row({ k: tr('up.title'),    sub: tr('acct.aboutSub'),  act:'acct', arg:'about' }));
@@ -23553,6 +23712,20 @@ function handleAct(act, arg, e, srcEl){
     if (ui.acct) ui.acct = ''; else ui.detail = null;
     ui.err = ''; render(); window.scrollTo(0,0); return; }
   if (act === 'theme'){ ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; render(); return; }
+  /* ++++++ APP LOCK ++++++ вход, настройки устройства, раздел, вкл/выкл, задержка */
+  if (act === 'lock-enter'){ lockEnter(); return; }
+  if (act === 'lock-settings'){ lockOpenSettings(); return; }
+  if (act === 'lock-open'){ lockCan = null; lockSetErr = ''; navGoAcct('lock'); return; }
+  if (act === 'lock-on'){
+    var lkI = lockInfo();
+    if (lkI && (arg === '1') !== lkI.on) lockSetDo(arg === '1', lkI.delay, arg === '1' ? 'lock.onDone' : 'lock.offDone');
+    return;
+  }
+  if (act === 'lock-delay'){
+    var lkD = lockInfo();
+    if (lkD && lkD.on && lkD.delay !== arg && LOCK_DELAYS.indexOf(arg) > -1) lockSetDo(true, arg, 'lock.delayDone');
+    return;
+  }
   if (act === 'theme-set'){ ui.theme = arg; render(); return; }
   if (act === 'period'){
     ui.reportPreset = arg;
@@ -25150,6 +25323,9 @@ function exitArm(){
    Открытое окно закрывается первым, и приложение никогда не закрывается
    из-под него. */
 window.GTBack = function(can){
+  /* ++++++ APP LOCK ++++++ за воротами «Назад» не ходит по экранам, которых
+     не видно: одно нажатие — выход, как с первого экрана. */
+  if (lockShut()) return can === 'exit' ? 'exit' : 'none';
   /* ++++++ BACK STACK ++++++ закрывается ВЕРХНЕЕ окно, и закрывается оно
      ПРАВИЛЬНО — своим done(), как по Escape. Голый remove() оставлял фон
      запертым (sheetLock() никто не звал) и обработчик Escape на
@@ -25182,12 +25358,258 @@ window.GTBack = function(can){
   return 'wait';
 };
 
+/* ================================================ ++++++ APP LOCK ++++++ ==
+ * ЗАМОК НА ВХОД: отпечаток, лицо или PIN УСТРОЙСТВА.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: проверяет СИСТЕМА, решает ОБОЛОЧКА,
+ * ядро только показывает. Нужен ли вход, ядро узнаёт у оболочки
+ * (lockInfo), кто перед экраном — у системы через оболочку (lockCheck), и
+ * слышит в ответ одно: «подтверждено» или «нет, по такой причине». Своего
+ * пароля, своего хранилища секретов и своего шифрования здесь нет и быть
+ * не должно.
+ *
+ * ВОРОТА — ОДИН КЛАСС НА КОРНЕ ДОКУМЕНТА. Рисует программа не только
+ * через render(): полосы в #alerts ставят шесть частичных перерисовщиков,
+ * окна живут в #modalRoot, а полоса загрузки печатает названия товаров.
+ * Поэтому прячутся КОНТЕЙНЕРЫ (display:none — их нет и для экранного
+ * диктора), а не каждый художник по отдельности. Что обмен принесёт за
+ * дверью, нарисуется за ней и станет видно после входа (решение владельца
+ * 11.09.2026: обмен сразу, скрытый до входа).
+ *
+ * НАСТРОЕК ЗАМКА В ЯДРЕ НЕТ ВОВСЕ: ни в документе, ни в localStorage. Они
+ * живут в оболочке, поэтому в резервную копию, экспорт и обмен не
+ * попадают по построению, а не потому, что их оттуда вычищают.
+ *
+ * СТАРАЯ ОБОЛОЧКА (методов замка у моста нет) — ворот нет, раздел
+ * говорит, что нужна новая версия программы. СТАРОЕ ЯДРО в новой оболочке
+ * при включённом замке оболочка не загрузит: она ищет строку LOCK_GATE
+ * ниже буквально и без неё открывает ядро из пакета.
+ * ================================================================== */
+var LOCK_GATE = 1;
+var LOCK_DELAYS = ['now', '1m', '5m', '1h'];
+var LOCK_ERRS = ['cancel', 'none', 'policy', 'busy', 'lockout', 'fail'];
+var lockSt = '';           /* '' — открыто; 'locked' | 'checking' — зеркало ворот */
+var lockErr = '';          /* причина последнего отказа, ключ из LOCK_ERRS */
+var lockCoverOn = false;   /* заслонка на время ухода: только имя программы */
+var lockCan = null;        /* { can } — умеет ли система проверять; null — не спрашивали */
+var lockSetErr = '';
+var lockSetBusy = false;
+
+/* Мост умеет замок, только если у него есть ОБА главных метода. Иначе
+   это оболочка до этой задачи — ворот нет. */
+function lockBr(){
+  var b = (typeof window !== 'undefined') ? window.GTBridge : null;
+  return (b && typeof b.lockInfo === 'function' && typeof b.lockCheck === 'function') ? b : null;
+}
+/* Ответ оболочки: { on, delay, state }. СИНХРОННЫЙ — ворота обязаны
+   встать до первой отрисовки. */
+function lockInfo(){
+  var br = lockBr();
+  if (!br) return null;
+  var i = null;
+  try { i = br.lockInfo(); } catch(e){ i = null; }
+  return (i && typeof i === 'object' && typeof i.on === 'boolean') ? i : null;
+}
+function lockShut(){ return lockSt !== '' || lockCoverOn; }
+function lockErrKey(e){ return LOCK_ERRS.indexOf(e) > -1 ? e : 'fail'; }
+/* Куда вести человека. Отмена и занятый датчик лечатся повтором; для
+   остального нужна система. */
+function lockWantsSettings(e){ return e === 'none' || e === 'policy' || e === 'fail'; }
+
+/* Платформа — ТОЛЬКО для подписей: на телефоне говорим про телефон, на
+   компьютере — про компьютер. Замок показывается лишь в оболочке, значит
+   ответ всегда «телефон» или «компьютер», браузера здесь не бывает.
+   Спрашивается строка браузера, как у pubEnv(): мост о платформе не
+   сообщает. КАКОЙ именно способ (отпечаток/лицо) настроен — система нам
+   не говорит, поэтому подпись остаётся общей, но по своей платформе. */
+function lockPlat(){
+  var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  return /Android/i.test(ua) ? 'and' : 'win';
+}
+
+var LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"' +
+  ' stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/>' +
+  '<path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>';
+
+/* Экран до входа: имя, замок, кнопка — и больше НИЧЕГО. Ни чисел, ни
+   имён, ни счётчиков: всё это знание о записях. */
+function lockScreenHTML(){
+  var h = '<div class="lockbox"><div class="lockico">' + LOCK_SVG + '</div>' +
+          '<h1>' + esc(tr(modeTitlePlainKey())) + '</h1>';
+  if (lockSt === '') return h + '</div>';          /* заслонка: только имя */
+  h += '<p class="locksub">' + tr('lock.sub') + '</p>';
+  if (lockErr) h += '<div class="note ' + (lockErr === 'cancel' ? 'warn' : 'err') + '">' +
+                    tr('lock.e.' + lockErr) + '</div>';
+  var wait = lockSt === 'checking';
+  h += '<div class="lockbtns"><button type="button" class="btn block" data-act="lock-enter"' +
+       (wait ? ' disabled' : '') + '>' + tr(wait ? 'lock.checking' : 'lock.enter') + '</button>';
+  if (lockErr && lockWantsSettings(lockErr)) h += btn(tr('lock.settings'), 'lock-settings', 'sec block');
+  return h + '</div></div>';
+}
+
+/* ЕДИНСТВЕННОЕ место, где ворота открываются и закрываются. */
+function lockPaint(){
+  var root = document.documentElement, shut = lockShut();
+  if (shut) root.classList.add('gt-locked'); else root.classList.remove('gt-locked');
+  var n = $('lockRoot');
+  if (!shut){ if (n && n.parentNode) n.parentNode.removeChild(n); return; }
+  if (!n){ n = document.createElement('div'); n.id = 'lockRoot'; document.body.appendChild(n); }
+  n.innerHTML = lockScreenHTML();
+}
+
+/* Просьба к системе. Повторного вызова, пока идёт проверка, нет: окно
+   системы одно. */
+function lockEnter(){
+  var br = lockBr();
+  if (!br || lockSt === 'checking') return;
+  lockSt = 'checking'; lockErr = '';
+  lockPaint();
+  var p = null;
+  try { p = br.lockCheck(tr('lock.reason')); } catch(e){ p = null; }
+  var fail = function(k){ lockSt = 'locked'; lockErr = lockErrKey(k); lockPaint(); };
+  if (!p || typeof p.then !== 'function'){ fail('fail'); return; }
+  p.then(function(r){
+    if (r && r.ok){ lockSt = ''; lockErr = ''; lockCoverOn = false; lockPaint(); render(); return; }
+    fail(r && r.err);
+  }, function(){ fail('fail'); });
+}
+
+/* Голос оболочки: ушли (заслонка), вернулись вовремя (снять), вернулись
+   поздно (запереть и сразу спросить систему). */
+window.GTLock = function(st){
+  if (st === 'cover'){ lockCoverOn = true; lockPaint(); return 'ok'; }
+  if (st === 'uncover'){ lockCoverOn = false; lockPaint(); return 'ok'; }
+  if (st === 'locked'){
+    lockCoverOn = false;
+    if (lockSt === '') { lockSt = 'locked'; lockErr = ''; }
+    lockPaint();
+    lockEnter();
+    return 'ok';
+  }
+  return 'none';
+};
+
+/* ДО первой отрисовки: ворота встают раньше, чем рисуется хоть одна
+   запись. */
+function lockBoot(){
+  var i = lockInfo();
+  if (!i) return;
+  var br = lockBr();
+  if (typeof br.lockWatch === 'function'){ try { br.lockWatch(window.GTLock); } catch(e){} }
+  if (i.state === 'locked' || i.state === 'checking'){ lockSt = 'locked'; lockPaint(); }
+  /* Вернулись из настроек устройства: если там только что задали PIN,
+     войти можно сразу, без лишнего нажатия. */
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState !== 'visible') return;
+    if (lockSt === 'locked' && (lockErr === 'none' || lockErr === 'policy')) lockEnter();
+    if (lockCan !== null && ui.tab === 'acct' && ui.acct === 'lock'){ lockCan = null; render(); }
+  });
+}
+/* ПОСЛЕ первой отрисовки: окно системы встаёт поверх уже нарисованного
+   экрана замка, а не поверх пустоты. */
+function lockBootAfter(){ if (lockSt === 'locked') lockEnter(); }
+
+function lockOpenSettings(){
+  var br = lockBr();
+  lockCan = null;
+  if (br && typeof br.lockSettings === 'function'){ try { br.lockSettings(); } catch(e){} }
+}
+
+/* ------------------------------------------------------------------ */
+/* Раздел «Аккаунт → Вход в программу»                               */
+/* ------------------------------------------------------------------ */
+function lockRowSub(){
+  var i = lockInfo();
+  if (!i) return tr('lock.rowNone');
+  return i.on ? tr('lock.rowOn', { d: tr('lock.d.' + i.delay) }) : tr('lock.rowOff');
+}
+
+function lockCanAsk(){
+  var br = lockBr();
+  if (!br || typeof br.lockCan !== 'function'){ lockCan = { can:'ok' }; return; }
+  lockCan = { can:'?' };
+  var p = null;
+  try { p = br.lockCan(); } catch(e){ p = null; }
+  var put = function(c){
+    lockCan = { can: c };
+    if (ui.tab === 'acct' && ui.acct === 'lock') render();
+  };
+  if (!p || typeof p.then !== 'function'){ lockCan = { can:'fail' }; return; }
+  p.then(function(r){ put(r && typeof r.can === 'string' ? r.can : 'fail'); },
+         function(){ put('fail'); });
+}
+
+function lockSegBtn(act, arg, on, label, dis){
+  return '<button type="button" data-act="' + act + '" data-arg="' + arg + '"' +
+    (on ? ' class="on"' : '') + (dis && !on ? ' disabled' : '') + '>' + label + '</button>';
+}
+
+function acctLock(){
+  var i = lockInfo(), h = '';
+  if (!i) return '<section class="card"><div class="b"><div class="note warn">' +
+    tr(typeof window !== 'undefined' && window.GTBridge ? 'lock.oldShell' : 'lock.browser') +
+    '</div></div></section>';
+  if (lockCan === null) lockCanAsk();
+  var can = lockCan ? lockCan.can : '?';
+  /* Включить можно, только когда система умеет проверять (решение
+     владельца 11.09.2026): замок программы не бывает крепче замка
+     устройства, а своего пароля у нас нет. */
+  var ready = i.on || can === 'ok';
+  h += '<section class="card"><div class="t">' + tr('lock.set.title') + '</div><div class="b">' +
+       '<div class="seg">' +
+         lockSegBtn('lock-on', '0', !i.on, tr('lock.set.off'), lockSetBusy) +
+         lockSegBtn('lock-on', '1', i.on, tr('lock.set.on'), lockSetBusy || !ready) +
+       '</div><div class="lockhint">' + tr((i.on ? 'lock.set.onNote.' : 'lock.set.offNote.') + lockPlat()) + '</div>';
+  if (!i.on && can !== 'ok' && can !== '?')
+    h += '<div class="note err">' + tr('lock.e.' + lockErrKey(can)) + '</div>' +
+         btn(tr('lock.settings'), 'lock-settings', 'sec block');
+  if (lockSetErr)
+    h += '<div class="note ' + (lockSetErr === 'cancel' ? 'warn' : 'err') + '">' +
+         tr('lock.e.' + lockSetErr) + '</div>' +
+         (lockWantsSettings(lockSetErr) && can === 'ok' ? '' :
+          (lockWantsSettings(lockSetErr) ? btn(tr('lock.settings'), 'lock-settings', 'sec block') : ''));
+  h += '</div></section>';
+  if (i.on){
+    h += '<section class="card"><div class="t">' + tr('lock.set.delay') + '</div><div class="b">' +
+         '<div class="seg">';
+    LOCK_DELAYS.forEach(function(k){
+      h += lockSegBtn('lock-delay', k, i.delay === k, tr('lock.s.' + k), lockSetBusy);
+    });
+    h += '</div><div class="lockhint">' + tr('lock.set.delayNote.' + lockPlat()) + '</div></div></section>';
+  }
+  return h;
+}
+
+/* Смена настройки — ТОЛЬКО через оболочку, и оболочка сама проводит
+   проверку перед записью (A6): иначе любой, кто застал программу
+   открытой, выключил бы замок одним нажатием. */
+function lockSetDo(on, delay, what){
+  var br = lockBr();
+  if (!br || typeof br.lockSet !== 'function' || lockSetBusy) return;
+  lockSetBusy = true; lockSetErr = '';
+  render();
+  var p = null;
+  try { p = br.lockSet(on, delay, tr('lock.reason')); } catch(e){ p = null; }
+  var done = function(r){
+    lockSetBusy = false;
+    if (r && r.ok){ lockSetErr = ''; toast(tr(what), 'ok'); }
+    else lockSetErr = lockErrKey(r && r.err);
+    render();
+  };
+  if (!p || typeof p.then !== 'function'){ done(null); return; }
+  p.then(done, function(){ done(null); });
+}
+/* ++++++ APP LOCK END ++++++ */
+
 function boot(){
   if (!storageUsable) banner('nostorage','warn', tr('boot.noStorage'));
   var loaded = loadFromStorage();
   setLang(isLang(state.settings.lang) ? state.settings.lang : detectLang());
   state.settings.lang = getLang();
   resetForms();
+  /* ++++++ APP LOCK ++++++ ворота ДО первой отрисовки: ни одна запись
+     не рисуется раньше, чем стало известно, заперто ли. */
+  lockBoot();
   render();
   /* ++++++ COST HISTORY ++++++ после первой отрисовки: banner() кладёт
      узел в #alerts, а render() его не переписывает. */
@@ -25228,6 +25650,9 @@ function boot(){
   newsBoot();
   /* ++++++ SELF UPDATE ++++++ откуда открыто ядро и есть ли откат */
   updBoot();
+  /* ++++++ APP LOCK ++++++ заперто — спросить систему сразу; обмен выше уже
+     пошёл, но всё, что он принесёт, остаётся за воротами. */
+  lockBootAfter();
   /* ++++++ ATTACHMENTS ++++++ the picture store opens AFTER the first paint.
      The app must never wait for it: bookkeeping works with no files at all.
      When it cannot open, the whole consequence is one banner and dead file
