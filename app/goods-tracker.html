@@ -2657,7 +2657,7 @@ var STR = {
 'faq.a.syncWhat3gd': { en:'Photos of products travel on their own, into the same hidden folder on ' +
                           'your Drive. Invoices travel <b>when you ask</b>: an invoice weighs ' +
                           'megabytes, and pulling every one of them onto a phone would spend your ' +
-                          'traffic on files you may never open. Tap an invoice and it comes.',
+                          'traffic on files you may never open. Open an invoice and it comes.',
                        ru:'Фотографии товаров ездят сами — в ту же скрытую папку вашего Диска. ' +
                           'Накладные едут <b>по нажатию</b>: инвойс весит мегабайты, и тянуть их ' +
                           'все на телефон значит тратить трафик на файлы, которые можно ни разу не ' +
@@ -2721,7 +2721,7 @@ var STR = {
                           'Восстановление возвращает всю группу разом и теми же суммами, а если за ' +
                           'это время склад разошёлся, программа откажется и скажет, чего не ' +
                           'хватает, вместо того чтобы вернуть половину.' },
-'faq.a.trashWhat3':  { en:'A record waits in the trash for {n} and can be brought back with one tap ' +
+'faq.a.trashWhat3':  { en:'A record waits in the trash for {n} and can be brought back in one step ' +
                           'all that time. After that it leaves for good on its own, at the next start.',
                        ru:'Запись ждёт в корзине {n} и всё это время возвращается одним нажатием. ' +
                           'Потом уходит навсегда сама, при следующем запуске.' },
@@ -2895,7 +2895,7 @@ var STR = {
 'lock.checking':  { en:'Waiting for the device…',            ru:'Ждём ответа устройства…' },
 'lock.settings':  { en:'Open device settings',               ru:'Открыть настройки устройства' },
 'lock.reason':    { en:'Confirm it is you',                  ru:'Подтвердите, что это вы' },
-'lock.e.cancel':  { en:'The check was cancelled. Tap «Unlock» to try again.',
+'lock.e.cancel':  { en:'The check was cancelled. Use «Unlock» to try again.',
                     ru:'Проверка отменена. Нажмите «Войти», чтобы попробовать ещё раз.' },
 'lock.e.none':    { en:'This device has no lock set up — no PIN, fingerprint or face — so the system ' +
                        'cannot confirm it is you. Set one up in the device settings and come back: the ' +
@@ -3739,8 +3739,15 @@ var STR = {
 /* ++++++ PHOTO ZOOM ++++++ два ключа: подпись кнопки-снимка и подсказка в
    просмотрщике. Обе колонки, как у каждой записи словаря. */
 'att.zoom':        { en:'Open full screen',          ru:'Открыть во весь экран' },
-'zv.hint':         { en:'Pinch to zoom · double-tap to reset',
+/* ++++++ PLATFORM WORDS ++++++ подсказка называет УПРАВЛЕНИЕ, а оно на
+   двух платформах разное: на телефоне пальцы, на компьютере мышь и
+   клавиши. Одна строка на оба случая всегда врёт одному из них — на
+   Windows владелец читал «двумя пальцами», имея мышь. Пальцевый текст
+   оставлен ДОСЛОВНО прежним: он верен и менять его незачем. */
+'zv.hint.and':     { en:'Pinch to zoom · double-tap to reset',
                      ru:'Двумя пальцами — увеличить · двойное касание — исходный размер' },
+'zv.hint.win':     { en:'Ctrl + wheel to zoom · double-click to reset · drag to move',
+                     ru:'Ctrl + колесо — увеличить · двойной щелчок — исходный размер · тянуть мышью' },
 'att.photo':       { en:'Product photo',            ru:'Фото товара' },
 'att.photoHint':   { en:'Optional. JPG, PNG or WebP, up to {max}. The picture is reduced to {side} px and saved next to the product.',
                      ru:'Не обязательно. JPG, PNG или WebP, до {max}. Снимок уменьшается до {side} px и сохраняется рядом с товаром.' },
@@ -3752,7 +3759,7 @@ var STR = {
                      ru:'сохранится вместе с товаром' },
 'att.photoStored': { en:'{size} · added {date}',    ru:'{size} · добавлено {date}' },
 'att.photoAlt':    { en:'photo of {name}',          ru:'фото товара «{name}»' },
-'att.enlarge':     { en:'Click the photo to enlarge it.', ru:'Нажмите на фото, чтобы увеличить.' },
+'att.enlarge':     { en:'Open the photo to enlarge it.', ru:'Нажмите на фото, чтобы увеличить.' },
 
 'att.desc':        { en:'Description / notes',      ru:'Описание / заметки' },
 'att.descHint':    { en:'Optional, in your own words: colour, packaging, supplier, anything worth remembering.',
@@ -3875,10 +3882,18 @@ var STR = {
 'rmd.unknown':   { en:'no date on record',            ru:'дата неизвестна' },
 'rmd.copied':    { en:'The reminder was copied',      ru:'Напоминание скопировано' },
 'rmd.manualTitle':{ en:'Copy the text by hand',       ru:'Скопируйте текст вручную' },
-'rmd.manualHint':{ en:'The clipboard is not available here. The text below is already selected — ' +
-                      'press Ctrl+C (⌘C) and paste it into the messenger.',
-                   ru:'Буфер обмена здесь недоступен. Текст ниже уже выделен — ' +
-                      'нажмите Ctrl+C (⌘C) и вставьте его в мессенджер.' },
+/* ++++++ PLATFORM WORDS ++++++ ТРЕТИЙ случай той же беды, и нашёл его
+   обход словаря, а не глаз: запасное окно копирования велело нажать
+   Ctrl+C — клавиш, которых на телефоне нет вовсе. Окно это видят как раз
+   чаще на телефоне: буфер отказывает, когда документ не в фокусе. */
+'rmd.manualHint.and':{ en:'The clipboard is not available here. The text below is already selected — ' +
+                          'press and hold it, choose «Copy», and paste it into the messenger.',
+                       ru:'Буфер обмена здесь недоступен. Текст ниже уже выделен — ' +
+                          'нажмите и удерживайте, выберите «Копировать» и вставьте в мессенджер.' },
+'rmd.manualHint.win':{ en:'The clipboard is not available here. The text below is already selected — ' +
+                          'press Ctrl+C (⌘C) and paste it into the messenger.',
+                       ru:'Буфер обмена здесь недоступен. Текст ниже уже выделен — ' +
+                          'нажмите Ctrl+C (⌘C) и вставьте его в мессенджер.' },
 
 /* ---- само сообщение ---- */
 'rmd.t.hello':   { en:'Hello, {name}!',               ru:'Здравствуйте, {name}!' },
@@ -4070,7 +4085,7 @@ var STR = {
 'lot.noteTitle': { en:'Note',                               ru:'Заметка' },
 'lot.nameHint':  { en:'Leave the name, the date and the note empty and the trip becomes unnamed again. The goods and the expenses stay.',
                    ru:'Пустые имя, дата и заметка — поездка снова станет безымянной. Товары и расходы останутся.' },
-'lot.joinWhole': { en:'One tap moves the WHOLE shipment.',
+'lot.joinWhole': { en:'Selecting one moves the WHOLE shipment.',
                    ru:'Одно нажатие переносит приход ЦЕЛИКОМ.' },
 'lot.infoResult':{ en:'<b>Trip result</b> is revenue minus the cost of the goods handed out minus the share of the expenses — all three over the SAME items, or the number would mean nothing. It is not the Profit and not the Net profit above: those are counted over a period and never subtract an expense share.',
                    ru:'<b>Итог поездки</b> — это выручка минус себестоимость выданного минус доля расходов, и все три величины берутся по ОДНИМ И ТЕМ ЖЕ позициям, иначе число не значило бы ничего. Это не «Прибыль» и не «Чистая прибыль»: те считаются за период и доли расходов не вычитают вовсе.' },
@@ -4214,7 +4229,7 @@ var STR = {
                       'without a cost (an old backup, a repaired shipment log), its cost is zero ' +
                       'and earnings equal revenue: the program cannot tell &laquo;got it for ' +
                       'free&raquo; from &laquo;cost not recorded&raquo;. The cost and ' +
-                      'earnings of a single handout are shown in its window &mdash; tap its ' +
+                      'earnings of a single handout are shown in its window &mdash; open its ' +
                       'line in the &laquo;History&raquo;.',
                    ru:'Выручка, себестоимость и заработок — за период с панели над карточкой; ' +
                       'выбранный там товар сужает и их. Оплачено, долг и получено — за всё ' +
@@ -4409,7 +4424,7 @@ var STR = {
    подтверждений, ни одно из которых не переписано. */
 'trash.title':     { en:'Trash',                  ru:'Корзина' },
 'trash.empty':     { en:'The trash is empty',     ru:'Корзина пуста' },
-'trash.emptyHint': { en:'A deleted record waits here for {n} and can be brought back with one tap.',
+'trash.emptyHint': { en:'A deleted record waits here for {n} and can be brought back in one step.',
                      ru:'Удалённая запись ждёт здесь {n} и всё это время может вернуться одним нажатием.' },
 'trash.restore':   { en:'Restore',                ru:'Восстановить' },
 'trash.forever':   { en:'Delete for good',        ru:'Удалить навсегда' },
@@ -6148,8 +6163,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.19.1';
-var APP_BUILD = '2026-09-12T13:12:44.924Z';
+var APP_VERSION = '1.19.2';
+var APP_BUILD = '2026-09-12T17:58:37.094Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -17968,11 +17983,15 @@ function rmdLateHTML(rec){
  *  innerHTML, а имя человека и название товара пишет владелец. */
 function rmdManual(text){
   dialog({ title: tr('rmd.manualTitle'),
-    html: '<p class="remcap">' + tr('rmd.manualHint') + '</p>' +
+    /* ++++++ PLATFORM WORDS ++++++ тернарником с обоими литералами — как
+       у подсказки просмотрщика, и по той же причине. */
+    html: '<p class="remcap">' +
+          tr(uiPlat() === 'and' ? 'rmd.manualHint.and' : 'rmd.manualHint.win') + '</p>' +
           '<textarea id="rmdText" class="rmdta" readonly rows="12">' + esc(text) + '</textarea>',
     cancelLabel: tr('w.close'), buttons: [] });
   /* dialog() ставит фокус на «Закрыть»; здесь нужнее сам текст — он уже
-     выделен, остаётся нажать Ctrl+C. */
+     выделен, остаётся его скопировать тем способом, какой есть на этом
+     устройстве; какой именно — сказано подписью выше. */
   var ta = $('rmdText');
   if (ta){ ta.focus(); if (ta.select) ta.select(); }
 }
@@ -18870,7 +18889,13 @@ function zvOpen(src, name, from){
     '</div>' +
     '<button type="button" class="zvx" aria-label="' + esc(tr('w.close')) + '">' +
       ico('cross') + '</button>' +
-    '<div class="zvhint"><span>' + esc(tr('zv.hint')) + '</span></div>';
+    /* ++++++ PLATFORM WORDS ++++++ ключ собирается ТЕРНАРНИКОМ, а не
+       склейкой: `tr('zv.hint.' + uiPlat())` короче и молча делает оба
+       ключа мёртвыми для наборов словаря — те ищут либо приставку
+       конкатенации, либо буквальный литерал. Здесь оба литерала на
+       виду, и править чужие наборы не приходится. */
+    '<div class="zvhint"><span>' +
+      esc(tr(uiPlat() === 'and' ? 'zv.hint.and' : 'zv.hint.win')) + '</span></div>';
   var stage = back.querySelector('.zvstage');
   var img = back.querySelector('.zvimg');
   var xb = back.querySelector('.zvx');
@@ -25865,7 +25890,14 @@ function lockWantsSettings(e){ return e === 'none' || e === 'policy' || e === 'f
    Спрашивается строка браузера, как у pubEnv(): мост о платформе не
    сообщает. КАКОЙ именно способ (отпечаток/лицо) настроен — система нам
    не говорит, поэтому подпись остаётся общей, но по своей платформе. */
-function lockPlat(){
+/* ++++++ PLATFORM WORDS ++++++ ЕДИНСТВЕННЫЙ ответ «телефон или
+   компьютер» для ТЕКСТА. Назывался lockPlat и жил при замке, но вопрос
+   общий: подписи замка и подсказка просмотрщика спрашивают одно и то же,
+   а второй ответ на один вопрос однажды разойдётся с первым.
+   Мост о платформе не сообщает, поэтому спрашивается строка браузера —
+   как в pubEnv(); тот отвечает на ДРУГОЙ вопрос (куда идти за
+   обновлением) и различает ещё и браузер, поэтому остаётся отдельным. */
+function uiPlat(){
   var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
   return /Android/i.test(ua) ? 'and' : 'win';
 }
@@ -26025,8 +26057,8 @@ function acctLock(){
          lockSegBtn('lock-on', '0', !i.on, tr('lock.set.off'), lockSetBusy) +
          lockSegBtn('lock-on', '1', i.on, tr('lock.set.on'), lockSetBusy || !ready) +
        '</div><div class="lockhint">' +
-       tr(lockPlat() === 'and' ? (i.on ? 'lock.set.onNote.and' : 'lock.set.offNote.and')
-                               : (i.on ? 'lock.set.onNote.win' : 'lock.set.offNote.win')) + '</div>';
+       tr(uiPlat() === 'and' ? (i.on ? 'lock.set.onNote.and' : 'lock.set.offNote.and')
+                             : (i.on ? 'lock.set.onNote.win' : 'lock.set.offNote.win')) + '</div>';
   if (!i.on && can !== 'ok' && can !== '?')
     h += '<div class="note err">' + tr('lock.e.' + lockErrKey(can)) + '</div>' +
          btn(tr('lock.settings'), 'lock-settings', 'sec block');
@@ -26042,7 +26074,7 @@ function acctLock(){
     LOCK_DELAYS.forEach(function(k){
       h += lockSegBtn('lock-delay', k, i.delay === k, tr('lock.s.' + k), lockSetBusy);
     });
-    h += '</div><div class="lockhint">' + tr('lock.set.delayNote.' + lockPlat()) + '</div></div></section>';
+    h += '</div><div class="lockhint">' + tr('lock.set.delayNote.' + uiPlat()) + '</div></div></section>';
   }
   return h;
 }
