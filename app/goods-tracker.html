@@ -845,6 +845,21 @@
     margin:0 0 12px}
   @keyframes sheetUp{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
   .modal h3{margin:0 0 8px;font-size:17px}
+  /* ++++++ PHOTO TITLE ++++++ заголовок листа ПЕРЕНОСИТСЯ, а не уезжает
+     за край. Замерено на 320 px ДО этой задачи: имя файла
+     «81xIDzmVkQL._AC_UF350,350_QL80_.jpg» давало у <h3> scrollWidth 324
+     против clientWidth 288, то есть 36 px текста стояли за краем окна, —
+     так что правило чинит и то, что было, а не только то, что задача
+     приносит. Приносит же она названия товаров, среди которых бывает и
+     одно длинное слово без пробелов.
+
+     Свойство наследуемое, поэтому одной строки хватает и на <h3
+     class="hx"> с его внутренним <span>: второго правила для шапки с
+     крестиком заводить не нужно.
+
+     break-word, а не anywhere: обычные слова переносятся по пробелам
+     как раньше, ломается только слово, которое иначе не поместится. */
+  .modal h3{overflow-wrap:break-word}
   .modal .body{font-size:14px;color:var(--ink-2);line-height:1.55}
   .modal .body b{color:var(--ink)}
   .modal .btns{margin-top:18px;flex-wrap:wrap}
@@ -6163,8 +6178,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.19.2';
-var APP_BUILD = '2026-09-12T17:58:37.094Z';
+var APP_VERSION = '1.19.3';
+var APP_BUILD = '2026-09-13T00:47:27.756Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -19076,6 +19091,73 @@ function zvThumbHTML(url, alt){
     '<span class="attzoomi" aria-hidden="true">' + ico('expand') + '</span></button></div>';
 }
 
+/* =========================================== ++++++ PHOTO TITLE ++++++ ==
+ * КАК НАЗЫВАЕТСЯ ВЛОЖЕНИЕ НА ЭКРАНЕ.
+ *
+ * Жалоба владельца 13.09.2026: «Открываю фото товара — вверху написано
+ * 81xIDzmVkQL._AC_UF350,350_QL80_.jpg. Это ничего не говорит.»
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: у СНИМКА осмысленное имя ровно одно —
+ * НАЗВАНИЕ ТОВАРА, который на нём снят. У НАКЛАДНОЙ — наоборот, имя файла
+ * и есть содержание: в нём обычно стоит номер инвойса, и потерять его
+ * значит потерять единственное, чем одна накладная отличается от другой.
+ *
+ * Отсюда всё остальное:
+ *   - имя файла снимка не печатается НИГДЕ (решение владельца 13.09: это
+ *     касается и поля фото в форме товара);
+ *   - имя файла накладной остаётся везде, где стояло;
+ *   - ответ «как это называется» ОДИН на все места показа — attTitle().
+ *     Их три (окно, полноэкранный просмотр, форма), и три разных ответа
+ *     разошлись бы при первой же правке.
+ *
+ * ЧЕГО ЗДЕСЬ НЕТ. Имя файла не стирается из ЗАПИСИ: `meta.name` как
+ * лежал, так и лежит — он нужен, когда файл сохраняют на диск
+ * («Сохранить копию» отдаёт его под собственным именем) и когда он едет
+ * обменом. Задача про ПОКАЗ, а не про хранение: схема не двигается,
+ * `validate()` не трогается, резервная копия побайтово прежняя.
+ *
+ * ТОВАР МОЖЕТ НЕ НАЙТИСЬ, и это не ошибка: productById() читает активные
+ * записи, а товар мог уйти в корзину. Тогда подпись — «Фото товара»:
+ * выдумывать название нельзя, а имя файла — то, от чего уходим.
+ */
+
+/** ЕДИНСТВЕННЫЙ ответ «как это вложение называется на экране».
+    Снимок — названием товара, накладная — своим именем файла. */
+function attTitle(m){
+  if (!m) return tr('att.photo');
+  if (m.kind === 'invoice') return attInvLabel(m, tr, fmtDateLong);
+  var p = productById(m.productId);
+  var nm = p && typeof p.name === 'string' ? p.name.trim() : '';
+  return nm || tr('att.photo');
+}
+
+/** Подпись картинки для чтеца экрана. У снимка — та же «фото товара
+    «Чайник»», что печатает карточка (att.photoAlt): второй формулировки
+    об одном и том же заводить нельзя. */
+function attAltOf(m){
+  if (!m) return '';
+  if (m.kind === 'invoice') return m.name || '';
+  var p = productById(m.productId);
+  var nm = p && typeof p.name === 'string' ? p.name.trim() : '';
+  return nm ? tr('att.photoAlt', {name: nm}) : tr('att.photo');
+}
+
+/** То же для снимка, который ещё НЕ сохранён: товара в документе нет, и
+    название берётся из строки формы — того самого поля, которое человек
+    заполняет прямо над фотографией. */
+function attStagedTitle(i){
+  var f = ui.form.product, l = f && f.lines ? f.lines[i] : null;
+  var nm = l && typeof l.name === 'string' ? l.name.trim() : '';
+  return nm || tr('att.photo');
+}
+
+function attStagedAlt(i){
+  var f = ui.form.product, l = f && f.lines ? f.lines[i] : null;
+  var nm = l && typeof l.name === 'string' ? l.name.trim() : '';
+  return nm ? tr('att.photoAlt', {name: nm}) : tr('att.photo');
+}
+/* ++++++ PHOTO TITLE END ++++++ */
+
 function attOpenSheet(id){
   var m = attById(id);
   if (!m){ toast(tr('att.missing'), 'warn'); return; }
@@ -19104,7 +19186,7 @@ function attOpenSheet(id){
     var body = pdf
       ? '<div class="attview"><iframe src="' + url + '" title="' + esc(m.name || '') + '"></iframe></div>' +
         '<div class="note calc">' + tr('att.pdfNote') + '</div>'
-      : zvThumbHTML(url, m.name || '');   /* ++++++ PHOTO ZOOM ++++++ */
+      : zvThumbHTML(url, attAltOf(m));   /* ++++++ PHOTO TITLE ++++++ */
     /* The two links get their address in JS, not in the markup. A blob: URL is
        local, but gluing an address into a link attribute inside a string
        literal puts a literal link into the file, and the offline check reads
@@ -19119,7 +19201,11 @@ function attOpenSheet(id){
     var buttons = m.kind === 'invoice'
       ? [{key:'replace', label: tr('att.replace')}, {key:'del', label: tr('w.delete'), variant:'danger'}]
       : [{key:'replace', label: tr('att.photoChange')}, {key:'del', label: tr('att.photoRemove'), variant:'danger'}];
-    var done = dialog({ title: m.name || tr('att.photo'),
+    /* ++++++ PHOTO TITLE ++++++ заголовок больше не имя файла: у снимка стоит
+       название товара, у накладной — её имя (там номер инвойса), а
+       у накладной БЕЗ имени — «Накладная · дата». Прежняя строка
+       давала накладной без имени подпись «Фото товара». */
+    var done = dialog({ title: attTitle(m),
       html: '<div class="body small muted">' + esc(fmtBytes(m.size)) + ' · ' +
             esc(fmtDateLong(m.addedAt)) + '</div>' + body + links,
       cancelLabel: tr('w.close'), buttons: buttons });
@@ -19152,9 +19238,11 @@ function attOpenSheet(id){
 function attOpenStaged(i){
   var l = ui.form.product.lines[i];
   if (!l || !l.photo || !l.photo.url) return;
-  dialog({ title: l.photo.name || tr('att.photo'),
+  /* ++++++ PHOTO TITLE ++++++ товара в документе ещё нет, и название берётся из
+     строки формы — того самого поля над фотографией. */
+  dialog({ title: attStagedTitle(i),
     html: '<div class="body small muted">' + esc(fmtBytes(l.photo.size)) + '</div>' +
-          zvThumbHTML(l.photo.url, l.photo.name || ''),   /* ++++++ PHOTO ZOOM ++++++ */
+          zvThumbHTML(l.photo.url, attStagedAlt(i)),   /* ++++++ PHOTO TITLE ++++++ */
     cancelLabel: tr('w.close'), buttons: [] });
 }
 
@@ -19225,7 +19313,10 @@ function photoField(i){
     body = '<div class="photobox">' +
       '<button type="button" class="ph" data-act="att-open" data-arg="l:' + i + '">' +
         '<img src="' + l.photo.url + '" alt=""></button>' +
-      '<div class="meta"><b>' + esc(l.photo.name || '—') + '</b>' +
+      /* ++++++ PHOTO TITLE ++++++ имя файла снято (решение владельца 13.09):
+         название товара набирают полем выше, а тот ли это снимок,
+         видно по самой миниатюре слева. */
+      '<div class="meta">' +
       '<small>' + esc(fmtBytes(l.photo.size)) + ' · ' + tr('att.photoPending') + '</small>' +
       '<button type="button" class="lnk" data-act="att-clear" data-arg="l:' + i + '">' +
         tr('att.photoRemove') + '</button></div></div>';
@@ -19233,7 +19324,7 @@ function photoField(i){
     body = '<div class="photobox">' +
       '<button type="button" class="ph" data-act="att-open" data-arg="a:' + esc(curMeta.id) + '">' +
         (curMeta.thumb ? '<img src="' + esc(curMeta.thumb) + '" alt="">' : noPhotoIcon()) + '</button>' +
-      '<div class="meta"><b>' + esc(curMeta.name || '—') + '</b>' +
+      '<div class="meta">' +   /* ++++++ PHOTO TITLE ++++++ */
       '<small>' + tr('att.photoStored', {size: esc(fmtBytes(curMeta.size)),
         date: esc(fmtDateLong(curMeta.addedAt))}) + '</small>' +
       '<span class="two-lnk">' +
