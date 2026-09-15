@@ -3560,6 +3560,7 @@ var STR = {
                     ru:'Осталась от записи, заведённой до разделения полей. Можно очистить.' },
 'ppl.noContacts':{ en:'no contact details',                 ru:'контакты не заполнены' },
 'ppl.contacts':  { en:'Contacts',                           ru:'Контакты' },
+'ppl.infoBtn':   { en:'Info',                               ru:'Инфо' },
 'ppl.callOrWrite':{ en:'call or message',                   ru:'позвонить или написать' },
 'ppl.call':      { en:'Call',                               ru:'Позвонить' },
 'ppl.whatsapp':  { en:'Message on WhatsApp',                ru:'Написать в WhatsApp' },
@@ -4477,7 +4478,6 @@ var STR = {
 /* ---- корзина ---- */
 'trash.tLoan':     { en:'Cash loan',              ru:'Долг' },
 'trash.tRepay':    { en:'Loan repayment',         ru:'Возврат долга' },
-'trash.repOf':     { en:'Loan repayment — {name}', ru:'Возврат долга — {name}' },
 'trash.noLoan':    { en:'Only <b>{have}</b> is still outstanding on the loan «{name}», and the trash holds repayments of <b>{need}</b>.<br><br>Nothing was restored: the loan would be repaid more than it was. Delete the extra repayment on that loan and try again.',
                      ru:'По долгу «{name}» осталось вернуть <b>{have}</b>, а в корзине лежат возвраты на <b>{need}</b>.<br><br>Ничего не восстановлено: долг оказался бы возвращён больше, чем был. Удалите лишний возврат по этому долгу — и повторите.' },
 
@@ -4803,7 +4803,6 @@ var STR = {
 'trash.tPay':      { en:'Payment',                ru:'Платёж' },
 'trash.tRet':      { en:'Return',                 ru:'Возврат' },
 'trash.tExp':      { en:'Expense',                ru:'Расход' },
-'trash.payOf':     { en:'Payment — {name}',       ru:'Платёж — {name}' },
 /* Отказы восстановления. Заголовок один на все три: владельцу важно, что
    вернуть не вышло, а причина — в теле, с цифрами. */
 'trash.noTitle':   { en:'This cannot be restored', ru:'Вернуть не получится' },
@@ -6523,8 +6522,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.21.0';
-var APP_BUILD = '2026-09-15T07:11:45.690Z';
+var APP_VERSION = '1.22.0';
+var APP_BUILD = '2026-09-15T10:23:07.523Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -17812,6 +17811,7 @@ function earnCardHTML(personId, ps, hs){
   var rng = earnRange();
   ps = ps || productStats(); hs = hs || personStats();
   var e = personEarn(personId, rng, ps, hs, dcStats(ps));
+  var discGot = discPersonCents(personId);
   var sep = ' · ';
   var rows =
     row({ cls:'wrap', k: tr('sum.handedOutFor'),
@@ -17832,7 +17832,12 @@ function earnCardHTML(personId, ps, hs){
     (e.credCents > 0
       ? row({ cls:'wrap', k: tr('earn.credit'), sub: tr('flt.forAllTime'), v: dcMoney(e.credD) })
       : row({ cls:'wrap', k: tr('w.outstanding'), sub: tr('flt.forAllTime'), v: dcMoney(e.outD),
-              vcls: e.outCents > 0 ? 'neg' : '' }));
+              vcls: e.outCents > 0 ? 'neg' : '' })) +
+    /* ++++++ PERSON INFO ++++++ переехала из «Контактов» как есть: та же
+       discPersonCents(), та же базовая валюта, печатается только когда
+       скидка была (область 44). Второго счёта скидки не заводится. */
+    (discGot > 0 ? row({ cls:'wrap', k: tr('ppl.discGot'), sub: tr('ppl.discGotHint'),
+                         v: baseOne(discGot) }) : '');
   return '<section class="card"><div class="t"><span>' + tr('earn.title') + sep +
     tr('sum.inCur', {note: '<b>' + esc(dcCur()) + '</b>'}) + sep + earnScopeText(rng) + '</span>' +
     infoBtn('earn') + '</div>' + rows + '</section>';
@@ -21566,6 +21571,56 @@ function ledTapHTML(e){
     '<span class="chev" aria-hidden="true">' + chev() + '</span>';
 }
 /* ++++++ LEDGER DETAIL END ++++++ */
+/* ==================================================================
+ * ++++++ PERSON INFO ++++++  ОКНО «ИНФО» КАРТОЧКИ ЧЕЛОВЕКА
+ *
+ * То, что раньше стояло на карточке пунктом «Контакты», — телефон, город,
+ * магазин, заметка, — кроме скидки: она печатается в «Заработке».
+ * Механизм — тот же dialog(), что у окна записи из «Истории» (ledOpen) и
+ * у «i»: одно окно за раз, прежнее закрывается СВОИМ done(), фокус
+ * возвращается на кнопку без прокрутки. Ничего не хранится.
+ * ================================================================== */
+var personInfoNode = null;
+/** Кнопка у имени. Единственное место, где она печатается. */
+function personInfoBtnHTML(personId){
+  return '<button type="button" class="chipf" data-act="person-info" data-arg="' +
+    esc(personId) + '">' + tr('ppl.infoBtn') + '</button>';
+}
+/** Строки окна — дословно прежний блок «Контакты» без скидки. */
+function personInfoHTML(p){
+  var h = '';
+  if (p.phone){
+    h += row({ k: tr('ppl.phone'), sub: tr('ppl.callOrWrite'),
+      v: '<span style="color:var(--accent)">' + esc(p.phone) + '</span>', act:'contact', arg:p.id });
+  } else {
+    h += row({ k: tr('ppl.phone'), sub: tr('ppl.noPhoneHint'),
+      v: '<span class="muted">' + tr('ppl.noPhone') + '</span>' });
+  }
+  if (p.city) h += row({ k: tr('ppl.city'), v: esc(p.city) });
+  if (p.shop) h += row({ k: tr('ppl.shop'), v: esc(p.shop) });
+  /* заметка — второй подписью, которая ПЕРЕНОСИТСЯ (sub2): в окне ей
+     не с чем делить строку, а в ячейке .v длинный текст налезал на подпись */
+  if (p.note) h += row({ k: tr('w.note'), sub2: esc(p.note) });
+  return h;
+}
+/** Открыть окно. Единственный вход; ветка data-act="person-info". */
+function personInfoOpen(personId){
+  var p = personById(personId);
+  if (!p) return;
+  if (personInfoNode && personInfoNode.__done) personInfoNode.__done(null);
+  var from = document.activeElement, mine = null;
+  dialog({ title: tr('ppl.contacts'), sub: esc(p.name),
+           html: '<div class="rows">' + personInfoHTML(p) + '</div>',
+           closeX: true, buttons: [], cancelLabel: tr('w.close') })
+    .then(function(){
+      if (personInfoNode !== mine) return;
+      personInfoNode = null;
+      if (from && from.focus && document.body.contains(from)) from.focus({ preventScroll: true });
+    });
+  mine = $('modalRoot').lastChild;
+  personInfoNode = mine;
+}
+/* ++++++ PERSON INFO END ++++++ */
 /* ++++++ GOODS RETURN ++++++ форма живёт в ленте карточки человека, под
  * своей выдачей. Значения — в ui.form.ret (область 6: форма живёт в ui, не
  * в DOM), открытая выдача — в ui.retFor; ui не сохраняется и не
@@ -21641,7 +21696,7 @@ function viewPersonCard(){
   var p = personById(ui.detail.id);
   if (!p){ ui.detail = null; return viewPeople(); }
   var sec = 'people', hs = personStats(), st = hs[p.id];
-  var h = backHead(esc(p.name), esc(personSub(p)) || tr('ppl.noContacts'));
+  var h = backHead(esc(p.name), esc(personSub(p)) || tr('ppl.noContacts'), personInfoBtnHTML(p.id));
   if (st.outstandingCents > 0){
     h += hero({ cls:'bad', k: tr('ppl.card.debtLeft'), v: heroMoney(sec, st.outstandingCents),
       s: tr('ppl.tookPaid', {took: baseOne(st.dueCents), paid: baseOne(st.paidCents)}) });
@@ -21672,27 +21727,14 @@ function viewPersonCard(){
   if (earnRange().swapped) h += '<div class="note warn">' + tr('rep.swapped') + '</div>';
   h += earnCardHTML(p.id, null, hs);
 
-  var contact = '';
-  if (p.phone){
-    contact += row({ k: tr('ppl.phone'), sub: tr('ppl.callOrWrite'),
-      v: '<span style="color:var(--accent)">' + esc(p.phone) + '</span>', act:'contact', arg:p.id });
-  } else {
-    contact += row({ k: tr('ppl.phone'), sub: tr('ppl.noPhoneHint'),
-      v: '<span class="muted">' + tr('ppl.noPhone') + '</span>' });
-  }
-  /* ++++++ DISCOUNT ++++++ строка печатается ТОЛЬКО когда скидка была:
-     строка «0.00» без повода — предупреждение без причины (область 44), и
-     она учит пропускать карточку. Валюта — базовая, как у всей ленты. */
-  var discGot = discPersonCents(p.id);
-  if (discGot > 0) contact += row({ k: tr('ppl.discGot'), sub: tr('ppl.discGotHint'),
-    v: baseOne(discGot) });
-  if (p.city) contact += row({ k: tr('ppl.city'), v: esc(p.city) });
-  if (p.shop) contact += row({ k: tr('ppl.shop'), v: esc(p.shop) });
-  if (p.note) contact += row({ k: tr('w.note'), v: esc(p.note) });
-  h += listCard(tr('ppl.contacts'), contact);
+  /* ++++++ PERSON INFO ++++++ пункта «Контакты» на карточке больше нет:
+     телефон, город, магазин и заметка открываются кнопкой «Инфо» у имени
+     (personInfoOpen), а «Получил скидками» печатает карточка «Заработок». */
 
   var rows = '';
-  ledgerEvents(p.id).forEach(function(e){
+  /* ++++++ PERSON INFO ++++++ новая запись — первой. Порядок ПОКАЗА, а не
+     расчёта: ledgerEvents() копит остаток по хронологии, и её не трогаем. */
+  ledgerEvents(p.id).slice().reverse().forEach(function(e){
     var tag = e.kind === 'take' ? 'led.took' : (e.kind === 'ret' ? 'led.ret' : 'led.paid');
     /* ++++++ GOODS RETURN ++++++ на строке выдачи — сколько уже вернулось
        и кнопка «Возврат», пока есть что возвращать; на строке возврата —
@@ -23729,7 +23771,7 @@ function trashRowTitle(col, r){
   }
   if (col === 'payments'){
     f = trashFind(state, r.personId);
-    return tr('trash.payOf', { name: esc(f ? f.rec.name : '—') });
+    return esc(f ? f.rec.name : '—');
   }
   if (col === 'returns'){
     f = trashFind(state, r.txId);
@@ -23740,7 +23782,7 @@ function trashRowTitle(col, r){
   if (col === 'loans') return esc(r.name);
   if (col === 'repayments'){
     f = trashFind(state, r.loanId);
-    return tr('trash.repOf', { name: esc(f ? f.rec.name : '—') });
+    return esc(f ? f.rec.name : '—');
   }
   return esc(tr('exp.cat.' + expCatOf(r.cat)) + (r.note ? ' · ' + r.note : ''));
 }
@@ -26677,6 +26719,7 @@ function handleAct(act, arg, e, srcEl){
   if (act === 'open-person'){ navGo('people', {type:'person', id:arg}); return; }
   if (act === 'open-product'){ navGo('products', {type:'product', id:arg}); return; }
   if (act === 'contact'){ var per = personById(arg); if (per) contactSheet(per); return; }
+  if (act === 'person-info'){ personInfoOpen(arg); return; }   /* ++++++ PERSON INFO ++++++ */
   if (act === 'go-pay'){
     resetPayForm(arg);
     ui.tab = 'pay'; ui.seg.pay = 'new'; ui.detail = null; ui.err = '';
