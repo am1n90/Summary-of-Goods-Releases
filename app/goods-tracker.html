@@ -680,6 +680,16 @@
   .ev .tag.take{background:var(--owed-soft);color:var(--owed-ink)}
   .ev .tag.pay{background:var(--got-soft);color:var(--got-ink)}
   .ev .tag.ret{background:var(--got-soft);color:var(--got-ink)}
+  /* ++++++ OWN ORDERS ++++++ отменённый заказ — нейтральный, не цвет «получено» */
+  .ev .tag.cancel{background:var(--line-2);color:var(--ink-2)}
+  .ev .ordhd{display:block;width:100%;min-width:0;padding:0;margin:0;background:none;border:none;color:inherit;font:inherit;text-align:left;cursor:pointer;pointer-events:auto}
+  /* ++++++ OWN ORDERS ++++++ содержимое .ev пропускает нажатие насквозь (LEDGER DETAIL:
+     .ev .l{pointer-events:none}) — заголовок заказа возвращает его себе, как .evb */
+  .ev .ordhd>span{display:block}
+  .ev .ordhd>span.tag{display:inline-block}
+  .ev.ordrow{flex-wrap:wrap}
+  .ev.ordrow>.l{flex:1 1 0}
+  .ev.ordrow>.evb{flex:1 1 100%;margin-top:8px}
   .ev .evb{margin-top:6px}
   .retwrap{padding:4px var(--pad) 14px;border-bottom:1px solid var(--line-2)}
   .ev .l .txt{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1140,7 +1150,7 @@
     .tabs button{flex:1 0 auto;min-width:0;padding-left:8px;padding-right:8px}
 
     .bottombar{
-      display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
+      display:grid;grid-template-columns:repeat(6,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
       background:var(--surface);border-top:1px solid var(--line);
       padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 16px rgba(16,24,40,.07);
     }
@@ -1685,7 +1695,17 @@ var STORAGE_KEY = 'goods-tracker/v1';
        запись не переписывается. Пустые списки не скармливаются bakSig():
        подпись документа, долгами не пользующегося, остаётся байт в байт
        прежней. */
-var SCHEMA_VERSION = 21;
+/* v22: orders — ЗАКАЗЫ. Мелкие разовые заказы вне торговли. Одна
+       коллекция записей:
+         orders { id, name, product, costMinor, costCur, saleMinor,
+                  saleCur, date, status, closedAt, rateSnap, createdAt }
+       status — 'active' | 'done' | 'cancelled', ЯВНОЕ поле.
+       К ТОРГОВЛЕ НЕ ОТНОСЯТСЯ, как долги: ни товара, ни склада, ни
+       человека вкладки «Люди». Суммы — в СВОЕЙ валюте (как у долгов):
+       прибыль при одной валюте — точная разность.
+       Документ старее v22 просто не имеет ключа и берёт пустой список —
+       ветки по версии нет, пустой список не скармливается bakSig(). */
+var SCHEMA_VERSION = 22;
 
 /* Status keys are the stable identifiers; never compare by label.
    The labels themselves live in the dictionary below, as status.<key>. */
@@ -1756,7 +1776,9 @@ var NOUN = {
   'return':    { en:['return','returns'],           ru:['возврат','возврата','возвратов'] },
   /* ++++++ CASH LOANS ++++++ «2 долга» / «5 возвратов долга» */
   loan:        { en:['cash loan','cash loans'],     ru:['долг','долга','долгов'] },
-  repayment:   { en:['repayment','repayments'],     ru:['возврат долга','возврата долга','возвратов долга'] }
+  repayment:   { en:['repayment','repayments'],     ru:['возврат долга','возврата долга','возвратов долга'] },
+  /* ++++++ OWN ORDERS ++++++ «3 заказа» */
+  order:       { en:['order','orders'],             ru:['заказ','заказа','заказов'] }
 };
 function plIndex(n){
   n = Math.abs(Math.floor(n));
@@ -3571,6 +3593,22 @@ var STR = {
                     ru:'запись заведена до разделения полей' },
 'ppl.noPhoneToast':{ en:'This person has no phone number saved.',
                      ru:'У этого человека не записан телефон.' },
+/* ++++++ NOTE PHONE ++++++ у людей, заведённых до разделения полей
+   (v8), номер иногда лежит в старом примечании целиком — цифры и ничего
+   больше. Карточка печатается только когда такие записи есть (область
+   44); окно переносит номер в поле «Телефон» и очищает примечание. */
+'notephone.card':    { en:'Phone numbers in old notes',     ru:'Номера в старых заметках' },
+'notephone.cardHint':{ en:'Recorded in the old note instead of the Phone field',
+                       ru:'Записаны в старом примечании, а не в поле «Телефон»' },
+'notephone.title':   { en:'Move phone numbers out of old notes',
+                       ru:'Перенести номера из старых заметок' },
+'notephone.sub':     { en:'The phone number for {n} is in the old note. Pick who to move — the rest stay as they are.',
+                       ru:'У {n} номер телефона записан в старом примечании. Отметьте, кого перенести — остальные останутся как есть.' },
+'notephone.willBe':  { en:'phone will become: {phone}',     ru:'телефон станет: {phone}' },
+'notephone.dupOf':   { en:'this number already belongs to «{name}» — not moved',
+                       ru:'этот номер уже записан у «{name}» — не перенесён' },
+'notephone.go':      { en:'Move',                           ru:'Перенести' },
+'notephone.done':    { en:'Moved: {n}.',                    ru:'Перенесено: {n}.' },
 'ppl.tookPaid':  { en:'took {took} &middot; paid {paid}',   ru:'взял на {took} &middot; оплатил {paid}' },
 'ppl.card.debtLeft':{ en:'Balance remaining',               ru:'Остаток долга' },
 'ppl.card.noDebt':{ en:'Nothing owed',                      ru:'Долга нет' },
@@ -4492,7 +4530,7 @@ var STR = {
 'loan.kindOwedMe':{ en:'Owed to me',       ru:'Мне должны' },
 'loan.kindIOwe':  { en:'I owe',            ru:'Я должен' },
 
-/* ---- вкладка «Деньги → Долги» ---- */
+/* ---- вкладка «Своё → Долги» ---- */
 'tab.loans':      { en:'Loans',       ru:'Долги' },
 'loan.sub':       { en:'money lent and borrowed &middot; apart from goods',
                     ru:'деньги в долг &middot; отдельно от товара' },
@@ -4615,6 +4653,113 @@ var STR = {
                     ru:'<b>К торговле эти долги отношения не имеют.</b> Они не входят ни в прибыль, ни в «Чистую прибыль», ни в выручку, ни в расходы, ни в «Кто сколько должен» за товар, ни в напоминания, ни в заработок на человеке, ни в «Полный отчёт», ни в отчёт за месяц.' },
 'faq.a.loans3':   { en:'A loan lives in its own currency: lend 5,000 dollars and 5,000 dollars are owed back, whatever the rate. A repayment is recorded in the same currency, and once everything is back the loan closes and moves to &laquo;History&raquo;. The totals &laquo;Owed to me&raquo; and &laquo;I owe&raquo; are shown in the Summary currency &mdash; each loan at the rate of the day it was made.',
                     ru:'Долг живёт в своей валюте: дали 5 000 долларов — вернуть должны 5 000 долларов, какой бы ни был курс. Возврат вносится в той же валюте; когда вернули всё, долг закрывается и переходит в «Историю». Итоги «Мне должны» и «Я должен» показаны в валюте «Сводки» — каждый долг по курсу того дня, когда он возник.' },
+
+/* ++++++ OWN ORDERS ++++++ словарь. Приставка `ord.` свободна и
+   принадлежит только этой теме; `own` — вкладка. */
+
+/* ---- вкладка «Своё» ---- */
+'tab.own':        { en:'Personal',         ru:'Своё' },
+'tabS.own':       { en:'Personal',         ru:'Своё' },
+'tab.orders':     { en:'Orders',           ru:'Заказы' },
+'ord.sub':        { en:'one-off orders &middot; apart from goods',
+                    ru:'разовые заказы &middot; отдельно от товара' },
+
+/* ---- разбор документа (validate) ---- */
+'v.eOrder':       { en:'order',                             ru:'заказ' },
+'v.ordNoProduct': { en:'order #{n} has no product',         ru:'у заказа №{n} нет товара' },
+'v.ordBadStatus': { en:'order #{n} has an invalid status',  ru:'у заказа №{n} некорректный статус' },
+'v.ordBadAmount': { en:'order #{n} has an invalid amount',  ru:'у заказа №{n} некорректная сумма' },
+'v.ordBadCur':    { en:'order #{n} has an invalid currency', ru:'у заказа №{n} некорректная валюта' },
+
+/* ---- корзина, окно «Удалить везде», окно валют ---- */
+'trash.tOrder':   { en:'Order',            ru:'Заказ' },
+'wipe.nOrders':   { en:'orders',           ru:'заказы' },
+'cp.where.order': { en:'orders',           ru:'заказы' },
+
+/* ---- экран ---- */
+'ord.segHist':    { en:'History',          ru:'История' },
+'ord.segNew':     { en:'New order',        ru:'Новый заказ' },
+'ord.profit':     { en:'Profit',           ru:'Прибыль' },
+'ord.activeN':    { en:'in progress: {n}', ru:'в работе: {n}' },
+'ord.sumT':       { en:'Total',            ru:'Итог' },
+'ord.spent':      { en:'Spent',            ru:'Потрачено' },
+'ord.spentSub':   { en:'cost, in progress', ru:'себестоимость, в работе' },
+'ord.sold':       { en:'Sold',             ru:'Продано' },
+'ord.soldSub':    { en:'price, in progress', ru:'цена продажи, в работе' },
+'ord.received':   { en:'Received',         ru:'Получено' },
+'ord.receivedSub':{ en:'price, completed', ru:'цена продажи, выполненные' },
+'ord.apxTitle':   { en:'Converted at today’s rate', ru:'Пересчитано по сегодняшнему курсу' },
+'ord.apxShort':   { en:'&asymp; converted at today’s rate', ru:'≈ пересчёт по сегодняшнему курсу' },
+'ord.apxNote':    { en:'&asymp; marks a figure converted from another currency at today’s rate in &laquo;Currencies and rates&raquo;. It is an approximation, not an exact sum, and it moves when the rate is changed. The amounts recorded in orders do not.',
+                    ru:'≈ — цифра пересчитана из другой валюты по сегодняшнему курсу из «Валюты и курсы». Это приближение, а не точная сумма, и оно меняется вместе с курсом. Суммы, записанные в заказах, не меняются.' },
+'ord.noRate':     { en:'No rate is set for {codes}, so some totals are not counted. The rate is set in &laquo;Account &rarr; Currencies and rates&raquo;.',
+                    ru:'Для {codes} не задан курс — часть итогов не посчитана. Курс задаётся в «Аккаунт → Валюты и курсы».' },
+'ord.activeT':    { en:'In progress',      ru:'В работе' },
+'ord.empty':      { en:'No orders in progress. Add one in &laquo;New order&raquo;.',
+                    ru:'Заказов в работе нет. Добавьте его в «Новый заказ».' },
+'ord.histT':      { en:'Completed and cancelled', ru:'Выполненные и отменённые' },
+'ord.histEmpty':  { en:'Nothing here yet. An order moves here when it is marked done or deleted.',
+                    ru:'Пока пусто. Заказ попадает сюда, когда его отметили «Готово» или удалили.' },
+'ord.closedOn':   { en:'closed {date}',    ru:'закрыт {date}' },
+'ord.pair':       { en:'cost {cost} &middot; sale {sale}', ru:'себестоимость {cost} &middot; продажа {sale}' },
+'ord.done':       { en:'Done',             ru:'Готово' },
+'ord.reopen':     { en:'Back to work',     ru:'Вернуть в работу' },
+'ord.toTrash':    { en:'To the trash',     ru:'В корзину' },
+'ord.profitS':    { en:'profit',           ru:'прибыль' },
+'ord.notCounted': { en:'not in the totals', ru:'в итог не входит' },
+'ord.st.active':  { en:'In progress',      ru:'В работе' },
+'ord.st.done':    { en:'Done',             ru:'Выполнен' },
+'ord.st.cancelled':{ en:'Cancelled',       ru:'Отменён' },
+'ord.stLabel':    { en:'Status',           ru:'Состояние' },
+
+/* ---- форма ---- */
+'ord.nameLabel':  { en:'Who ordered',      ru:'Кто заказал' },
+'ord.nameHint':   { en:'Typed by hand &mdash; the People tab is not used here.',
+                    ru:'Набирается вручную — вкладка «Люди» здесь не используется.' },
+'ord.productLabel':{ en:'What',            ru:'Что' },
+'ord.productPh':  { en:'Product name',     ru:'Название товара' },
+'ord.costLabel':  { en:'Cost',             ru:'Себестоимость' },
+'ord.saleLabel':  { en:'Sale price',       ru:'Цена продажи' },
+'ord.hintProfit': { en:'Profit: {sum}',    ru:'Прибыль: {sum}' },
+'ord.record':     { en:'Record order',     ru:'Записать заказ' },
+'err.ord.name':   { en:'Enter who ordered.', ru:'Укажите, кто заказал.' },
+'err.ord.product':{ en:'Enter what was ordered.', ru:'Укажите, что заказали.' },
+'err.ord.cost':   { en:'Enter the cost &mdash; a number greater than zero.',
+                    ru:'Укажите себестоимость — число больше нуля.' },
+'err.ord.sale':   { en:'Enter the sale price &mdash; a number greater than zero.',
+                    ru:'Укажите цену продажи — число больше нуля.' },
+'err.ord.date':   { en:'Enter the date.',  ru:'Укажите дату.' },
+'err.ord.gone':   { en:'This order no longer exists.', ru:'Этого заказа больше нет.' },
+'err.ordNameLong':{ en:'The name is too long &mdash; at most {n} characters.',
+                    ru:'Имя слишком длинное — не больше {n} знаков.' },
+'err.ordProductLong':{ en:'The product name is too long &mdash; at most {n} characters.',
+                    ru:'Название слишком длинное — не больше {n} знаков.' },
+'msg.ordAdded':   { en:'Order recorded',   ru:'Заказ записан' },
+'msg.ordUpdated': { en:'Order updated',    ru:'Заказ изменён' },
+'msg.ordDone':    { en:'Order done &mdash; moved to history', ru:'Заказ выполнен — он в истории' },
+'msg.ordCancelled':{ en:'Order cancelled &mdash; moved to history', ru:'Заказ отменён — он в истории' },
+'msg.ordReopened':{ en:'Order is back in progress', ru:'Заказ снова в работе' },
+
+/* ---- окна ---- */
+'dlg.ordCancelTitle':{ en:'Delete the order?', ru:'Удалить заказ?' },
+'dlg.ordCancelBody': { en:'<p>&laquo;{product}&raquo; for {name} moves to history as <b>cancelled</b> and stops counting in the totals.</p><p>It is not erased: it can be brought back to work from history.</p>',
+                       ru:'<p>«{product}» для {name} уйдёт в историю как <b>отменённый</b> и перестанет входить в итоги.</p><p>Запись не стирается: из истории её можно вернуть в работу.</p>' },
+'dlg.ordCancelOk':   { en:'Delete',       ru:'Удалить' },
+'dlg.ordTrashTitle': { en:'Move the order to the trash?', ru:'Убрать заказ в корзину?' },
+'dlg.ordTrashBody':  { en:'<p>&laquo;{product}&raquo; for {name} leaves history.</p>',
+                       ru:'<p>«{product}» для {name} уйдёт из истории.</p>' },
+
+/* ---- «i» и «Вопросы и ответы». Пример — в долларах и евро: программа
+   не про одну страну (правило владельца 2026-09-07). ---- */
+'faq.t.orders':   { en:'Orders',           ru:'Заказы' },
+'faq.q.orders':   { en:'What are orders, and why is their profit not in the Summary?',
+                    ru:'Что такое заказы и почему их прибыли нет в «Сводке»?' },
+'faq.a.orders1':  { en:'Here you record small one-off orders outside your regular trade: someone asks you to bring a phone case or a power bank. An order has a name, a product, what it cost you and what you sell it for. It has no stock and no product record.',
+                    ru:'Здесь записываются мелкие разовые заказы вне основной торговли: кто-то попросил привезти чехол или пауэрбанк. У заказа есть имя, товар, сколько он вам стоил и за сколько вы его отдаёте. Склада и карточки товара у него нет.' },
+'faq.a.orders2':  { en:'<b>Orders have nothing to do with trade.</b> They are not part of the profit, net profit, revenue or expenses, per-person earnings, the Full report or the monthly report. &laquo;Done&raquo; means paid: the order moves to history and its price counts as received. &laquo;Delete&raquo; moves it to history as cancelled, and it no longer counts anywhere. An order in history can be edited, brought back to work, or moved to the trash.',
+                    ru:'<b>К торговле заказы отношения не имеют.</b> Они не входят ни в прибыль, ни в «Чистую прибыль», ни в выручку, ни в расходы, ни в заработок на человеке, ни в «Полный отчёт», ни в отчёт за месяц. «Готово» значит «оплатили»: заказ уходит в историю, и его цена входит в «Получено». «Удалить» уводит его в историю как отменённый, и он больше никуда не входит. Заказ из истории можно изменить, вернуть в работу или убрать в корзину.' },
+'faq.a.orders3':  { en:'Each amount stays in the currency it was entered in. If cost and price are in the same currency, the profit is an exact difference: 100 dollars and 150 dollars give 50 dollars. If they differ &mdash; bought for 100 dollars, sold for 120 euros &mdash; the cost is converted at today’s rate and the profit is marked &asymp;: it is an approximation, and it moves when the rate changes. The totals are converted into the Summary currency the same way and carry the same mark. The amounts you entered never change.',
+                    ru:'Каждая сумма остаётся в той валюте, в которой её ввели. Если себестоимость и цена в одной валюте, прибыль — точная разность: 100 долларов и 150 долларов дают 50 долларов. Если в разных — купили за 100 долларов, продали за 120 евро, — себестоимость пересчитывается по сегодняшнему курсу, и прибыль помечена знаком ≈: это приближение, и оно меняется вместе с курсом. Итоги пересчитываются в валюту «Сводки» так же и несут тот же знак. Введённые суммы не меняются никогда.' },
 
 
 /* ++++++ GDRIVE ++++++ продуктовый режим: вход через Google и обмен
@@ -5285,6 +5430,10 @@ function curUsedBy(doc, code){
      как у записей выше: запись из корзины возвращают. */
   var lr = (doc.loans || []).concat(doc.repayments || []);
   for (i = 0; i < lr.length; i++) if (lr[i] && curNorm(lr[i].cur) === c){ hits.push('loan'); break; }
+  /* ++++++ OWN ORDERS ++++++ суммы заказа живут в своих валютах — удалить такую
+     валюту значило бы оставить его прибыль прочерком навсегда. */
+  var ol = doc.orders || [];
+  for (i = 0; i < ol.length; i++) if (ol[i] && (curNorm(ol[i].costCur) === c || curNorm(ol[i].saleCur) === c)){ hits.push('order'); break; }
   if (curNorm(s.baseCurrency) === c) hits.push('base');
   if (curNorm(s.sumCur) === c) hits.push('sumCur');
   if (curNorm(s.displayCurrency) === c) hits.push('displayCurrency');
@@ -6522,8 +6671,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.22.0';
-var APP_BUILD = '2026-09-15T10:23:07.523Z';
+var APP_VERSION = '1.23.0';
+var APP_BUILD = '2026-09-17T10:14:32.826Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -7604,8 +7753,10 @@ var TRASH_DAYS = 30;
    (SYNC_COLS), и это не совпадение: корзина едет обменом как данные. */
 /* ++++++ CASH LOANS ++++++ долги и возвраты идут в корзину, как всякая запись о
    деньгах. Порядок — родитель раньше ребёнка, как у выдачи и возврата. */
+/* ++++++ OWN ORDERS ++++++ заказ, удалённый НАСОВСЕМ, идёт в корзину, как всякая
+   запись. «Удалить» у заказа — не это, а статус «отменён». */
 var TRASH_COLS = ['products', 'people', 'transactions', 'payments', 'returns', 'expenses',
-                  'loans', 'repayments'];
+                  'loans', 'repayments', 'orders'];
 
 /* Собственное свойство — R20: id вида `constructor` не должен отзываться
    функцией из прототипа. Идиома own() из основного файла. */
@@ -7690,7 +7841,8 @@ function trashCascade(doc, col, id){
   var out = { products: [], people: [], transactions: [], payments: [], returns: [], expenses: [],
               /* ++++++ CASH LOANS ++++++ ключи ОБЯЗАТЕЛЬНЫ: trashMark() читает plan[k] для
                  каждой коллекции TRASH_COLS и упал бы на первом же удалении */
-              loans: [], repayments: [] };
+              loans: [], repayments: [],
+              orders: [] };                            /* ++++++ OWN ORDERS ++++++ детей нет */
   var txIds = {}, i, list;
   if (!trashFind(doc, id)) return out;
   out[col].push(id);
@@ -8172,8 +8324,10 @@ function trashAttIds(doc, ids){
 /* ++++++ CASH LOANS ++++++ v21: долги и возвраты ездят обменом, как всякая
    запись. Список живёт в ТРЁХ местах — здесь и в обеих копиях
    core/merge.js, — и двигаться обязан во всех трёх (правило 93). */
+/* ++++++ OWN ORDERS ++++++ v22: заказы ездят обменом. Три места — здесь и обе
+   копии core/merge.js (правило 93). */
 var SYNC_COLS = ['products', 'people', 'transactions', 'payments', 'returns', 'expenses', 'lots',
-                 'loans', 'repayments'];
+                 'loans', 'repayments', 'orders'];
 
 /* Поля `settings`, которые ЕДУТ. Всё остальное — предпочтение этого
    устройства и остаётся дома (список и доводы — в README задачи).
@@ -11487,6 +11641,8 @@ function defaultState(){
     /* ++++++ CASH LOANS ++++++ v21. Долги наличными и возвраты по ним — к торговле
        не относятся. */
     loans: [], repayments: [],
+    /* ++++++ OWN ORDERS ++++++ v22. Разовые заказы — к торговле не относятся. */
+    orders: [],
     /* ++++++ SYNC ++++++ v16. Карты рядом с записями, не внутри них. */
     syncMeta: {}, syncTombs: {}
   };
@@ -12229,6 +12385,9 @@ function bakSig(){
      сохраняет подпись байт в байт. */
   if (state.loans && state.loans.length) walk(state.loans);
   if (state.repayments && state.repayments.length) walk(state.repayments);
+  /* ++++++ OWN ORDERS ++++++ заказ — запись; пустой список не скармливается, и
+     проверяется само наличие поля: подпись документа без заказов прежняя. */
+  if (state.orders && state.orders.length) walk(state.orders);
   return h1.toString(36) + '-' + h2.toString(36) + '-' + len.toString(36);
 }
 
@@ -12906,7 +13065,7 @@ function validate(obj){
   /* ++++++ CASH LOANS ++++++ и долги: сумма долга без валюты документа так же
      бессмысленна, как сумма выдачи. */
   var fresh0 = (s.baseCurrency === '' || s.baseCurrency === undefined) &&
-    ['products','people','transactions','payments','returns','expenses','loans','repayments'].every(function(k){
+    ['products','people','transactions','payments','returns','expenses','loans','repayments','orders'].every(function(k){
       return !obj[k] || !obj[k].length;
     });
   if (!fresh0 &&
@@ -12952,6 +13111,8 @@ function validate(obj){
     /* ++++++ CASH LOANS ++++++ v21: долги наличными. Заполняются ниже, после
        поездок; возвраты — после долгов, иначе проверять ссылку не по чему. */
     loans: [], repayments: [],
+    /* ++++++ OWN ORDERS ++++++ v22: заказы. Заполняются ниже, после долгов. */
+    orders: [],
     /* ++++++ SYNC ++++++ v16: карты обмена. Читаются той же рукой, что и
        rateLog: кривое значение отбрасывается целиком, документ из-за него
        не перестаёт открываться. Внутрь записей не попадает ничего. */
@@ -13348,6 +13509,27 @@ function validate(obj){
         amountMinor:r.amountMinor, cur:r.cur.toUpperCase(), date:dateOf(r.date),
         note: typeof r.note==='string'?r.note:'', rateSnap:snapOf(r),
         createdAt: typeof r.createdAt==='string'?r.createdAt:'' }, r));
+    } catch(e){ dropRec(e); } });
+
+    /* ++++++ OWN ORDERS ++++++ v22. Заказы. Кривая запись выбрасывает СЕБЯ (R23).
+       Статус не угадывается: он решает, входит ли заказ в итоги, и
+       угадать его значило бы молча сдвинуть «Получено». Дата закрытия
+       не придумывается: нечитаемая — пустая, показ берёт дату заказа. */
+    arr('orders').forEach(function(o,i){ try {
+      if (!o || typeof o !== 'object') throw new Error(tr('v.badRecord', {what:tr('v.eOrder'), n:i+1}));
+      if (typeof o.name !== 'string' || !o.name.trim()) throw new Error(tr('v.noName', {what:tr('v.eOrder'), n:i+1}));
+      if (typeof o.product !== 'string' || !o.product.trim()) throw new Error(tr('v.ordNoProduct', {n:i+1}));
+      if (!ordStatusOf(o.status)) throw new Error(tr('v.ordBadStatus', {n:i+1}));
+      if (!isInt(o.costMinor) || o.costMinor < 1 || !isInt(o.saleMinor) || o.saleMinor < 1)
+        throw new Error(tr('v.ordBadAmount', {n:i+1}));
+      if (typeof o.costCur !== 'string' || !/^[A-Za-z0-9]{1,6}$/.test(o.costCur) ||
+          typeof o.saleCur !== 'string' || !/^[A-Za-z0-9]{1,6}$/.test(o.saleCur))
+        throw new Error(tr('v.ordBadCur', {n:i+1}));
+      out.orders.push(trashPut({ id:takeId(o.id, tr('v.eOrder')), name:o.name.trim(), product:o.product.trim(),
+        costMinor:o.costMinor, costCur:o.costCur.toUpperCase(), saleMinor:o.saleMinor,
+        saleCur:o.saleCur.toUpperCase(), date:dateOf(o.date), status:o.status,
+        closedAt: (o.status !== 'active' && typeof o.closedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.closedAt)) ? o.closedAt : '',
+        rateSnap:snapOf(o), createdAt: typeof o.createdAt==='string'?o.createdAt:'' }, o));
     } catch(e){ dropRec(e); } });
   }catch(e){ return bad(e.message); }
 
@@ -13962,6 +14144,196 @@ function loanDefaultCur(){
   return state.settings.baseCurrency;
 }
 /* ++++++ CASH LOANS CORE END ++++++ */
+/* ============================================= ++++++ OWN ORDERS ++++++ ==
+ * ЗАКАЗЫ: мелкие разовые заказы вне торговли — чехол, пауэрбанк, то, что
+ * попросили привезти один раз.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ:
+ *
+ *   ЗАКАЗ — САМОСТОЯТЕЛЬНАЯ ЗАПИСЬ, НЕ СВЯЗАННАЯ НИ С ТОВАРОМ, НИ СО
+ *   СКЛАДОМ, НИ С ЧЕЛОВЕКОМ ВКЛАДКИ «ЛЮДИ», НИ С ДОЛГАМИ. НИ ОДНА ЕГО
+ *   ЦИФРА НЕ ВХОДИТ НИ В ПРИБЫЛЬ, НИ В «ЧИСТУЮ ПРИБЫЛЬ», НИ В ВЫРУЧКУ, НИ
+ *   В РАСХОДЫ, НИ В ОТЧЁТ ЗА МЕСЯЦ, НИ В ЗАРАБОТОК НА ЧЕЛОВЕКЕ.
+ *
+ * Из него:
+ *   · ни одна считающая функция торговли не читает `orders` и ни одна не
+ *     тронута. «Сводка», «Полный отчёт», отчёт за месяц и заработок читают
+ *     actTx()/actPay()/actExp() и соседей, а не весь документ;
+ *   · имя — строка на записи (допущение A1). Подсказки имени — только из
+ *     прежних заказов;
+ *   · СТАТУС — ЯВНОЕ ПОЛЕ из трёх значений: 'active' | 'done' | 'cancelled'.
+ *     Он не выводится ни из отсутствия даты, ни из чего-либо ещё.
+ *     «Удалить» у заказа — это СМЕНА СТАТУСА на 'cancelled', а не корзина.
+ *     Корзина — отдельное действие «В корзину» из истории.
+ *
+ * ДЕНЬГИ. СУММЫ ЖИВУТ В ВАЛЮТЕ ВВОДА (как у долгов, решение 1 задачи).
+ *
+ *   costMinor + costCur — себестоимость, saleMinor + saleCur — цена
+ *   продажи, целыми минорными единицами СВОЕЙ валюты. Почему не в основной:
+ *   прибыль в одной валюте обязана быть простым вычитанием в этой валюте, а
+ *   провенанс (entryMinor) в арифметику входить не имеет права (домен-
+ *   правило 7). Храня в основной, «150 USD − 100 USD = 50 USD» пришлось бы
+ *   получать обратным переводом с округлением — то есть не точно.
+ *
+ *   Отсюда:
+ *   · прибыль заказа при ОДНОЙ валюте — вычитание целых, без курса вовсе;
+ *   · при РАЗНЫХ валютах себестоимость переводится в валюту продажи по
+ *     ТЕКУЩЕМУ курсу настроек (допущение A2) и прибыль ПОМЕЧАЕТСЯ как
+ *     пересчёт — это приближение, а не точная разность;
+ *   · итог раздела переводит каждую сумму в валюту показа («Сводки») по
+ *     ТЕКУЩЕМУ курсу; каждая из четырёх цифр, где был хоть один перевод,
+ *     помечается тем же знаком;
+ *   · перевод — ОДНА функция ordConv(): курс берёт единственный rateOf(),
+ *     округление одно на сумму;
+ *   · снимок курсов пишется при создании (rateSnapshot()) и не двигается
+ *     при правке (A4) — по общему правилу записей. Пересчитанные цифры его
+ *     НЕ читают: по A2 они по определению сегодняшние, и об этом сказано за
+ *     «i». Снимок не входит в snapEach() и при смене базы не переписывается
+ *     — ровно по доводу долгов: суммы в своей валюте при смене базы не
+ *     делятся, поделённый снимок разошёлся бы с ними;
+ *   · смена основной валюты сумм заказов не трогает вовсе.
+ * ================================================================== */
+
+var ORD_STATUSES = ['active', 'done', 'cancelled'];
+/** Пределы — правило ФОРМЫ; validate() не режет (резать чужую копию значит
+ *  молча терять текст, как person.note). */
+var ORD_NAME_MAX = 120;
+var ORD_PRODUCT_MAX = 200;
+
+function ordStatusOf(v){ return (v === 'active' || v === 'done' || v === 'cancelled') ? v : ''; }
+
+/** Активные записи. Корзину отсекает trashActive() — единственное место. */
+function actOrders(){ return trashActive(state.orders || []); }
+function orderById(id){
+  var l = actOrders(), i;
+  for (i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+  return null;
+}
+
+/** ЕДИНСТВЕННЫЙ ПЕРЕВОД РАЗДЕЛА. Сумма в `from` → целые минорные единицы
+ *  `to` по ТЕКУЩЕМУ курсу настроек. Одна валюта — без курса и без
+ *  приближения. Нет курса у любой из двух — v:null (печатается «—»).
+ *  Одно округление: через основную валюту НЕОКРУГЛЁННО. */
+function ordConv(minor, from, to){
+  if (from === to) return { v: minor, approx: false };
+  var rf = rateOf(from), rt = rateOf(to);
+  if (rf === null || rt === null) return { v: null, approx: true };
+  return { v: Math.round(minor * rf / rt), approx: true };
+}
+
+/** Прибыль ОДНОГО заказа — в валюте продажи. */
+function ordProfit(o){
+  if (o.costCur === o.saleCur) return { v: o.saleMinor - o.costMinor, cur: o.saleCur, approx: false };
+  var c = ordConv(o.costMinor, o.costCur, o.saleCur);
+  return { v: c.v === null ? null : o.saleMinor - c.v, cur: o.saleCur, approx: true };
+}
+
+/** Тотальный порядок: дата, createdAt, id (хрупкое место 34). */
+function ordCmpDesc(a, b){
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  var ca = a.createdAt || '', cb = b.createdAt || '';
+  if (ca !== cb) return ca < cb ? 1 : -1;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? 1 : -1;
+}
+
+/** ЕДИНСТВЕННАЯ АГРЕГИРУЮЩАЯ ФУНКЦИЯ РАЗДЕЛА.
+ *
+ *  Читает документ и ничего не меняет. Торговых функций не зовёт.
+ *
+ *    active  — заказы в работе, новые сверху
+ *    history — готовые и отменённые, недавно закрытые сверху
+ *    byId[id] = { order, profit }
+ *    sum = { cur, spent, sold, received, profit,
+ *            spentApprox, soldApprox, receivedApprox, profitApprox, noRate }
+ *      spent    — себестоимость АКТИВНЫХ
+ *      sold     — цена продажи АКТИВНЫХ
+ *      received — цена продажи ГОТОВЫХ (только их, A3)
+ *      profit   — sold − spent: видна сразу, без ожидания оплаты
+ *    Отменённый заказ не входит ни в одну цифру.
+ *
+ *  Цифра — целые минорные единицы валюты `cur` либо null, если перевести
+ *  нечем (нет курса у валюты записи или у валюты показа). */
+function orderFigures(doc, cur){
+  var list = trashActive((doc && doc.orders) || []), out = { byId: {}, active: [], history: [] }, i;
+  var zero = rateOf(cur) === null ? null : 0;
+  var s = { cur: cur, spent: zero, sold: zero, received: zero, profit: zero,
+            spentApprox: false, soldApprox: false, receivedApprox: false, profitApprox: false, noRate: [] };
+  var seen = {};
+  function add(key, minor, from){
+    var c = ordConv(minor, from, cur);
+    if (c.approx) s[key + 'Approx'] = true;
+    if (c.v === null && rateOf(from) === null && !own(seen, from)){ seen[from] = true; s.noRate.push(from); }
+    s[key] = (s[key] === null || c.v === null) ? null : s[key] + c.v;
+  }
+  for (i = 0; i < list.length; i++){
+    var o = list[i], f = { order: o, profit: ordProfit(o) };
+    out.byId[o.id] = f;
+    if (o.status === 'active'){
+      out.active.push(f);
+      add('spent', o.costMinor, o.costCur);
+      add('sold', o.saleMinor, o.saleCur);
+    } else {
+      out.history.push(f);
+      if (o.status === 'done') add('received', o.saleMinor, o.saleCur);
+    }
+  }
+  s.profit = (s.sold === null || s.spent === null) ? null : s.sold - s.spent;
+  s.profitApprox = s.soldApprox || s.spentApprox;
+  s.noRate.sort();
+  out.active.sort(function(a, b){ return ordCmpDesc(a.order, b.order); });
+  out.history.sort(function(a, b){
+    var x = a.order.closedAt || '', y = b.order.closedAt || '';
+    if (x !== y) return x < y ? 1 : -1;
+    return ordCmpDesc(a.order, b.order);
+  });
+  out.sum = s;
+  return out;
+}
+
+/** Можно ли сохранить поля заказа — и если нет, то почему. Проверки в
+ *  порядке полей формы. `f` — { name, product, cost, costCur, sale,
+ *  saleCur, date } строками формы.
+ *    ok:true несёт costMinor, saleMinor, name, product (уже обрезанные). */
+function orderCheck(f){
+  var name = String(f.name || '').trim(), product = String(f.product || '').trim();
+  if (!name) return { ok: false, why: 'name' };
+  if (name.length > ORD_NAME_MAX) return { ok: false, why: 'nameLong' };
+  if (!product) return { ok: false, why: 'product' };
+  if (product.length > ORD_PRODUCT_MAX) return { ok: false, why: 'productLong' };
+  /* ноль отвергается наравне с пустым и нечисловым; знака parseMoneyToCents()
+     не принимает, поэтому отрицательного не бывает по построению */
+  var c = parseMoneyToCents(f.cost);
+  if (c === null || c <= 0) return { ok: false, why: 'cost' };
+  var p = parseMoneyToCents(f.sale);
+  if (p === null || p <= 0) return { ok: false, why: 'sale' };
+  if (typeof f.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(f.date)) return { ok: false, why: 'date' };
+  if (rateOf(f.costCur) === null) return { ok: false, why: 'rate', cur: f.costCur };
+  if (rateOf(f.saleCur) === null) return { ok: false, why: 'rate', cur: f.saleCur };
+  return { ok: true, name: name, product: product, costMinor: c, saleMinor: p };
+}
+
+/** Подсказки имени — ТОЛЬКО из имён прежних заказов. «Люди» не читаются
+ *  по построению: функция видит doc.orders и больше ничего. */
+function orderNames(doc, q, limit){
+  var qn = normQ(q), seen = {}, out = [], i, n, k;
+  var list = trashActive((doc && doc.orders) || []).slice().sort(ordCmpDesc);
+  var max = limit || 6;
+  if (!qn) return out;
+  for (i = 0; i < list.length && out.length < max; i++){
+    n = list[i].name;
+    k = normQ(n);
+    if (own(seen, k)) continue;
+    seen[k] = true;
+    if (k === qn || k.indexOf(qn) < 0) continue;
+    out.push(n);
+  }
+  return out;
+}
+
+/** «150.00 USD» — сумма в своей валюте, без пересчёта. */
+function ordMoney(minor, cur){ return fmtMinor(minor) + ' ' + esc(cur); }
+/* ++++++ OWN ORDERS CORE END ++++++ */
 /* ================================================ ++++++ EXPENSES ++++++ ==
  * ПРОЧИЕ РАСХОДЫ: доставка, растаможка, комиссия, перевод денег, другое.
  *
@@ -15424,7 +15796,7 @@ function infoP(html){ return '<p class="ip">' + html + '</p>'; }
    что покупают и выдают, потом деньги, потом устройство самой
    программы. Раздел без единого вопроса не печатается вовсе — пустая
    группа обещает ответы, которых нет. */
-var FAQ_TOPICS = ['goods', 'people', 'tx', 'pay', 'exp', 'loans', 'money', 'sync', 'backup', 'app'];
+var FAQ_TOPICS = ['goods', 'people', 'tx', 'pay', 'exp', 'loans', 'orders', 'money', 'sync', 'backup', 'app'];
 
 var FAQ = [
 
@@ -15545,6 +15917,16 @@ var FAQ = [
   title: function(){ return tr('tab.loans'); },
   html: function(){ return infoP(tr('faq.a.loans1')) + infoP(tr('faq.a.loans2')) + infoP(tr('faq.a.loans3')); },
   see: ['money.profit', 'people.debt']
+},
+
+/* ++++++ OWN ORDERS ++++++ заказы: что это, во что НЕ входят, почему пересчёт помечен.
+   Иконка — у заголовка вкладки «Своё» на «Заказах». */
+{
+  key: 'orders', topic: 'orders', icon: true,
+  q: function(){ return tr('faq.q.orders'); },
+  title: function(){ return tr('tab.orders'); },
+  html: function(){ return infoP(tr('faq.a.orders1')) + infoP(tr('faq.a.orders2')) + infoP(tr('faq.a.orders3')); },
+  see: ['loans', 'money.profit']
 },
 
 /* ---------------------------------------------------------------- *
@@ -17312,7 +17694,9 @@ ui.seg = { summary:'money', products:'list', people:'list', tx:'list', pay:'list
               не попадает ни в документ, ни в копию. */
            money:'tx',
            /* ++++++ CASH LOANS ++++++ сегмент вкладки «Долги» */
-           loans:'list' };
+           loans:'list',
+           /* ++++++ OWN ORDERS ++++++ какая вкладка «Своего» открыта и сегмент заказов */
+           own:'loans', orders:'list' };
 /* ++++++ CASH LOANS ++++++ строка поиска долгов и долг, у которого открыта форма возврата. Это
    взгляд, а не запись: ui не сохраняется и не выгружается. */
 ui.loanQuery = '';
@@ -17415,6 +17799,7 @@ function resetForms(){
   resetProductForm(); resetPersonForm(); resetTxForm(); resetPayForm(); resetRetForm();
   resetExpForm();                                    /* ++++++ EXPENSES ++++++ */
   resetLoanForm(); resetRepayForm();                 /* ++++++ CASH LOANS ++++++ */
+  resetOrderForm();                                  /* ++++++ OWN ORDERS ++++++ */
 }
 /** та же память по человеку, что была в форме выдачи: его последняя валюта */
 function lastTxCurFor(personId){
@@ -17990,6 +18375,43 @@ function personSub(p){
   return parts.join(' · ');
 }
 
+/* ++++++ NOTE PHONE ++++++ до разделения полей (v8) номер записывали в
+ * ЕДИНСТВЕННОЕ поле — «Примечание» (person.note). У части людей,
+ * заведённых тогда, он там и остался: поле «Телефон» пустое.
+ *
+ * ОТЛИЧИТЬ НОМЕР ОТ ОБЫЧНОГО ТЕКСТА С ЦИФРАМИ можно только тогда, когда
+ * примечание — номер и НИЧЕГО БОЛЬШЕ: ни буквы, ни слова, только цифры,
+ * пробелы и типовые разделители номера (+, -, скобки, точка). Текст вида
+ * «Душанбе, брат Фируза» или «долг 500 до пятницы» под это не подходит и
+ * трогать его нельзя — молчаливая правка чужого текста хуже пропуска. */
+function notePhoneOf(note){
+  var s = String(note || '').trim();
+  if (!s) return null;
+  if (!/^[+()\-.\s\d]+$/.test(s)) return null;
+  var n = phoneDigits(s);
+  if (n < 9 || n > 15) return null;
+  return s;
+}
+/** Кто подходит под перенос, и почему сегодня ему откажут. `actPeople()`
+ *  — тот же коридор, что читает список и лист: запись в корзине не
+ *  предлагается. Столкновение с уже занятым номером (по `phoneKey()`,
+ *  той же мерке, что и форма) не даёт ошибки — оно просто не переносится
+ *  и называется словами, ровно как err.phoneDup у формы. */
+function notePhoneCandidates(){
+  var used = {}, out = [];
+  actPeople().forEach(function(p){ var k = phoneKey(p.phone); if (k) used[k] = p.name; });
+  actPeople().forEach(function(p){
+    if (p.phone) return;
+    var cand = notePhoneOf(p.note);
+    if (!cand) return;
+    var key = phoneKey(cand);
+    var dupOf = own(used, key) ? used[key] : null;
+    out.push({ person: p, phone: cand, dupOf: dupOf });
+    if (!dupOf) used[key] = p.name;
+  });
+  return out;
+}
+
 /* ++++++ NAME TWINS ++++++ R29: у людей нет проверки на тёзок.
  *
  * У ТОВАРОВ имя уникально, и это правильно: два товара с одним названием —
@@ -18239,6 +18661,8 @@ var ICON = {
   more:    '<circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>',
   /* ++++++ NAV ++++++ кошелёк для «Денег». Прежние tx/pay/exp остаются
      живыми: их печатают вкладки внутри раздела. */
+  /* ++++++ OWN ORDERS ++++++ блокнот: личные записи */
+  own:     '<rect x="5" y="3.5" width="14" height="17" rx="2.6"/><path d="M9 8.5h6"/><path d="M9 12h6"/><path d="M9 15.5h3.5"/>',
   money:   '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h11A2.5 2.5 0 0 1 19 8.5V9"/>' +
            '<rect x="3" y="9" width="18" height="10.5" rx="2.6"/><circle cx="16.6" cy="14.2" r="1.35"/>',
   person:  '<circle cx="12" cy="8.6" r="3.6"/><path d="M4.8 20c0-3.7 3.2-5.9 7.2-5.9s7.2 2.2 7.2 5.9"/>',
@@ -18276,8 +18700,12 @@ function ico(n){
    сегментов «Ещё» — разделами «Аккаунта». Ни одна возможность не
    переехала и не переписалась: изменилось только то, как до неё
    добираются. Последний пункт показывает круглый аватар. */
+/* ++++++ OWN ORDERS ++++++ ШЕСТОЙ пункт — «Своё»: долги и заказы, личное, а не
+   торговля. Прежнее «шестого быть не должно» говорило о торговле;
+   решение владельца 17.09.2026 (задача own-tab), замер 320 px — в её
+   README. Порядок: торговля слева направо, личное перед аккаунтом. */
 var NAV = [['summary','tab.summary'],['products','tab.products'],['people','tab.people'],
-           ['money','tab.money'],['acct','tab.acct']];
+           ['money','tab.money'],['own','tab.own'],['acct','tab.acct']];
 
 /* Какой раздел «Аккаунта» отвечает прежнему сегменту «Ещё». Читается
    ТОЛЬКО в navNorm(): второго ответа на этот вопрос быть не должно. */
@@ -18294,7 +18722,17 @@ function navNorm(){
      seg ставит ui.tab = 'loans'. Без этой строки render() такой вкладки
      не знает и уводит на «Сводку» — нажатие «История» открывало бы не то.
      У расходов то же самое держит эта же функция. */
-  if (ui.tab === 'tx' || ui.tab === 'pay' || ui.tab === 'exp' || ui.tab === 'loans'){
+  /* ++++++ OWN TAB ++++++ segbar('loans'|'orders', …) ставит ui.tab = 'loans'|'orders' —
+     это вкладки «Своего». И прежний адрес «Деньги → Долги» (ui.seg.money =
+     'loans', его ставят наборы и снимок стека) ведёт туда же: одна точка
+     перевода старого имени, как и было. */
+  if (ui.tab === 'loans' || ui.tab === 'orders'){
+    ui.seg.own = ui.tab;
+    ui.tab = 'own';
+  } else if (ui.tab === 'money' && ui.seg.money === 'loans'){
+    ui.seg.money = 'tx'; ui.seg.own = 'loans';
+    ui.tab = 'own';
+  } else if (ui.tab === 'tx' || ui.tab === 'pay' || ui.tab === 'exp'){
     ui.seg.money = ui.tab;
     ui.tab = 'money';
   } else if (ui.tab === 'more'){
@@ -21000,10 +21438,19 @@ function attOpenSheet(id){
        it would be right to be suspicious. Real <a> elements are also
        what keeps a popup blocker out of it: the browser sees a navigation the
        owner asked for, not one the script started. */
-    var links = '<div class="stack">' +
-      '<a class="btn ghost" data-attlink="tab" target="_blank" rel="noopener noreferrer">' +
-        tr('att.openTab') + '</a>' +
-      '<a class="btn ghost" data-attlink="save">' + tr('att.saveCopy') + '</a></div>';
+    /* «Открыть в новой вкладке» убрана у снимка (решение владельца
+       2026-09-15): фото и так открывается нажатием — тем же телом
+       (zvThumbHTML), что печатается выше, — а вкладка открывала ровно
+       тот же blob. У PDF кнопка остаётся: iframe показывает его СРЕДИ
+       формы, а вкладка — единственный способ увидеть накладную во весь
+       экран и распечатать средствами встроенного просмотрщика. */
+    var links = pdf
+      ? '<div class="stack">' +
+        '<a class="btn ghost" data-attlink="tab" target="_blank" rel="noopener noreferrer">' +
+          tr('att.openTab') + '</a>' +
+        '<a class="btn ghost" data-attlink="save">' + tr('att.saveCopy') + '</a></div>'
+      : '<div class="stack">' +
+        '<a class="btn ghost" data-attlink="save">' + tr('att.saveCopy') + '</a></div>';
     var buttons = m.kind === 'invoice'
       ? [{key:'replace', label: tr('att.replace')}, {key:'del', label: tr('w.delete'), variant:'danger'}]
       : [{key:'replace', label: tr('att.photoChange')}, {key:'del', label: tr('att.photoRemove'), variant:'danger'}];
@@ -21289,6 +21736,7 @@ function viewPeople(){
   h += segbar('people', [['list', tr('seg.list')],
     ['add', ui.form.person.editId ? tr('seg.editing') : tr('seg.add')]]);
   if (ui.seg.people === 'list'){
+    h += notePhoneCardHTML();
     h += searchBar('peopleQuery', tr('srch.phPerson'));
     h += '<div id="peopleQueryBox">' + peopleListHTML() + '</div>';
   } else {
@@ -21344,6 +21792,79 @@ function formPerson(){
   h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'w.add')) +
     (f.editId ? btn(tr('w.cancelEdit'), 'person-cancel', 'ghost') : '') + '</div>';
   return h + '</form>';
+}
+/* ++++++ NOTE PHONE ++++++ черновик окна — модульная переменная, как
+ * `expPickDraft` и `curPickDraft`: наполовину отмеченному списку нечего
+ * делать ни в `state`, ни в резервной копии. */
+var notePhoneDraft = null;
+/** Карточка печатается ТОЛЬКО когда есть что перенести (область 44) —
+ *  после переноса кандидатов не остаётся, и карточка исчезает сама. */
+function notePhoneCardHTML(){
+  var list = notePhoneCandidates();
+  if (!list.length) return '';
+  return '<section class="card">' + row({ k: tr('notephone.card'),
+    sub: tr('notephone.cardHint'), cnt: list.length, act:'notephone-open' }) +
+    '</section>';
+}
+/** Строка-флажок переиспользует `expPickBox()`: тот же вопрос («отмечено
+ *  или нет»), второй ответ на него заводить незачем. Столкнувшийся с
+ *  занятым номером печатается строкой без действия — не кнопкой,
+ *  переносить его нечем. */
+function notePhoneRowsHTML(){
+  var list = notePhoneCandidates(), rows = '';
+  list.forEach(function(c){
+    var checked = !c.dupOf && notePhoneDraft && own(notePhoneDraft, c.person.id);
+    var sub = c.dupOf ? tr('notephone.dupOf', {name: esc(c.dupOf)})
+                       : tr('notephone.willBe', {phone: esc(c.phone)});
+    rows += row({ lead: expPickBox(!!checked), k: esc(c.person.name), sub: sub,
+      act: c.dupOf ? '' : 'notephone-toggle', arg: c.person.id, noChev: true });
+  });
+  return '<div class="rows">' + rows + '</div>';
+}
+function notePhoneHTML(){
+  return '<div id="notePhoneBody">' + notePhoneRowsHTML() + '</div>';
+}
+/** Перерисовка ОДНОГО узла листа, без render() — лист не часть render()
+ *  вовсе (область 14). */
+function notePhonePaint(){
+  var b = $('notePhoneBody');
+  if (b) b.innerHTML = notePhoneRowsHTML();
+}
+function notePhoneToggle(id){
+  if (!notePhoneDraft) return;
+  if (own(notePhoneDraft, id)) delete notePhoneDraft[id]; else notePhoneDraft[id] = true;
+  notePhonePaint();
+}
+/** Перенос: только отмеченные и только не столкнувшиеся. Телефон
+ *  записывается КАК НАБРАН в примечании (решение владельца 15.09,
+ *  «переносить как написан»); примечание после переноса пустеет. */
+function notePhoneApply(){
+  var n = 0;
+  notePhoneCandidates().forEach(function(c){
+    if (c.dupOf) return;
+    if (!notePhoneDraft || !own(notePhoneDraft, c.person.id)) return;
+    c.person.phone = c.phone;
+    c.person.note = '';
+    touch(c.person.id);
+    n++;
+  });
+  if (!n) return;
+  toast(tr('notephone.done', {n: nq(n, 'person')}), 'ok');
+  commit();
+}
+function notePhoneSheet(){
+  var list = notePhoneCandidates();
+  if (!list.length) return;
+  notePhoneDraft = {};
+  list.forEach(function(c){ if (!c.dupOf) notePhoneDraft[c.person.id] = true; });
+  dialog({ title: tr('notephone.title'),
+    sub: tr('notephone.sub', {n: nq(list.length, 'person')}),
+    html: notePhoneHTML(), cancelLabel: tr('w.cancel'),
+    buttons: [{key:'go', label: tr('notephone.go'), variant:'primary'}] })
+    .then(function(k){
+      if (k === 'go') notePhoneApply();
+      notePhoneDraft = null;
+    });
 }
 function ledgerEvents(personId){
   var evts = [];
@@ -22477,23 +22998,20 @@ function saveRatePair(){
    органов управления подряд не пугаемся: верхний — какой вид записей
    смотрим, нижний — «Список / Новая», и они НАРОЧНО разного вида, иначе
    читались бы как один. */
-/* ++++++ CASH LOANS ++++++ четвёртая вкладка — долги наличными. NAV не трогается: пунктов
-   пять, шестого быть не должно. */
-var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses'],['loans','tab.loans']];
+/* ++++++ OWN TAB ++++++ «Долги» переехали во вкладку «Своё» (OWN_TABS): это личные
+   деньги, а не деньги торговли. Логика и данные долгов не тронуты —
+   поменялся только адрес. */
+var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses']];
 function moneySub(){
-  if (ui.seg.money === 'loans') return tr('loan.sub');          /* ++++++ CASH LOANS ++++++ */
   if (ui.seg.money === 'exp') return tr('sum.inCur', {note: dcStoreNote()});
   var sec = ui.seg.money === 'pay' ? 'payments' : 'transactions';
   return tr('sum.inCur', {note: secNote(sec) || '—'});
 }
 function viewMoney(){
-  /* ++++++ CASH LOANS ++++++ карточка долга — отдельный экран, без шапки и вкладок: так
-     карточка человека заменяет вкладку «Люди». */
-  if (ui.detail && ui.detail.type === 'loan') return viewLoanCard();
   /* ++++++ INFO ++++++ иконка только на «Расходах»: у «Выдач» и «Оплат»
      пояснения не было. */
   var h = head(tr('tab.money'), moneySub(),
-    ui.seg.money === 'exp' ? infoBtn('exp') : (ui.seg.money === 'loans' ? infoBtn('loans') : ''));
+    ui.seg.money === 'exp' ? infoBtn('exp') : '');
   h += '<div class="tabs">';
   MONEY_TABS.forEach(function(t){
     h += '<button type="button" data-act="money" data-arg="' + t[0] + '"' +
@@ -22502,7 +23020,6 @@ function viewMoney(){
   h += '</div>';
   if (ui.seg.money === 'pay') return h + viewPay();
   if (ui.seg.money === 'exp') return h + viewExp();
-  if (ui.seg.money === 'loans') return h + viewLoans();          /* ++++++ CASH LOANS ++++++ */
   return h + viewTx();
 }
 function viewExp(){
@@ -23206,7 +23723,7 @@ function startLoanEdit(id){
   ui.form.loan = { kind: l.kind, name: l.name, amount: (l.amountMinor / 100).toFixed(2), cur: l.cur,
                    date: l.date, note: l.note || '', editId: l.id };
   ui.edit.loan = l.id;
-  ui.tab = 'money'; ui.seg.money = 'loans'; ui.seg.loans = 'new'; ui.detail = null; ui.err = '';
+  ui.tab = 'own'; ui.seg.own = 'loans'; ui.seg.loans = 'new'; ui.detail = null; ui.err = '';
   navClear();                              /* корневой переход, как у прочих start*Edit */
   render(); scrTo(0);
 }
@@ -23215,7 +23732,7 @@ function startLoanEdit(id){
 
 function viewLoanCard(){
   var fig = loanFigures(state), f = own(fig.byId, ui.detail.id) ? fig.byId[ui.detail.id] : null;
-  if (!f){ ui.detail = null; return viewMoney(); }
+  if (!f){ ui.detail = null; return viewOwn(); }
   var l = f.loan, lent = l.kind !== 'borrowed', h;
   h = backHead(esc(l.name), loanKindWord(l) + ' · ' + tr('loan.since', { date: fmtDateLong(l.date) }),
     infoBtn('loans'));
@@ -23392,7 +23909,7 @@ function deleteLoan(id){
 
 /** Действия «loan-*» и «repay-*». */
 function loanAct(act, arg){
-  if (act === 'loan-open'){ resetRepayForm(); navGo('money', { type:'loan', id: arg }); return; }
+  if (act === 'loan-open'){ resetRepayForm(); navGo('own', { type:'loan', id: arg }); return; }
   if (act === 'loan-edit'){ startLoanEdit(arg); return; }
   if (act === 'loan-delete'){ deleteLoan(arg); return; }
   if (act === 'loan-cancel'){ resetLoanForm(); ui.seg.loans = 'list'; ui.err = ''; render(); return; }
@@ -23420,6 +23937,343 @@ function loanLive(){
   n = $('repayHint'); if (n) n.innerHTML = repayHintText();
 }
 /* ++++++ CASH LOANS UI END ++++++ */
+/* ============================================ ++++++ OWN ORDERS UI ++++++ ==
+ * ВКЛАДКА «СВОЁ»: «Долги» (переехали из «Денег» как есть) и «Заказы».
+ *
+ * «Своё» — ОБЁРТКА, как «Деньги»: шапка и ряд вкладок, а тело берут
+ * прежний viewLoans() и новый viewOrders(). Логика долгов не тронута:
+ * изменился только адрес вкладки (ui.tab 'own', ui.seg.own 'loans').
+ *
+ * Ни одного нового способа что-либо нарисовать: head(), hero(), row(),
+ * listCard(), segbar(), money2(), field(), лента .ev с кнопками .chipf,
+ * dialog() и confirmBox(). Правил стилей — два: цвет метки «отменён» и
+ * заголовок строки заказа как кнопка.
+ *
+ * СЧИТАЕТ ЯДРО, А НЕ ЭКРАН: orderFigures(), ordProfit(), orderCheck().
+ * ================================================================== */
+
+var OWN_TABS = [['loans','tab.loans'],['orders','tab.orders']];
+
+function ownSub(){
+  if (ui.seg.own === 'orders') return tr('ord.sub');
+  return tr('loan.sub');
+}
+function viewOwn(){
+  /* карточка долга — отдельный экран, без шапки и вкладок, как и была */
+  if (ui.detail && ui.detail.type === 'loan') return viewLoanCard();
+  /* «i» — ЛИТЕРАЛОМ ключа: набор ссылок справки (test-faqrefs) ищет вызов
+     infoBtn('ключ') у каждой записи с иконкой, выражение он не видит */
+  var h = head(tr('tab.own'), ownSub(), ui.seg.own === 'orders' ? infoBtn('orders') : infoBtn('loans'));
+  h += '<div class="tabs">';
+  OWN_TABS.forEach(function(t){
+    h += '<button type="button" data-act="own" data-arg="' + t[0] + '"' +
+      (ui.seg.own === t[0] ? ' class="on"' : '') + '>' + tr(t[1]) + '</button>';
+  });
+  h += '</div>';
+  if (ui.seg.own === 'orders') return h + viewOrders();
+  return h + viewLoans();
+}
+
+/* ---- черновик формы — в ui.form (область 6) ---------------------- */
+function resetOrderForm(){
+  var c = ordDefaultCur();
+  ui.form.order = { name:'', product:'', cost:'', costCur: c, sale:'', saleCur: c,
+                    date: todayISO(), editId:'' };
+}
+/** Валюты новой формы — последнего ЗАПИСАННОГО заказа (по createdAt), как у
+ *  долгов: владелец, возящий в долларах, не выбирает доллар каждый раз.
+ *  Выключенная валюта не предлагается; заказов нет — основная. */
+function ordDefaultCur(){
+  var list = actOrders().slice().sort(function(a, b){
+    var x = String(a.createdAt || ''), y = String(b.createdAt || '');
+    if (x !== y) return x < y ? 1 : -1;
+    return a.id < b.id ? 1 : (a.id > b.id ? -1 : 0);
+  }), codes = currencyCodes();
+  if (list.length && codes.indexOf(list[0].saleCur) > -1) return list[0].saleCur;
+  return state.settings.baseCurrency;
+}
+
+/* ---- мелочи показа ----------------------------------------------- */
+
+/** ЕДИНЫЙ ЗНАК ПЕРЕСЧЁТА. Один и тот же у прибыли заказа и у итога. */
+function ordApx(on){ return on ? '<span title="' + esc(tr('ord.apxTitle')) + '">≈ </span>' : ''; }
+/** Прибыль заказа: «≈» при пересчёте, минус — красным и не зажимается. */
+function ordProfitHTML(p){
+  if (p.v === null) return '—';
+  var t = ordMoney(p.v, p.cur);
+  return ordApx(p.approx) + (p.v < 0 ? '<span class="bad-txt">' + t + '</span>' : t);
+}
+function ordStatusWord(o){ return tr('ord.st.' + o.status); }
+function ordTagCls(o){ return o.status === 'done' ? 'pay' : (o.status === 'cancelled' ? 'cancel' : 'take'); }
+
+/* ---- экран -------------------------------------------------------- */
+
+function viewOrders(){
+  var h = segbar('orders', [['list', tr('seg.list')], ['hist', tr('ord.segHist')],
+    ['new', ui.form.order.editId ? tr('seg.editing') : tr('ord.segNew')]]);
+  if (ui.seg.orders === 'new') return h + formOrder();
+  var fig = orderFigures(state, dcCur());
+  if (ui.seg.orders === 'hist') return h + ordHistHTML(fig);
+  var s = fig.sum;
+  h += hero({ cls:'pick', aside: dcPickHTML(), k: tr('ord.profit'),
+    v: ordApx(s.profitApprox) + (s.profit !== null && s.profit < 0
+      ? '<span class="bad-txt">' + dcHero(s.profit) + '</span>' : dcHero(s.profit)),
+    s: tr('ord.activeN', { n: nq(fig.active.length, 'order') }) });
+  h += listCard(tr('ord.sumT'),
+    row({ k: tr('ord.spent'), sub: tr('ord.spentSub'), v: ordApx(s.spentApprox) + dcMoney(s.spent) }) +
+    row({ k: tr('ord.sold'), sub: tr('ord.soldSub'), v: ordApx(s.soldApprox) + dcMoney(s.sold) }) +
+    row({ k: tr('ord.received'), sub: tr('ord.receivedSub'), v: ordApx(s.receivedApprox) + dcMoney(s.received) }));
+  if (s.spentApprox || s.soldApprox || s.receivedApprox)
+    h += '<div class="note">' + tr('ord.apxNote') + '</div>';
+  if (s.noRate.length)
+    h += '<div class="note warn">' + tr('ord.noRate', { codes: esc(s.noRate.join(', ')) }) + '</div>';
+  var rows = '';
+  fig.active.forEach(function(f){ rows += ordRowHTML(f); });
+  return h + listCard(tr('ord.activeT'), rows ||
+    '<div class="empty">' + tr('ord.empty') + '</div>');
+}
+function ordHistHTML(fig){
+  var rows = '';
+  fig.history.forEach(function(f){ rows += ordRowHTML(f); });
+  return listCard(tr('ord.histT'), rows || '<div class="empty">' + tr('ord.histEmpty') + '</div>');
+}
+
+/** Строка заказа — лента .ev: метка статуса, товар (ужат многоточием),
+ *  имя и дата, обе суммы в своих валютах; справа прибыль. Кнопки — соседи
+ *  заголовка, не его дети (область 25). */
+function ordRowHTML(f){
+  var o = f.order, act = o.status === 'active', h;
+  h = '<div class="ev ordrow" data-ord="' + esc(o.id) + '"><div class="l">' +
+    '<button type="button" class="ordhd" data-act="ord-open" data-arg="' + esc(o.id) + '">' +
+      '<span class="tag ' + ordTagCls(o) + '">' + ordStatusWord(o) + '</span>' +
+      '<span class="txt"><b>' + esc(o.product) + '</b></span>' +
+      '<span class="d">' + esc(o.name) + ' · ' + fmtDateLong(o.date) +
+        (act ? '' : ' · ' + tr('ord.closedOn', { date: fmtDateLong(o.closedAt || o.date) })) + '</span>' +
+      '<span class="d">' + tr('ord.pair', { cost: ordMoney(o.costMinor, o.costCur),
+                                            sale: ordMoney(o.saleMinor, o.saleCur) }) + '</span>' +
+    '</button></div>' +
+    '<div class="r"><b>' + ordProfitHTML(f.profit) + '</b>' +
+    '<small>' + tr(o.status === 'cancelled' ? 'ord.notCounted' : 'ord.profitS') + '</small></div>' +
+    /* ряд кнопок — на всю ширину строки: в левой колонке на 320 px три
+       кнопки вставали столбиком (снимок стенда) */
+    '<div class="evb">' +
+      '<button type="button" class="chipf" data-act="ord-edit" data-arg="' + esc(o.id) + '">' + tr('w.edit') + '</button> ';
+  if (act){
+    h += '<button type="button" class="chipf" data-act="ord-cancel" data-arg="' + esc(o.id) + '">' + tr('w.delete') + '</button> ' +
+         '<button type="button" class="chipf" data-act="ord-done" data-arg="' + esc(o.id) + '">' + tr('ord.done') + '</button>';
+  } else {
+    h += '<button type="button" class="chipf" data-act="ord-reopen" data-arg="' + esc(o.id) + '">' + tr('ord.reopen') + '</button> ' +
+         '<button type="button" class="chipf" data-act="ord-trash" data-arg="' + esc(o.id) + '">' + tr('ord.toTrash') + '</button>';
+  }
+  h += '</div></div>';
+  return h;
+}
+
+/* ---- окно заказа: полный текст записи (крайний случай 13) ---------- */
+var ordNode = null;
+function ordOpen(id){
+  var o = orderById(id);
+  if (!o) return;
+  if (ordNode && ordNode.__done) ordNode.__done(null);
+  var p = ordProfit(o), from = document.activeElement, mine = null;
+  var rows = row({ cls:'wrap', k: tr('ord.nameLabel'), v: esc(o.name) }) +
+    row({ cls:'wrap', k: tr('ord.productLabel'), v: esc(o.product) }) +
+    row({ k: tr('ord.costLabel'), v: ordMoney(o.costMinor, o.costCur) }) +
+    row({ k: tr('ord.saleLabel'), v: ordMoney(o.saleMinor, o.saleCur) }) +
+    row({ k: tr('ord.profit'), sub: p.approx ? tr('ord.apxShort') : '', v: ordProfitHTML(p) }) +
+    row({ k: tr('w.date'), v: fmtDateLong(o.date) }) +
+    row({ k: tr('ord.stLabel'), v: ordStatusWord(o) +
+      (o.status === 'active' ? '' : ' · ' + fmtDateLong(o.closedAt || o.date)) });
+  dialog({ title: esc(o.product), sub: esc(o.name), html: '<div class="rows">' + rows + '</div>',
+           closeX: true, buttons: [], cancelLabel: tr('w.close') })
+    .then(function(){
+      if (ordNode !== mine) return;
+      ordNode = null;
+      if (from && from.focus && document.body.contains(from)) from.focus({ preventScroll: true });
+    });
+  mine = $('modalRoot').lastChild;
+  ordNode = mine;
+}
+
+/* ---- форма -------------------------------------------------------- */
+
+function ordAcHTML(q){
+  var names = orderNames(state, q), h = '';
+  if (!names.length) return '';
+  names.forEach(function(n){
+    var cnt = 0;
+    actOrders().forEach(function(o){ if (normQ(o.name) === normQ(n)) cnt++; });
+    h += '<button type="button" data-act="ord-name" data-arg="' + esc(n) + '">' +
+      '<span class="n">' + esc(n) + '</span><span class="m">' +
+      tr('loan.acN', { n: nq(cnt, 'order') }) + '</span></button>';
+  });
+  return '<div class="ac">' + h + '</div>';
+}
+/** Валюты формы: активные плюс уже записанная, если её потом выключили. */
+function ordFormCodes(cur){
+  var codes = currencyCodes();
+  if (cur && codes.indexOf(cur) < 0) codes = codes.concat([cur]);
+  return codes;
+}
+function formOrder(){
+  var f = ui.form.order;
+  var h = '<form id="fOrder" novalidate>' + errNote();
+  h += '<label class="f"><span>' + tr('ord.nameLabel') + '</span>' +
+    input({ f:'order.name', value:f.name, ph: tr('loan.namePh') }) +
+    '<span id="ordAc">' + ordAcHTML(f.name) + '</span>' +
+    '<small class="hint">' + tr('ord.nameHint') + '</small></label>';
+  h += field({ label: tr('ord.productLabel'),
+    control: input({ f:'order.product', value:f.product, ph: tr('ord.productPh') }) });
+  h += field({ label: tr('ord.costLabel'),
+    control: money2('order.cost', f.cost, 'order.costCur', f.costCur, ordFormCodes(f.costCur)) });
+  h += field({ label: tr('ord.saleLabel'),
+    control: money2('order.sale', f.sale, 'order.saleCur', f.saleCur, ordFormCodes(f.saleCur)),
+    hintId:'ordHint', hint: ordHintText() });
+  h += '<div class="f"><label class="f" style="margin:0"><span>' + tr('w.date') + '</span>' +
+    input({ f:'order.date', value:f.date, type:'date' }) + '</label></div>';
+  h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'ord.record')) +
+    (f.editId ? btn(tr('w.cancelEdit'), 'ord-formcancel', 'ghost') : '') + '</div>';
+  return h + '</form>';
+}
+/** Живая подсказка: нет курса, либо прибыль по набранному. Решает ядро. */
+function ordHintText(){
+  var f = ui.form.order, out = [];
+  [f.costCur, f.saleCur].forEach(function(c, i){
+    if (c && rateOf(c) === null && (i === 0 || c !== f.costCur)) out.push(tr('conv.noRate', { cur: esc(c) }));
+  });
+  var c = parseMoneyToCents(f.cost), s = parseMoneyToCents(f.sale);
+  if (c !== null && c > 0 && s !== null && s > 0 && !out.length){
+    var p = ordProfit({ costMinor: c, costCur: f.costCur, saleMinor: s, saleCur: f.saleCur });
+    out.push(tr('ord.hintProfit', { sum: ordProfitHTML(p) }) + (p.approx ? ' · ' + tr('ord.apxShort') : ''));
+  }
+  return out.join(' · ');
+}
+function ordErr(chk){
+  if (chk.why === 'rate') return noRateText(chk.cur);
+  if (chk.why === 'nameLong') return tr('err.ordNameLong', { n: ORD_NAME_MAX });
+  if (chk.why === 'productLong') return tr('err.ordProductLong', { n: ORD_PRODUCT_MAX });
+  return tr('err.ord.' + chk.why);
+}
+function saveOrder(){
+  var f = ui.form.order;
+  ui.err = '';
+  var chk = orderCheck(f);
+  if (!chk.ok){ ui.err = ordErr(chk); render(); return; }
+  if (f.editId){
+    var o = orderById(f.editId);
+    if (!o){ ui.err = tr('err.ord.gone'); render(); return; }
+    /* Статус, дата закрытия и снимок курсов НЕ двигаются (A4). */
+    o.name = chk.name; o.product = chk.product;
+    o.costMinor = chk.costMinor; o.costCur = f.costCur;
+    o.saleMinor = chk.saleMinor; o.saleCur = f.saleCur; o.date = f.date;
+    touch(o.id);
+    var back = o.status === 'active' ? 'list' : 'hist';
+    resetOrderForm(); ui.seg.orders = back;
+    toast(tr('msg.ordUpdated'), 'ok');
+    commit(); return;
+  }
+  var id = uid('ord');
+  state.orders.push({ id: id, name: chk.name, product: chk.product,
+    costMinor: chk.costMinor, costCur: f.costCur, saleMinor: chk.saleMinor, saleCur: f.saleCur,
+    date: f.date, status: 'active', closedAt: '', rateSnap: rateSnapshot(),
+    createdAt: new Date().toISOString() });
+  touch(id);
+  resetOrderForm();
+  ui.seg.orders = 'list';
+  toast(tr('msg.ordAdded'), 'ok');
+  commit();
+}
+function startOrderEdit(id){
+  var o = orderById(id);
+  if (!o) return;
+  ui.form.order = { name: o.name, product: o.product,
+    cost: (o.costMinor / 100).toFixed(2), costCur: o.costCur,
+    sale: (o.saleMinor / 100).toFixed(2), saleCur: o.saleCur,
+    date: o.date, editId: o.id };
+  ui.tab = 'own'; ui.seg.own = 'orders'; ui.seg.orders = 'new'; ui.detail = null; ui.err = '';
+  navClear();
+  render(); scrTo(0);
+}
+
+/* ---- три действия строки и два истории ----------------------------- */
+
+/** «Готово»: заказ оплачен — в историю как выполненный. */
+function orderDone(id){
+  var o = orderById(id);
+  if (!o || o.status !== 'active') return;
+  o.status = 'done'; o.closedAt = todayISO();
+  touch(o.id);
+  toast(tr('msg.ordDone'), 'ok');
+  commit();
+}
+/** «Удалить»: передумали — в историю как ОТМЕНЁННЫЙ. Это не корзина: запись
+ *  остаётся, в итоги не входит, её можно вернуть в работу. */
+function orderCancel(id){
+  var o = orderById(id);
+  if (!o || o.status !== 'active') return;
+  confirmBox(tr('dlg.ordCancelTitle'),
+    tr('dlg.ordCancelBody', { product: esc(o.product), name: esc(o.name) }),
+    tr('dlg.ordCancelOk'), true).then(function(okd){
+      if (!okd) return;
+      var x = orderById(id);
+      if (!x || x.status !== 'active') return;
+      x.status = 'cancelled'; x.closedAt = todayISO();
+      touch(x.id);
+      toast(tr('msg.ordCancelled'), 'ok');
+      commit();
+    });
+}
+/** Из истории — снова в работу (крайний случай 8: правка закрытого
+ *  разрешена, и вернуть его можно). */
+function orderReopen(id){
+  var o = orderById(id);
+  if (!o || o.status === 'active') return;
+  o.status = 'active'; o.closedAt = '';
+  touch(o.id);
+  toast(tr('msg.ordReopened'), 'ok');
+  commit();
+}
+/** Удалить НАСОВСЕМ — через корзину, как всякую запись. Статус едет с
+ *  записью и возвращается вместе с ней. */
+function orderTrash(id){
+  var o = orderById(id);
+  if (!o) return;
+  confirmBox(tr('dlg.ordTrashTitle'),
+    tr('dlg.ordTrashBody', { product: esc(o.product), name: esc(o.name) }) + trashNoteHTML(),
+    tr('dlg.trashOk'), true).then(function(okd){
+      if (!okd) return;
+      trashMark(state, 'orders', id, nowISO(), touch);
+      if (ui.form.order.editId === id) resetOrderForm();
+      toast(tr('msg.trashed'), 'ok');
+      commit();
+    });
+}
+
+/* ---- входы из обработчиков приложения ------------------------------ */
+
+function orderAct(act, arg){
+  if (act === 'ord-open'){ ordOpen(arg); return; }
+  if (act === 'ord-edit'){ startOrderEdit(arg); return; }
+  if (act === 'ord-done'){ orderDone(arg); return; }
+  if (act === 'ord-cancel'){ orderCancel(arg); return; }
+  if (act === 'ord-reopen'){ orderReopen(arg); return; }
+  if (act === 'ord-trash'){ orderTrash(arg); return; }
+  if (act === 'ord-formcancel'){ resetOrderForm(); ui.seg.orders = 'list'; ui.err = ''; render(); return; }
+  if (act === 'ord-name'){ setF('order.name', arg); render(); return; }
+}
+function orderSubmit(id){
+  if (id === 'fOrder'){ saveOrder(); return true; }
+  return false;
+}
+function orderInput(key, el){
+  if (key !== 'order.name') return;
+  var n = $('ordAc');
+  if (n) n.innerHTML = ordAcHTML(String(el.value));
+}
+function orderLive(){
+  var n = $('ordHint'); if (n) n.innerHTML = ordHintText();
+}
+/* ++++++ OWN ORDERS UI END ++++++ */
 /* ============================================ ++++++ EXPENSE LOT ++++++ ==
  * ЭКРАН ПАРТИИ и всё, что деление показывает.
  *
@@ -23780,6 +24634,7 @@ function trashRowTitle(col, r){
   }
   /* ++++++ CASH LOANS ++++++ долг подписан именем, возврат — именем своего долга */
   if (col === 'loans') return esc(r.name);
+  if (col === 'orders') return esc(r.product);        /* ++++++ OWN ORDERS ++++++ */
   if (col === 'repayments'){
     f = trashFind(state, r.loanId);
     return esc(f ? f.rec.name : '—');
@@ -23820,6 +24675,7 @@ function trashRowAmount(col, r){
   if (col === 'payments' || col === 'expenses') return baseOne(r.amountCents);
   /* ++++++ CASH LOANS ++++++ сумма долга — в его валюте, без пересчёта */
   if (col === 'loans' || col === 'repayments') return loanMoney(r.amountMinor, r.cur);
+  if (col === 'orders') return ordMoney(r.saleMinor, r.saleCur);   /* ++++++ OWN ORDERS ++++++ */
   if (col === 'returns'){
     f = trashFind(state, r.txId);
     return f ? baseOne(r.qty * f.rec.unitPriceCents) : '';
@@ -23833,7 +24689,8 @@ function trashRowAmount(col, r){
 var TRASH_TYPE_KEY = {
   products: 'tProduct', people: 'tPerson', transactions: 'tTx',
   payments: 'tPay', returns: 'tRet', expenses: 'tExp',
-  loans: 'tLoan', repayments: 'tRepay'          /* ++++++ CASH LOANS ++++++ */
+  loans: 'tLoan', repayments: 'tRepay',         /* ++++++ CASH LOANS ++++++ */
+  orders: 'tOrder'                               /* ++++++ OWN ORDERS ++++++ */
 };
 function trashTypeName(col){ return tr('trash.' + TRASH_TYPE_KEY[col]); }
 
@@ -23850,6 +24707,9 @@ function trashRowSub(col, r, g){
   } else if (col === 'loans'){
     /* ++++++ CASH LOANS ++++++ кто кому должен — одно слово, дата ниже, как у всех */
     parts.push(tr(r.kind === 'borrowed' ? 'loan.kindIOwe' : 'loan.kindOwedMe'));
+  } else if (col === 'orders'){
+    /* ++++++ OWN ORDERS ++++++ кто заказал и в каком состоянии — оно вернётся с записью */
+    parts.push(esc(r.name), tr('ord.st.' + ordStatusOf(r.status)));
   }
   /* у человека своей даты нет — печатать «от —» значит показать пустоту
      там, где владелец ждёт сведений (найдено живой проверкой) */
@@ -23881,7 +24741,8 @@ function trashStockWas(g, p){
  *  не идёт: про неё уже сказано в самой строке. */
 function trashParts(items, headId){
   var n = { products:0, people:0, transactions:0, payments:0, returns:0, expenses:0,
-            loans:0, repayments:0 };                 /* ++++++ CASH LOANS ++++++ */
+            loans:0, repayments:0,                  /* ++++++ CASH LOANS ++++++ */
+            orders:0 };                             /* ++++++ OWN ORDERS ++++++ */
   var qTx = 0, qRet = 0, mPay = 0, mExp = 0, i, it, out = [];
   var mRep = {};                                       /* ++++++ CASH LOANS ++++++ по валютам */
   for (i = 0; i < items.length; i++){
@@ -23903,6 +24764,7 @@ function trashParts(items, headId){
   if (n.expenses) out.push(tr('trash.pWithSum', { n: nq(n.expenses, 'expense'), sum: baseOne(mExp) }));
   /* ++++++ CASH LOANS ++++++ возвраты долга — в их валютах, без пересчёта */
   if (n.loans) out.push(nq(n.loans, 'loan'));
+  if (n.orders) out.push(nq(n.orders, 'order'));      /* ++++++ OWN ORDERS ++++++ */
   if (n.repayments) out.push(tr('trash.pWithSum', { n: nq(n.repayments, 'repayment'),
     sum: Object.keys(mRep).sort().map(function(c){ return loanMoney(mRep[c], c); }).join(', ') }));
   return out.join(', ');
@@ -24902,6 +25764,7 @@ function render(){
   if (ui.tab === 'products') h = viewProducts();
   else if (ui.tab === 'people') h = viewPeople();
   else if (ui.tab === 'money') h = viewMoney();
+  else if (ui.tab === 'own') h = viewOwn();          /* ++++++ OWN ORDERS ++++++ */
   else if (ui.tab === 'acct') h = viewAcct();
   else h = viewSummary();
   $('app').innerHTML = h;
@@ -24958,7 +25821,8 @@ function live(){
     n = $('vatNote');   if (n) n.innerHTML = vatNoteText();
   }
   /* ++++++ CASH LOANS ++++++ два узла, не форма — курсор в поле суммы цел */
-  if (ui.tab === 'money' && ui.seg.money === 'loans') loanLive();
+  if (ui.tab === 'own' && ui.seg.own === 'loans') loanLive();
+  if (ui.tab === 'own' && ui.seg.own === 'orders') orderLive();     /* ++++++ OWN ORDERS ++++++ */
   if (ui.tab === 'money' && ui.seg.money === 'pay'){
     n = $('payHint'); if (n) n.innerHTML = payHintText();
     /* ++++++ PAY LIVE ++++++ и активность кнопки — она зависит от того же
@@ -25316,6 +26180,7 @@ document.addEventListener('input', function(e){
   }
   /* ++++++ CASH LOANS ++++++ подсказки имени — один узел рядом с полем */
   loanInput(key, el);
+  orderInput(key, el);                    /* ++++++ OWN ORDERS ++++++ */
   if (key.indexOf('report.') === 0){ render(); return; }
   live();
 });
@@ -25422,6 +26287,7 @@ document.addEventListener('submit', function(e){
   else if (id === 'fRet') saveRet();
   else if (id === 'fExp') saveExp();         /* ++++++ EXPENSES ++++++ */
   else if (loanSubmit(id)){}                 /* ++++++ CASH LOANS ++++++ */
+  else if (orderSubmit(id)){}                /* ++++++ OWN ORDERS ++++++ */
   else if (id === 'fRate') saveRatePair();   /* ++++++ RATE PAIR ++++++ */
 });
 
@@ -26319,6 +27185,7 @@ function wipeNumsHTML(files){
      печатаются, только когда долги есть: иначе окно сдвинулось бы у
      каждого, кто ими не пользуется, ради двух строк «0». */
   if (c.loans || c.repayments) rows.push(['wipe.nLoans', c.loans], ['wipe.nRepay', c.repayments]);
+  if (c.orders) rows.push(['wipe.nOrders', c.orders]);      /* ++++++ OWN ORDERS ++++++ */
   h = '<div class="note calc"><dl class="wnums">';
   for (i = 0; i < rows.length; i++)
     h += '<dt>' + esc(tr(rows[i][0])) + '</dt><dd>' + rows[i][1] + '</dd>';
@@ -26783,6 +27650,8 @@ function handleAct(act, arg, e, srcEl){
   if (act === 'person-cancel'){ resetPersonForm(); ui.seg.people = 'list'; ui.err=''; render(); return; }
   if (act === 'person-edit'){ startPersonEdit(arg); return; }
   if (act === 'person-delete'){ deletePerson(arg); return; }
+  if (act === 'notephone-open'){ notePhoneSheet(); return; }        /* ++++++ NOTE PHONE ++++++ */
+  if (act === 'notephone-toggle'){ notePhoneToggle(arg); return; }
   if (act === 'tx-open'){ var t3 = txById(arg); if (t3) txSheet(t3); return; }
   if (act === 'tx-cancel'){ resetTxForm(); ui.seg.tx = 'list'; ui.err=''; render(); return; }
   if (act === 'tx-edit'){ startTxEdit(arg); return; }
@@ -26800,6 +27669,13 @@ function handleAct(act, arg, e, srcEl){
      денег: лист записи, правка, отмена правки и удаление за подтверждением. */
   /* ++++++ CASH LOANS ++++++ ветки долгов — в loanAct(): стенд задачи зовёт тот же код */
   if (act.indexOf('loan-') === 0 || act.indexOf('repay-') === 0){ loanAct(act, arg); return; }
+  /* ++++++ OWN ORDERS ++++++ вкладки «Своего» — корневой переход, как у «Денег» */
+  if (act === 'own'){
+    ui.seg.own = arg; ui.detail = null; ui.err = '';
+    navClear();
+    render(); scrTo(0); return;
+  }
+  if (act.indexOf('ord-') === 0){ orderAct(act, arg); return; }
   if (act === 'exp-open'){ var x1 = expById(arg); if (x1) expSheet(x1); return; }
   if (act === 'exp-edit'){ startExpEdit(arg); return; }
   if (act === 'exp-cancel'){ resetExpForm(); ui.seg.exp = 'list'; ui.err=''; render(); return; }
