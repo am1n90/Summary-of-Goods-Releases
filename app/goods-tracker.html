@@ -1150,7 +1150,7 @@
     .tabs button{flex:1 0 auto;min-width:0;padding-left:8px;padding-right:8px}
 
     .bottombar{
-      display:grid;grid-template-columns:repeat(6,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
+      display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
       background:var(--surface);border-top:1px solid var(--line);
       padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 16px rgba(16,24,40,.07);
     }
@@ -4677,11 +4677,13 @@ var STR = {
                     ru:'Долг живёт в своей валюте: дали 5 000 долларов — вернуть должны 5 000 долларов, какой бы ни был курс. Возврат вносится в той же валюте; когда вернули всё, долг закрывается и переходит в «Историю». Итоги «Мне должны» и «Я должен» показаны в валюте «Сводки» — каждый долг по курсу того дня, когда он возник.' },
 
 /* ++++++ OWN ORDERS ++++++ словарь. Приставка `ord.` свободна и
-   принадлежит только этой теме; `own` — вкладка. */
+   принадлежит только этой теме; `own` — ВКЛАДКА «ДЕНЕГ» (own-in-money,
+   17.09.2026), а не пункт нижней панели — `tabS.own` снят как мёртвый:
+   короткую подпись читает только строка панели, а панели этот пункт
+   больше не показывает. */
 
-/* ---- вкладка «Своё» ---- */
+/* ---- вкладка «Своё» внутри «Денег» ---- */
 'tab.own':        { en:'Personal',         ru:'Своё' },
-'tabS.own':       { en:'Personal',         ru:'Своё' },
 'tab.orders':     { en:'Orders',           ru:'Заказы' },
 'ord.sub':        { en:'one-off orders &middot; apart from goods',
                     ru:'разовые заказы &middot; отдельно от товара' },
@@ -6693,8 +6695,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.23.1';
-var APP_BUILD = '2026-09-17T10:55:53.641Z';
+var APP_VERSION = '1.24.0';
+var APP_BUILD = '2026-09-17T12:00:43.269Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -18825,12 +18827,15 @@ function ico(n){
    сегментов «Ещё» — разделами «Аккаунта». Ни одна возможность не
    переехала и не переписалась: изменилось только то, как до неё
    добираются. Последний пункт показывает круглый аватар. */
-/* ++++++ OWN ORDERS ++++++ ШЕСТОЙ пункт — «Своё»: долги и заказы, личное, а не
-   торговля. Прежнее «шестого быть не должно» говорило о торговле;
-   решение владельца 17.09.2026 (задача own-tab), замер 320 px — в её
-   README. Порядок: торговля слева направо, личное перед аккаунтом. */
+/* ++++++ OWN IN MONEY ++++++ «Своё» ВЕРНУЛОСЬ внутрь «Денег» четвёртой
+   вкладкой рядом с «Выдачами», «Оплатами» и «Расходами» — решение
+   владельца 17.09.2026, тем же днём, что и сам «Своё»: отдельный шестой
+   пункт панели прожил несколько часов. Панель снова на пять пунктов,
+   как была до задачи own-tab; сама возможность (долги и заказы, их
+   формы, расчёты) не тронута ни строкой — переехал только адрес.
+   Задача own-in-money, README там же. */
 var NAV = [['summary','tab.summary'],['products','tab.products'],['people','tab.people'],
-           ['money','tab.money'],['own','tab.own'],['acct','tab.acct']];
+           ['money','tab.money'],['acct','tab.acct']];
 
 /* Какой раздел «Аккаунта» отвечает прежнему сегменту «Ещё». Читается
    ТОЛЬКО в navNorm(): второго ответа на этот вопрос быть не должно. */
@@ -18847,16 +18852,23 @@ function navNorm(){
      seg ставит ui.tab = 'loans'. Без этой строки render() такой вкладки
      не знает и уводит на «Сводку» — нажатие «История» открывало бы не то.
      У расходов то же самое держит эта же функция. */
-  /* ++++++ OWN TAB ++++++ segbar('loans'|'orders', …) ставит ui.tab = 'loans'|'orders' —
-     это вкладки «Своего». И прежний адрес «Деньги → Долги» (ui.seg.money =
-     'loans', его ставят наборы и снимок стека) ведёт туда же: одна точка
-     перевода старого имени, как и было. */
+  /* ++++++ OWN IN MONEY ++++++ ТРИ поколения старого адреса «Своего», и
+     все ведут в один: ui.tab='money', ui.seg.money='own', ui.seg.own=…
+     Плоские 'loans'/'orders' — доисторический адрес cash-loans; 'money' +
+     seg.money==='loans' — адрес того же дня, когда «Долги» жили внутри
+     «Денег» до own-tab; 'own' — адрес отдельного шестого пункта панели,
+     который own-tab заводил и own-in-money снял в тот же день. Одна точка
+     перевода на все три, как и было для более ранних пар. */
   if (ui.tab === 'loans' || ui.tab === 'orders'){
     ui.seg.own = ui.tab;
-    ui.tab = 'own';
+    ui.seg.money = 'own';
+    ui.tab = 'money';
   } else if (ui.tab === 'money' && ui.seg.money === 'loans'){
-    ui.seg.money = 'tx'; ui.seg.own = 'loans';
-    ui.tab = 'own';
+    ui.seg.own = 'loans';
+    ui.seg.money = 'own';
+  } else if (ui.tab === 'own'){
+    ui.seg.money = 'own';
+    ui.tab = 'money';
   } else if (ui.tab === 'tx' || ui.tab === 'pay' || ui.tab === 'exp'){
     ui.seg.money = ui.tab;
     ui.tab = 'money';
@@ -23123,20 +23135,30 @@ function saveRatePair(){
    органов управления подряд не пугаемся: верхний — какой вид записей
    смотрим, нижний — «Список / Новая», и они НАРОЧНО разного вида, иначе
    читались бы как один. */
-/* ++++++ OWN TAB ++++++ «Долги» переехали во вкладку «Своё» (OWN_TABS): это личные
-   деньги, а не деньги торговли. Логика и данные долгов не тронуты —
-   поменялся только адрес. */
-var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses']];
+/* ++++++ OWN IN MONEY ++++++ «Своё» — ЧЕТВЁРТАЯ вкладка «Денег», рядом с
+   «Выдачами», «Оплатами» и «Расходами», а не отдельный пункт панели
+   (решение владельца 17.09.2026, тем же днём, что и сама задача own-tab —
+   она прожила несколько часов шестым пунктом). Внутри неё — прежний ряд
+   OWN_TABS («Долги»/«Заказы»), нетронутый: карточка долга, формы, расчёты
+   не тронуты ни строкой, поменялся только адрес — на один уровень глубже.
+   Задача own-in-money, README там же. */
+var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses'],
+                   ['own','tab.own']];
 function moneySub(){
   if (ui.seg.money === 'exp') return tr('sum.inCur', {note: dcStoreNote()});
+  if (ui.seg.money === 'own') return ownSub();
   var sec = ui.seg.money === 'pay' ? 'payments' : 'transactions';
   return tr('sum.inCur', {note: secNote(sec) || '—'});
 }
 function viewMoney(){
-  /* ++++++ INFO ++++++ иконка только на «Расходах»: у «Выдач» и «Оплат»
-     пояснения не было. */
+  /* карточка долга — отдельный экран, без шапки и вкладок, как и была */
+  if (ui.detail && ui.detail.type === 'loan') return viewLoanCard();
+  /* ++++++ INFO ++++++ иконка на «Расходах» и на «Своём»: у «Выдач» и
+     «Оплат» пояснения не было. «i» — ЛИТЕРАЛОМ ключа: набор ссылок
+     справки (test-faqrefs) ищет вызов infoBtn('ключ'), выражение не видит */
   var h = head(tr('tab.money'), moneySub(),
-    ui.seg.money === 'exp' ? infoBtn('exp') : '');
+    ui.seg.money === 'exp' ? infoBtn('exp') :
+    (ui.seg.money === 'own' ? (ui.seg.own === 'orders' ? infoBtn('orders') : infoBtn('loans')) : ''));
   h += '<div class="tabs">';
   MONEY_TABS.forEach(function(t){
     h += '<button type="button" data-act="money" data-arg="' + t[0] + '"' +
@@ -23145,6 +23167,7 @@ function viewMoney(){
   h += '</div>';
   if (ui.seg.money === 'pay') return h + viewPay();
   if (ui.seg.money === 'exp') return h + viewExp();
+  if (ui.seg.money === 'own') return h + viewOwnBody();
   return h + viewTx();
 }
 function viewExp(){
@@ -23848,7 +23871,7 @@ function startLoanEdit(id){
   ui.form.loan = { kind: l.kind, name: l.name, amount: (l.amountMinor / 100).toFixed(2), cur: l.cur,
                    date: l.date, note: l.note || '', editId: l.id };
   ui.edit.loan = l.id;
-  ui.tab = 'own'; ui.seg.own = 'loans'; ui.seg.loans = 'new'; ui.detail = null; ui.err = '';
+  ui.tab = 'money'; ui.seg.money = 'own'; ui.seg.own = 'loans'; ui.seg.loans = 'new'; ui.detail = null; ui.err = '';
   navClear();                              /* корневой переход, как у прочих start*Edit */
   render(); scrTo(0);
 }
@@ -23857,7 +23880,7 @@ function startLoanEdit(id){
 
 function viewLoanCard(){
   var fig = loanFigures(state), f = own(fig.byId, ui.detail.id) ? fig.byId[ui.detail.id] : null;
-  if (!f){ ui.detail = null; return viewOwn(); }
+  if (!f){ ui.detail = null; return viewMoney(); }
   var l = f.loan, lent = l.kind !== 'borrowed', h;
   h = backHead(esc(l.name), loanKindWord(l) + ' · ' + tr('loan.since', { date: fmtDateLong(l.date) }),
     infoBtn('loans'));
@@ -24034,7 +24057,7 @@ function deleteLoan(id){
 
 /** Действия «loan-*» и «repay-*». */
 function loanAct(act, arg){
-  if (act === 'loan-open'){ resetRepayForm(); navGo('own', { type:'loan', id: arg }); return; }
+  if (act === 'loan-open'){ resetRepayForm(); navGo('money', { type:'loan', id: arg }); return; }
   if (act === 'loan-edit'){ startLoanEdit(arg); return; }
   if (act === 'loan-delete'){ deleteLoan(arg); return; }
   if (act === 'loan-cancel'){ resetLoanForm(); ui.seg.loans = 'list'; ui.err = ''; render(); return; }
@@ -24063,11 +24086,12 @@ function loanLive(){
 }
 /* ++++++ CASH LOANS UI END ++++++ */
 /* ============================================ ++++++ OWN ORDERS UI ++++++ ==
- * ВКЛАДКА «СВОЁ»: «Долги» (переехали из «Денег» как есть) и «Заказы».
+ * «СВОЁ»: «Долги» (переехали из «Денег» как есть) и «Заказы».
  *
- * «Своё» — ОБЁРТКА, как «Деньги»: шапка и ряд вкладок, а тело берут
- * прежний viewLoans() и новый viewOrders(). Логика долгов не тронута:
- * изменился только адрес вкладки (ui.tab 'own', ui.seg.own 'loans').
+ * «Своё» — ЧЕТВЁРТАЯ вкладка «Денег» (own-in-money, 17.09.2026), а не
+ * своя обёртка: шапку и внешний ряд вкладок печатает viewMoney(), эта
+ * функция — только внутренний ряд OWN_TABS и тело. Логика долгов не
+ * тронута: адрес — ui.tab 'money', ui.seg.money 'own', ui.seg.own 'loans'.
  *
  * Ни одного нового способа что-либо нарисовать: head(), hero(), row(),
  * listCard(), segbar(), money2(), field(), лента .ev с кнопками .chipf,
@@ -24083,13 +24107,8 @@ function ownSub(){
   if (ui.seg.own === 'orders') return tr('ord.sub');
   return tr('loan.sub');
 }
-function viewOwn(){
-  /* карточка долга — отдельный экран, без шапки и вкладок, как и была */
-  if (ui.detail && ui.detail.type === 'loan') return viewLoanCard();
-  /* «i» — ЛИТЕРАЛОМ ключа: набор ссылок справки (test-faqrefs) ищет вызов
-     infoBtn('ключ') у каждой записи с иконкой, выражение он не видит */
-  var h = head(tr('tab.own'), ownSub(), ui.seg.own === 'orders' ? infoBtn('orders') : infoBtn('loans'));
-  h += '<div class="tabs">';
+function viewOwnBody(){
+  var h = '<div class="tabs">';
   OWN_TABS.forEach(function(t){
     h += '<button type="button" data-act="own" data-arg="' + t[0] + '"' +
       (ui.seg.own === t[0] ? ' class="on"' : '') + '>' + tr(t[1]) + '</button>';
@@ -24315,7 +24334,7 @@ function startOrderEdit(id){
     cost: (o.costMinor / 100).toFixed(2), costCur: o.costCur,
     sale: (o.saleMinor / 100).toFixed(2), saleCur: o.saleCur,
     date: o.date, editId: o.id };
-  ui.tab = 'own'; ui.seg.own = 'orders'; ui.seg.orders = 'new'; ui.detail = null; ui.err = '';
+  ui.tab = 'money'; ui.seg.money = 'own'; ui.seg.own = 'orders'; ui.seg.orders = 'new'; ui.detail = null; ui.err = '';
   navClear();
   render(); scrTo(0);
 }
@@ -25969,7 +25988,6 @@ function render(){
   if (ui.tab === 'products') h = viewProducts();
   else if (ui.tab === 'people') h = viewPeople();
   else if (ui.tab === 'money') h = viewMoney();
-  else if (ui.tab === 'own') h = viewOwn();          /* ++++++ OWN ORDERS ++++++ */
   else if (ui.tab === 'acct') h = viewAcct();
   else h = viewSummary();
   $('app').innerHTML = h;
@@ -26026,8 +26044,8 @@ function live(){
     n = $('vatNote');   if (n) n.innerHTML = vatNoteText();
   }
   /* ++++++ CASH LOANS ++++++ два узла, не форма — курсор в поле суммы цел */
-  if (ui.tab === 'own' && ui.seg.own === 'loans') loanLive();
-  if (ui.tab === 'own' && ui.seg.own === 'orders') orderLive();     /* ++++++ OWN ORDERS ++++++ */
+  if (ui.tab === 'money' && ui.seg.money === 'own' && ui.seg.own === 'loans') loanLive();
+  if (ui.tab === 'money' && ui.seg.money === 'own' && ui.seg.own === 'orders') orderLive();     /* ++++++ OWN IN MONEY ++++++ */
   if (ui.tab === 'money' && ui.seg.money === 'pay'){
     n = $('payHint'); if (n) n.innerHTML = payHintText();
     /* ++++++ PAY LIVE ++++++ и активность кнопки — она зависит от того же
