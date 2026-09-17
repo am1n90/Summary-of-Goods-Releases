@@ -2855,6 +2855,28 @@ var STR = {
                           'здесь, часы другого устройства не решают ничего. Если обе стороны ' +
                           'правили одну запись по-разному, программа спросит, какую версию ' +
                           'оставить, а не выберет молча.' },
+/* ++++++ BASE SYNC ++++++ основная валюта и обмен. Приставка `bsync.` свободна. */
+'bsync.chooseT':  { en:'The main currency differs between devices.', ru:'Основная валюта на устройствах разная.' },
+'bsync.chooseB':  { en:'Here it is {local}, on the other device {remote}. The records are the same, but their amounts are stored in one currency, so on one of the devices they are read wrongly right now. Syncing is paused until you choose which currency is right.',
+                    ru:'Здесь она {local}, на другом устройстве — {remote}. Записи одни и те же, а суммы в них хранятся в одной валюте, поэтому на одном из устройств они сейчас читаются неверно. Обмен остановлен, пока вы не выберете, какая валюта правильная.' },
+'bsync.take':     { en:'{cur} is right', ru:'Правильная — {cur}' },
+'bsync.keep':     { en:'{cur} is right', ru:'Правильная — {cur}' },
+'bsync.takeT':    { en:'Make {cur} the main currency here?', ru:'Сделать {cur} основной здесь?' },
+'bsync.takeB':    { en:'<p>This device takes the main currency and rates from the other device: {remote} instead of {local}.</p><p>Amounts are not converted — they are the same records, and they will be read in {remote}, as on the other device.</p>',
+                    ru:'<p>Это устройство возьмёт основную валюту и курсы у другого устройства: {remote} вместо {local}.</p><p>Суммы не пересчитываются — это те же записи, и читаться они будут в {remote}, как на другом устройстве.</p>' },
+'bsync.keepT':    { en:'Keep {cur} as the main currency?', ru:'Оставить {cur} основной?' },
+'bsync.keepB':    { en:'<p>The other device will take {local} and these rates at its next sync, instead of {remote}.</p><p>Amounts are not converted — they are the same records.</p>',
+                    ru:'<p>Другое устройство при следующем обмене возьмёт {local} и эти курсы вместо {remote}.</p><p>Суммы не пересчитываются — это те же записи.</p>' },
+'bsync.recordsT': { en:'Syncing is paused: the main currency differs.', ru:'Обмен остановлен: основная валюта разная.' },
+'bsync.recordsHere': { en:'Here it is {local}, on your other devices {remote}. This device holds {n} entered in {local}: taking {remote} would make their amounts read in {remote}, which is wrong. Change the main currency here to {remote} with the amounts converted, and syncing will continue.',
+                    ru:'Здесь она {local}, на других устройствах — {remote}. Здесь есть {n} в {local}: если принять {remote}, их суммы стали бы читаться в {remote}, и это было бы неверно. Смените основную валюту здесь на {remote} с пересчётом сумм — и обмен продолжится.' },
+'bsync.recordsThere': { en:'Here it is {local}, on your other device {remote}. That device holds {n} entered in {remote}: they would be read here in {local}, which is wrong. On that device, change the main currency to {local} with the amounts converted, and syncing will continue.',
+                    ru:'Здесь она {local}, на другом устройстве — {remote}. Там есть {n} в {remote}: здесь их суммы читались бы в {local}, и это было бы неверно. На том устройстве смените основную валюту на {local} с пересчётом сумм — и обмен продолжится.' },
+'bsync.open':     { en:'Open «Currencies and rates»', ru:'Открыть «Валюты и курсы»' },
+'gd.eBasediff':   { en:'Syncing is paused: the main currency differs between devices. What to do is written above.',
+                    ru:'Обмен остановлен: основная валюта на устройствах разная. Что делать — написано в полосе сверху.' },
+'faq.a.syncWhat5':{ en:'The main currency travels too, but it never changes silently at the cost of amounts: they are stored in it. If devices have different main currencies and records entered in both, syncing pauses and says where to change the currency with the amounts converted. If the records are the same and nobody chose the currency, the app asks which one is right.',
+                    ru:'Основная валюта тоже ездит, но никогда не меняется молча ценой сумм: они в ней хранятся. Если на устройствах разные основные валюты и записи есть с обеих сторон, обмен останавливается и говорит, где сменить валюту с пересчётом сумм. Если записи те же, а валюту никто не выбирал, программа спросит, какая правильная.' },
 
 /* ---- КОПИЯ И КОРЗИНА ---- */
 'faq.a.backupWhy1gd':{ en:'Google Drive keeps the <b>current</b> state, not the history. Delete a ' +
@@ -6671,8 +6693,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.23.0';
-var APP_BUILD = '2026-09-17T10:14:32.826Z';
+var APP_VERSION = '1.23.1';
+var APP_BUILD = '2026-09-17T10:55:53.641Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -11408,6 +11430,102 @@ function syncStatusNew(){
  * Такое разделение не украшательство: оно делает цикл проверяемым без
  * браузера, а приложение — местом, где живут validate() и commit().
  */
+/* ============================================== ++++++ BASE SYNC ++++++ ==
+ * ОСНОВНАЯ ВАЛЮТА ЕДЕТ ОБМЕНОМ — И НЕ ПРИНИМАЕТСЯ МОЛЧА ЦЕНОЙ ЧУЖИХ СУММ.
+ *
+ * Что было (воспроизведено на настоящем коде, repro.mjs задачи base-sync):
+ *
+ *   А. Метку настроек ставит только ПРАВКА настроек после подключения
+ *      обмена (syncSettingsTouch). Два устройства, где валюту выбрали до
+ *      входа и потом не трогали, приходят к обмену БЕЗ МЕТКИ, в конверт
+ *      уходит пустая метка, mergeSettings() при пустой чужой метке
+ *      оставляет свои — и устройства не сходятся НИКОГДА, молча.
+ *   Б. Основная валюта — не обычная настройка: все суммы торговли хранятся
+ *      в ней. Устройство, принявшее чужую основную валюту, суммы не
+ *      пересчитывает — они просто начинают читаться в другой валюте.
+ *      Новое устройство с записями в AED, вошедшее к устройствам в TJS,
+ *      превращало чайник за 60.00 AED в чайник за 60.00 TJS — и отправляло
+ *      его остальным.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: основная валюта сходится обменом, но
+ * НИ ОДНА сумма не имеет права сменить валюту, в которой её читают, без
+ * пересчёта или без слова владельца.
+ *
+ * Из него:
+ *   · метка в конверте не бывает пустой: настройки, которые никто не
+ *     правил, уходят с меткой SETTINGS_KNOWN — «известны, не правились».
+ *     Устройство без метки принимает их; правка на любом устройстве — метка
+ *     временем — побеждает их;
+ *   · перед применением syncBaseCheck(): если основные валюты сторон
+ *     разные и в итоге обмена оказались бы записи ПРОИГРАВШЕЙ стороны,
+ *     которых нет у победившей, — обмен ОСТАНАВЛИВАЕТСЯ: ничего не
+ *     применяется и не отправляется, и программа говорит, где сменить
+ *     валюту с пересчётом;
+ *   · если записи у сторон те же, а решения о валюте не было ни там, ни там
+ *     (обе метки пусты или «не правились»), — какая валюта правильная,
+ *     по данным не узнать. Программа СПРАШИВАЕТ, а не угадывает; ответ
+ *     ставит метку, и второе устройство сходится само;
+ *   · движок слияния (mergeDocs, mergeSettings) и обе копии core/merge.js
+ *     не тронуты: решение принимается в обороте, ДО применения.
+ * ================================================================== */
+
+/** «Настройки известны, но их не правили». Меньше любой настоящей метки. */
+var SETTINGS_KNOWN = '1970-01-01T00:00:00.000Z';
+/** Коллекции, чьи суммы хранятся в ОСНОВНОЙ валюте. Долги и заказы живут
+ *  в своих валютах и от основной не зависят; поездки сумм не хранят. */
+var BASE_MONEY_COLS = ['products', 'transactions', 'payments', 'returns', 'expenses'];
+
+/** Метка — решение владельца о настройках, а не «известны». */
+function syncStampReal(at){ return typeof at === 'string' && at !== '' && at !== SETTINGS_KNOWN; }
+
+/** Есть ли в документе суммы в основной валюте (корзина — наравне). */
+function syncHasMoney(doc){
+  var i;
+  for (i = 0; i < BASE_MONEY_COLS.length; i++)
+    if (doc && doc[BASE_MONEY_COLS[i]] && doc[BASE_MONEY_COLS[i]].length) return true;
+  return false;
+}
+
+/** ЕДИНСТВЕННОЕ решение «можно ли применить обмен при разных основных
+ *  валютах». Читает три документа, ничего не меняет.
+ *
+ *    { ok:true }                                  валюты равны / чужого нет
+ *    { ok:true, adopted:'TJS' }                   валюта сменится, суммы не задеты
+ *    { ok:false, why:'choose', local, remote, remoteSettings }
+ *    { ok:false, why:'records', local, remote, win, n }
+ *
+ *  «Суммы задеты» — в итоге слияния лежит запись ровно в том виде, в каком
+ *  она пришла с ПРОИГРАВШЕЙ стороны, а у победившей её в этом виде нет:
+ *  такая запись была записана в проигравшей валюте и прочлась бы в
+ *  победившей. */
+function syncBaseCheck(localDoc, remoteDoc, merged, localAt, remoteAt){
+  if (!remoteDoc || !merged || !merged.doc) return { ok: true };
+  var lb = (localDoc.settings && localDoc.settings.baseCurrency) || '';
+  var rb = (remoteDoc.settings && remoteDoc.settings.baseCurrency) || '';
+  if (!lb || !rb || lb === rb) return { ok: true };
+  var wb = (merged.doc.settings && merged.doc.settings.baseCurrency) || lb;
+  if (!syncStampReal(localAt) && !syncStampReal(remoteAt) && syncHasMoney(localDoc) && syncHasMoney(remoteDoc))
+    return { ok: false, why: 'choose', local: lb, remote: rb, remoteSettings: remoteDoc.settings };
+  var winner = wb === lb ? localDoc : remoteDoc, loser = wb === lb ? remoteDoc : localDoc;
+  var n = 0, c, i, col, win, got;
+  for (c = 0; c < BASE_MONEY_COLS.length; c++){
+    col = BASE_MONEY_COLS[c];
+    win = {}; got = {};
+    (winner[col] || []).forEach(function(r){ if (r && typeof r.id === 'string') win[r.id] = recHash(r); });
+    (merged.doc[col] || []).forEach(function(r){ if (r && typeof r.id === 'string') got[r.id] = recHash(r); });
+    var list = loser[col] || [];
+    for (i = 0; i < list.length; i++){
+      var r = list[i];
+      if (!r || typeof r.id !== 'string') continue;
+      var h = recHash(r);
+      if (Object.prototype.hasOwnProperty.call(got, r.id) && got[r.id] === h &&
+          !(Object.prototype.hasOwnProperty.call(win, r.id) && win[r.id] === h)) n++;
+    }
+  }
+  if (n) return { ok: false, why: 'records', local: lb, remote: rb, win: wb, n: n };
+  return { ok: true, adopted: wb !== lb ? wb : '' };
+}
+/* ++++++ BASE SYNC CORE END ++++++ */
 function syncCycle(env, cb, attempt){
   attempt = attempt || 1;
   var cfg = env.cfg();
@@ -11459,6 +11577,13 @@ function syncCycle(env, cb, attempt){
        иначе конверт уедет с меткой от чужих настроек, а внутри будут
        свои. */
     var settingsWon = (settingsAt && (!localAt || settingsAt > localAt)) ? settingsAt : localAt;
+    /* ++++++ BASE SYNC ++++++ ДО копии и применения: если основные валюты сторон разные
+       и чьи-то суммы стали бы читаться в чужой валюте — обмен стоит, ничего не
+       применено и не отправлено. Пустая метка уходит как «настройки известны,
+       не правились»: иначе два устройства без правок не сходятся никогда. */
+    var baseChk = syncBaseCheck(localDoc, remoteDoc, merged, localAt, settingsAt);
+    if (!baseChk.ok){ cb({ err: 'basediff', base: baseChk }); return; }
+    if (!settingsWon) settingsWon = SETTINGS_KNOWN;
 
     /* --- резервная копия ПЕРЕД применением --------------------------- */
     /* Снимается всегда, когда чужой документ вообще был: даже «ничего не
@@ -16028,7 +16153,7 @@ var FAQ = [
   html: function(){
     var h = infoP(tr('faq.a.syncWhat1')) + infoP(tr('faq.a.syncWhat2'));
     h += infoP(tr(modeIsProduct() ? 'faq.a.syncWhat3gd' : 'faq.a.syncWhat3gh'));
-    return h + infoP(tr('faq.a.syncWhat4'));
+    return h + infoP(tr('faq.a.syncWhat4')) + infoP(tr('faq.a.syncWhat5'));   /* ++++++ BASE SYNC ++++++ */
   },
   see: ['sync', 'backup.why', 'backup.wipe']
 },
@@ -25100,6 +25225,8 @@ function syncBtnHTML(st, err){
  *  выбирает существующий gdRetryable(): беда, которая пройдёт сама, —
  *  спокойно; та, что ждёт решения владельца, — предупреждением. */
 function syncErrHTML(err){
+  if (err === 'basediff')                            /* ++++++ BASE SYNC ++++++ */
+    return '<div class="syncerr"><div class="note warn">' + esc(tr('gd.eBasediff')) + '</div></div>';
   var key = modeIsProduct() ? gdErrKey(err) : null;
   var text = key ? tr(key) : syncErrText(err);
   var h = '<div class="syncerr"><div class="note ' +
@@ -25109,6 +25236,84 @@ function syncErrHTML(err){
          esc(tr('gd.fixOpen')) + '</button></div>';
   return h + '</div>';
 }
+/* ============================================ ++++++ BASE SYNC UI ++++++ ==
+ * Остановленный обмен из-за основной валюты — ПОЛОСОЙ, а не только строкой
+ * на экране «Аккаунт»: на других экранах владелец о ней не узнал бы, а обмен
+ * стоял бы молча. Разметка — существующие banner() и .rb кнопки; ни одного
+ * нового правила стилей.
+ * ================================================================== */
+
+/** Текст и кнопки отказа — ОДИН построитель на полосу и на строку обмена. */
+function baseSyncHTML(b){
+  if (!b) return '';
+  var h;
+  if (b.why === 'choose'){
+    h = '<b>' + esc(tr('bsync.chooseT')) + '</b> ' +
+      esc(tr('bsync.chooseB', { local: b.local, remote: b.remote }));
+    h += '<div class="rb">' +
+      '<button type="button" data-act="bsync-take">' + esc(tr('bsync.take', { cur: b.remote })) + '</button>' +
+      '<button type="button" data-act="bsync-keep">' + esc(tr('bsync.keep', { cur: b.local })) + '</button></div>';
+    return h;
+  }
+  h = '<b>' + esc(tr('bsync.recordsT')) + '</b> ' +
+    esc(tr(b.win === b.local ? 'bsync.recordsThere' : 'bsync.recordsHere',
+      { local: b.local, remote: b.remote, n: nq(b.n, 'record') }));
+  if (b.win !== b.local)
+    h += '<div class="rb"><button type="button" data-act="bsync-open">' + esc(tr('bsync.open')) + '</button></div>';
+  return h;
+}
+/** Полоса в #alerts: ставится при отказе, снимается при удачном обмене. */
+function baseSyncBarPaint(){
+  if (syncStatus.err === 'basediff' && syncStatus.base) banner('base-sync', 'warn', baseSyncHTML(syncStatus.base));
+  else removeBanner('base-sync');
+}
+
+/** «Правильная — как на другом устройстве»: ездящие настройки берутся у
+ *  той стороны целиком (валюта без своих курсов была бы ложью), save()
+ *  ставит метку правки, обмен продолжается. Записи не пересчитываются —
+ *  они те же самые, выбор лишь говорит, в какой валюте их читать. */
+function baseSyncTake(){
+  var b = syncStatus.base;
+  if (!b || b.why !== 'choose') return;
+  confirmBox(tr('bsync.takeT', { cur: b.remote }), tr('bsync.takeB', { local: b.local, remote: b.remote }),
+    tr('bsync.take', { cur: b.remote })).then(function(okd){
+      if (!okd) return;
+      var i, f, rs = b.remoteSettings || {};
+      for (i = 0; i < SYNC_SETTINGS.length; i++){
+        f = SYNC_SETTINGS[i];
+        if (Object.prototype.hasOwnProperty.call(rs, f)) state.settings[f] = JSON.parse(JSON.stringify(rs[f]));
+      }
+      baseSyncDone();
+      commit();
+      syncRun(true);
+    });
+}
+/** «Правильная — здесь»: настройки не меняются, но это РЕШЕНИЕ — метка
+ *  правки ставится, и другое устройство примет эту валюту. */
+function baseSyncKeep(){
+  var b = syncStatus.base;
+  if (!b || b.why !== 'choose') return;
+  confirmBox(tr('bsync.keepT', { cur: b.local }), tr('bsync.keepB', { local: b.local, remote: b.remote }),
+    tr('bsync.keep', { cur: b.local })).then(function(okd){
+      if (!okd) return;
+      var cur = syncRead();
+      if (cur){ cur.settingsAt = nowISO(); syncWrite(cur); }
+      baseSyncDone();
+      syncRun(true);
+    });
+}
+function baseSyncDone(){
+  syncStatus.err = ''; syncStatus.base = null;
+  removeBanner('base-sync');
+}
+/** Действия раздела; обработчик приложения зовёт одной строкой. */
+function baseSyncAct(act){
+  if (act === 'bsync-take'){ baseSyncTake(); return true; }
+  if (act === 'bsync-keep'){ baseSyncKeep(); return true; }
+  if (act === 'bsync-open'){ navGoAcct('cur'); return true; }
+  return false;
+}
+/* ++++++ BASE SYNC UI END ++++++ */
 /** ОДИН узел, никогда render(): в личной сборке прямо под этой строкой
  *  стоит форма с пятью полями, и полная перерисовка во время обмена
  *  вынесла бы каретку из поля, в котором владелец печатает. */
@@ -27803,6 +28008,7 @@ function handleAct(act, arg, e, srcEl){
      обоих режимах. */
   if (act === 'gd-signin'){ gdSignIn(); return; }
   if (act === 'gd-signout'){ gdSignOut(); return; }
+  if (act.indexOf('bsync-') === 0 && baseSyncAct(act)) return;   /* ++++++ BASE SYNC ++++++ */
   if (act === 'gd-fixremote'){ gdFixRemote(); return; }
   if (act === 'sync-connect'){ syncConnect(); return; }
   if (act === 'sync-forget'){ syncForgetAll(); return; }
@@ -28583,6 +28789,7 @@ function syncRun(loud){
     if (r && r.ok){
       syncStatus.err = '';
       syncStatus.conflicts = r.conflicts || [];
+      syncStatus.base = null; baseSyncBarPaint();       /* ++++++ BASE SYNC ++++++ */
       syncBarPaint();
       /* ++++++ ERASE SPLIT ++++++ ПРИШЛО УДАЛЕНИЕ — И ОБ ЭТОМ ГОВОРЯТ.
          Числа возвращает то же слияние, и до этой задачи их никто не
@@ -28609,6 +28816,7 @@ function syncRun(loud){
       });
     } else {
       syncStatus.err = (r && r.err) || 'server';
+      syncStatus.base = (r && r.base) || null; baseSyncBarPaint();   /* ++++++ BASE SYNC ++++++ */
       /* ++++++ ERASE SPLIT ++++++ оборот не удался — удаление осталось
          здесь и ждёт сети. Молчать нельзя: нажатие было необратимым. */
       if (wipeSent){ wipeSent = false; banner('wipe-done', 'warn', esc(tr('wipe.donePending'))); }
