@@ -6695,8 +6695,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.24.0';
-var APP_BUILD = '2026-09-17T12:00:43.269Z';
+var APP_VERSION = '1.24.1';
+var APP_BUILD = '2026-09-17T19:37:52.125Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -24147,6 +24147,16 @@ function ordProfitHTML(p){
   var t = ordMoney(p.v, p.cur);
   return ordApx(p.approx) + (p.v < 0 ? '<span class="bad-txt">' + t + '</span>' : t);
 }
+/** Та же прибыль, ЕЩЁ РАЗ переведённая в валюту показа `cur` — тем же
+ *  ordConv(), тем же одним округлением поверх уже посчитанного значения.
+ *  Домен-правило 7 тут ни при чём: это второй ПОКАЗ одной цифры, а не
+ *  вторая арифметика — p.v уже посчитан, ничего не сохраняется и в
+ *  orderFigures() не идёт. Совпадает с p, когда переводить не во что. */
+function ordProfitDc(p, cur){
+  if (p.v === null || p.cur === cur) return p;
+  var c = ordConv(p.v, p.cur, cur);
+  return { v: c.v, cur: cur, approx: true };
+}
 function ordStatusWord(o){ return tr('ord.st.' + o.status); }
 function ordTagCls(o){ return o.status === 'done' ? 'pay' : (o.status === 'cancelled' ? 'cancel' : 'take'); }
 
@@ -24186,7 +24196,7 @@ function ordHistHTML(fig){
  *  имя и дата, обе суммы в своих валютах; справа прибыль. Кнопки — соседи
  *  заголовка, не его дети (область 25). */
 function ordRowHTML(f){
-  var o = f.order, act = o.status === 'active', h;
+  var o = f.order, act = o.status === 'active', cur = dcCur(), dcP = ordProfitDc(f.profit, cur), h;
   h = '<div class="ev ordrow" data-ord="' + esc(o.id) + '"><div class="l">' +
     '<button type="button" class="ordhd" data-act="ord-open" data-arg="' + esc(o.id) + '">' +
       '<span class="tag ' + ordTagCls(o) + '">' + ordStatusWord(o) + '</span>' +
@@ -24196,7 +24206,11 @@ function ordRowHTML(f){
       '<span class="d">' + tr('ord.pair', { cost: ordMoney(o.costMinor, o.costCur),
                                             sale: ordMoney(o.saleMinor, o.saleCur) }) + '</span>' +
     '</button></div>' +
-    '<div class="r"><b>' + ordProfitHTML(f.profit) + '</b>' +
+    /* прибыль — В ВЫБРАННОЙ ВАЛЮТЕ ПОКАЗА, как и итог наверху; своя валюта
+       продажи заказа (провенанс) — второй строкой, когда она другая */
+    '<div class="r"><b>' + ordProfitHTML(dcP) + '</b>' +
+    (f.profit.v !== null && f.profit.cur !== cur
+      ? '<div class="conv">' + ordMoney(f.profit.v, f.profit.cur) + '</div>' : '') +
     '<small>' + tr(o.status === 'cancelled' ? 'ord.notCounted' : 'ord.profitS') + '</small></div>' +
     /* ряд кнопок — на всю ширину строки: в левой колонке на 320 px три
        кнопки вставали столбиком (снимок стенда) */
@@ -24219,12 +24233,15 @@ function ordOpen(id){
   var o = orderById(id);
   if (!o) return;
   if (ordNode && ordNode.__done) ordNode.__done(null);
-  var p = ordProfit(o), from = document.activeElement, mine = null;
+  var p = ordProfit(o), cur = dcCur(), dcP = ordProfitDc(p, cur), from = document.activeElement, mine = null;
   var rows = row({ cls:'wrap', k: tr('ord.nameLabel'), v: esc(o.name) }) +
     row({ cls:'wrap', k: tr('ord.productLabel'), v: esc(o.product) }) +
     row({ k: tr('ord.costLabel'), v: ordMoney(o.costMinor, o.costCur) }) +
     row({ k: tr('ord.saleLabel'), v: ordMoney(o.saleMinor, o.saleCur) }) +
-    row({ k: tr('ord.profit'), sub: p.approx ? tr('ord.apxShort') : '', v: ordProfitHTML(p) }) +
+    /* прибыль — в валюте показа, как в строке списка; своя валюта продажи —
+       вторая строка значения (тем же классом .conv, что и остальные суммы) */
+    row({ k: tr('ord.profit'), sub: dcP.approx ? tr('ord.apxShort') : '',
+          v: ordProfitHTML(dcP) + (p.v !== null && p.cur !== cur ? '<div class="conv">' + ordMoney(p.v, p.cur) + '</div>' : '') }) +
     row({ k: tr('w.date'), v: fmtDateLong(o.date) }) +
     row({ k: tr('ord.stLabel'), v: ordStatusWord(o) +
       (o.status === 'active' ? '' : ' · ' + fmtDateLong(o.closedAt || o.date)) });
