@@ -6695,8 +6695,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.24.1';
-var APP_BUILD = '2026-09-17T19:37:52.125Z';
+var APP_VERSION = '1.25.0';
+var APP_BUILD = '2026-09-24T06:38:18.020Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -17819,7 +17819,7 @@ ui.seg = { summary:'money', products:'list', people:'list', tx:'list', pay:'list
            /* ++++++ MONEY TABS ++++++ какая из трёх вкладок «Денег»
               открыта. Живёт в ui, значит помнится в пределах сеанса и
               не попадает ни в документ, ни в копию. */
-           money:'tx',
+           money:'pay',
            /* ++++++ CASH LOANS ++++++ сегмент вкладки «Долги» */
            loans:'list',
            /* ++++++ OWN ORDERS ++++++ какая вкладка «Своего» открыта и сегмент заказов */
@@ -18869,7 +18869,18 @@ function navNorm(){
   } else if (ui.tab === 'own'){
     ui.seg.money = 'own';
     ui.tab = 'money';
-  } else if (ui.tab === 'tx' || ui.tab === 'pay' || ui.tab === 'exp'){
+  } else if (ui.tab === 'tx' || (ui.tab === 'money' && ui.seg.money === 'tx')){
+    /* ++++++ TX IN PRODUCTS ++++++ ДВА поколения адреса «Выдач», и оба
+       ведут в products/tx: плоский tab==='tx' — доисторический адрес до
+       редизайна 2026-09-01; tab==='money' + seg.money==='tx' — адрес
+       того дня, устаревший ровно сегодня (его принесёт обменом
+       устройство со старым ядром). Приём own-in-money, третья дверь:
+       одна точка перевода на оба поколения; ui.seg.tx (список/новая
+       форма) не трогается — его независимо ставит собственный segbar
+       внутри viewTx(). */
+    ui.seg.products = 'tx';
+    ui.tab = 'products';
+  } else if (ui.tab === 'pay' || ui.tab === 'exp'){
     ui.seg.money = ui.tab;
     ui.tab = 'money';
   } else if (ui.tab === 'more'){
@@ -20632,13 +20643,20 @@ function viewProducts(){
   if (ui.detail && ui.detail.type === 'lot') return viewLotCard();
   var sec = 'products';
   var h = head(tr('tab.products'), tr('sum.inCur', {note: secNote(sec) || '—'}));
-  /* ++++++ TRIPS ++++++ третий сегмент. Пункт в нижней панели НЕ
-     добавляется: их пять, и шестого быть не должно. Поездка — это
-     закупка, и карточка поездки уже живёт на этой вкладке. */
+  /* ++++++ TRIPS ++++++ / ++++++ TX IN PRODUCTS ++++++ четыре сегмента.
+     Пункт в нижней панели НЕ добавляется: их пять, и шестого быть не
+     должно. Поездка — это закупка, и карточка поездки уже живёт на этой
+     вкладке; «Выдачи» переехали сюда с «Денег» (задача tx-to-products,
+     2026-09-23) — выдаётся ТОВАР, а не деньги. */
   h += segbar('products', [['list', tr('seg.list')],
     ['lots', tr('lot.tab')],
+    ['tx', tr('tab.transactions')],
     ['add', ui.form.product.editId ? tr('seg.editing') : tr('seg.add')]]);
-  h += warnNote(sec);
+  /* ++++++ TX IN PRODUCTS ++++++ на сегменте «Выдачи» полосу про курс
+     печатает сам viewTx() (ниже, для раздела 'transactions') — вторая
+     полоса про раздел 'products' здесь была бы про чужой курс и
+     повторяла бы предупреждение дважды. */
+  if (ui.seg.products !== 'tx') h += warnNote(sec);
   /* ++++++ ATTACHMENTS ++++++ a file refused or unwritable from the EDIT
      form reports through ui.attErr, whose only other printer is the product
      card — without this the message would be rendered on no screen at all. */
@@ -20663,6 +20681,8 @@ function viewProducts(){
     h += listCard('', rows);
   } else if (ui.seg.products === 'lots'){
     h += viewTripList();
+  } else if (ui.seg.products === 'tx'){
+    h += viewTx();
   } else {
     h += formProduct();
   }
@@ -23142,20 +23162,20 @@ function saveRatePair(){
    OWN_TABS («Долги»/«Заказы»), нетронутый: карточка долга, формы, расчёты
    не тронуты ни строкой, поменялся только адрес — на один уровень глубже.
    Задача own-in-money, README там же. */
-var MONEY_TABS = [['tx','tab.transactions'],['pay','tab.payments'],['exp','tab.expenses'],
+var MONEY_TABS = [['pay','tab.payments'],['exp','tab.expenses'],
                    ['own','tab.own']];
 function moneySub(){
   if (ui.seg.money === 'exp') return tr('sum.inCur', {note: dcStoreNote()});
   if (ui.seg.money === 'own') return ownSub();
-  var sec = ui.seg.money === 'pay' ? 'payments' : 'transactions';
-  return tr('sum.inCur', {note: secNote(sec) || '—'});
+  return tr('sum.inCur', {note: secNote('payments') || '—'});
 }
 function viewMoney(){
   /* карточка долга — отдельный экран, без шапки и вкладок, как и была */
   if (ui.detail && ui.detail.type === 'loan') return viewLoanCard();
-  /* ++++++ INFO ++++++ иконка на «Расходах» и на «Своём»: у «Выдач» и
-     «Оплат» пояснения не было. «i» — ЛИТЕРАЛОМ ключа: набор ссылок
-     справки (test-faqrefs) ищет вызов infoBtn('ключ'), выражение не видит */
+  /* ++++++ TX IN PRODUCTS ++++++ иконка на «Расходах» и на «Своём»: у
+     «Оплат» пояснения не было и нет — «Выдачи» переехали на «Товар».
+     «i» — ЛИТЕРАЛОМ ключа: набор ссылок справки (test-faqrefs) ищет
+     вызов infoBtn('ключ'), выражение не видит */
   var h = head(tr('tab.money'), moneySub(),
     ui.seg.money === 'exp' ? infoBtn('exp') :
     (ui.seg.money === 'own' ? (ui.seg.own === 'orders' ? infoBtn('orders') : infoBtn('loans')) : ''));
@@ -23165,10 +23185,9 @@ function viewMoney(){
       (ui.seg.money === t[0] ? ' class="on"' : '') + '>' + tr(t[1]) + '</button>';
   });
   h += '</div>';
-  if (ui.seg.money === 'pay') return h + viewPay();
   if (ui.seg.money === 'exp') return h + viewExp();
   if (ui.seg.money === 'own') return h + viewOwnBody();
-  return h + viewTx();
+  return h + viewPay();
 }
 function viewExp(){
   var sec = 'expenses';
@@ -26034,7 +26053,7 @@ function live(){
   /* ++++++ NAME TWINS ++++++ один узел, не форма: курсор в имени остаётся
      на месте, пока подсказка пересчитывается на каждую букву. */
   if (ui.tab === 'people'){ n = $('personTwin'); if (n) n.innerHTML = personTwinText(); }
-  if (ui.tab === 'money' && ui.seg.money === 'tx'){
+  if (ui.tab === 'products' && ui.seg.products === 'tx'){
     /* ++++++ DISCOUNT ++++++ пара «цена ↔ скидка %» пересчитывается на
        каждую набранную букву. Трогаются ровно два узла — второе поле и
        подсказка, — и ПОЛЕ, В КОТОРОМ КАРЕТКА, НЕ ПЕРЕПИСЫВАЕТСЯ НИКОГДА.
