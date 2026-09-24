@@ -1994,7 +1994,6 @@ var STR = {
 
 /* ---------------- selects ---------------- */
 'sel.allCurrencies':  { en:'All currencies',  ru:'Все валюты' },
-'sel.addPersonFirst': { en:'— add a person first —',  ru:'— сначала добавьте человека —' },
 'sel.addProductFirst':{ en:'— add a product first —', ru:'— сначала добавьте товар —' },
 'sel.allProducts':    { en:'All products',    ru:'Все товары' },
 
@@ -3703,6 +3702,7 @@ var STR = {
 'tx.toWhom':     { en:'To whom',                            ru:'Кому' },
 'tx.what':       { en:'What',                               ru:'Что' },
 'tx.pickPerson': { en:'Choose a person',                    ru:'Выберите человека' },
+'ppl.newBuyer':  { en:'New buyer',                          ru:'Новый покупатель' },
 'tx.pickProduct':{ en:'Choose a product',                   ru:'Выберите товар' },
 'tx.record':     { en:'Record the handout',                 ru:'Записать выдачу' },
 'tx.inStock':    { en:'{n} in stock',                       ru:'на складе {n} шт' },
@@ -6695,8 +6695,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.25.0';
-var APP_BUILD = '2026-09-24T06:38:18.020Z';
+var APP_VERSION = '1.26.0';
+var APP_BUILD = '2026-09-24T08:12:54.459Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -18613,8 +18613,10 @@ function personItems(){
 }
 
 /* Подсказка под полем имени. Пустая строка — значит тёзок нет. */
-function personTwinText(){
-  var f = ui.form.person;
+function personTwinText(f){
+  /* ++++++ NEW BUYER ++++++ черновик можно передать: окно «Новый покупатель»
+     держит свой, а не ui.form.person. Без аргумента — как прежде. */
+  f = f || ui.form.person;
   var t = personTwins(f.name, f.editId || null);
   if (!t.length) return '';
   var marks = [], i;
@@ -21925,23 +21927,33 @@ function peopleListHTML(){
   });
   return listCard('', rows);
 }
-function formPerson(){
-  var f = ui.form.person;
-  var h = '<form id="fPerson" novalidate>' + errNote();
+/* ++++++ NEW BUYER ++++++ ЕДИНСТВЕННАЯ разметка полей человека: её печатают
+   страница «Люди» и окно «Новый покупатель». Две копии разошлись бы при
+   первой правке. `mk(key, o)` даёт поле: у страницы это data-f
+   «person.<key>», у окна — свой id и никакого data-f, чтобы общие
+   слушатели input/change его не видели. */
+function personFieldsHTML(f, mk, twinId){
+  var h = '';
   /* ++++++ NAME TWINS ++++++ подсказка, а не отказ: два «Азиза» это норма. */
   h += field({ label: tr('ppl.name') + ' *',
-    control: input({ f:'person.name', value:f.name, ph: tr('ph.person') }),
-    hintId:'personTwin', hint: personTwinText() });
+    control: mk('name', { value:f.name, ph: tr('ph.person') }),
+    hintId:twinId, hint: personTwinText(f) });
   /* ++++++ NEUTRAL ++++++ подсказка НАЗЫВАЕТ поле, а не показывает номер
      владельца; город — обычное поле, а не список городов одной страны. */
   h += field({ label: tr('ppl.phone') + ' *',
-    control: input({ f:'person.phone', value:f.phone, type:'tel', mode:'tel', ph: tr('ph.phone') }),
+    control: mk('phone', { value:f.phone, type:'tel', mode:'tel', ph: tr('ph.phone') }),
     hint: tr('ppl.phoneHint') });
   h += field({ label: tr('ppl.city'),
-    control: input({ f:'person.city', value:f.city, ph: tr('ph.city') }) });
+    control: mk('city', { value:f.city, ph: tr('ph.city') }) });
   h += field({ label: tr('ppl.shop'),
-    control: input({ f:'person.shop', value:f.shop, ph: tr('ph.shop') }),
+    control: mk('shop', { value:f.shop, ph: tr('ph.shop') }),
     hint: tr('ppl.shopHint') });
+  return h;
+}
+function formPerson(){
+  var f = ui.form.person;
+  var h = '<form id="fPerson" novalidate>' + errNote();
+  h += personFieldsHTML(f, function(k, o){ o.f = 'person.' + k; return input(o); }, 'personTwin');
   if (f.note){
     h += field({ label: tr('ppl.noteOld'), control: input({ f:'person.note', value:f.note }),
       hint: tr('ppl.noteOldHint') });
@@ -22662,14 +22674,14 @@ function txListHTML(){
 function formTx(){
   /* ++++++ NAME TWINS ++++++ примета — только у тёзок; у остальных подпись
      байт в байт прежняя. */
-  var f = ui.form.tx, hItems = personItems(), pItems = [], ps = productStats();
+  var f = ui.form.tx, hItems = newBuyerItems(), pItems = [], ps = productStats();
   actProducts().forEach(function(p){
     pItems.push([p.id, tr('sel.available', {name: p.name, n: units(ps[p.id].remaining)})]);
   });
   var h = '<form id="fTx" novalidate>' + errNote();
   h += field({ label: tr('tx.toWhom'),
     control: select({ f:'tx.personId', value:f.personId, items:hItems,
-      ph: actPeople().length ? tr('tx.pickPerson') : tr('sel.addPersonFirst') }) });
+      ph: tr('tx.pickPerson') }) });
   h += field({ label: tr('tx.what'),
     control: select({ f:'tx.productId', value:f.productId, items:pItems,
       ph: actProducts().length ? tr('tx.pickProduct') : tr('sel.addProductFirst') }) });
@@ -22763,11 +22775,11 @@ function payListHTML(){
 }
 function formPay(){
   /* ++++++ NAME TWINS ++++++ тот же список, что в форме выдачи. */
-  var f = ui.form.pay, hItems = personItems();
+  var f = ui.form.pay, hItems = newBuyerItems();
   var h = '<form id="fPay" novalidate>' + errNote();
   h += field({ label: tr('pay.fromWhom'),
     control: select({ f:'pay.personId', value:f.personId, items:hItems,
-      ph: actPeople().length ? tr('pay.pickPerson') : tr('sel.addPersonFirst') }) });
+      ph: tr('pay.pickPerson') }) });
   h += field({ label: tr('w.amount'),
     control: money2('pay.amount', f.amount, 'pay.cur', f.cur, payEntryCodes()),
     hintId:'payHint', hint: payHintText() });
@@ -26472,6 +26484,12 @@ document.addEventListener('change', function(e){
   }
   var key = el.getAttribute && el.getAttribute('data-f');
   if (!key) return;
+  /* ++++++ NEW BUYER ++++++ служебный пункт списка — не значение: в форму
+     он не пишется, список возвращается к прежнему человеку, а окно
+     открывается поверх. Больше в форме не меняется ничего. */
+  if ((key === 'tx.personId' || key === 'pay.personId') && el.value === NEW_BUYER){
+    render(); newBuyerOpen(key); return;
+  }
   if (key === 'product.cur'){ reexpressInvoice(el.value); render(); return; }
   if (/\.sellCur$/.test(key)){
     var t = parentOf(key), o = t.obj;
@@ -26725,24 +26743,89 @@ function saveProduct(){
 }
 
 
-function savePerson(){
-  var f = ui.form.person;
-  ui.err = '';
+/* ++++++ NEW BUYER ++++++ ПРАВИЛА ПРОВЕРКИ ЧЕЛОВЕКА — В ОДНОМ МЕСТЕ: их
+   зовут «Люди» и окно «Новый покупатель». Порядок отказов и тексты те же,
+   что стояли в savePerson(). Возвращает {err} либо {name, phone, city}. */
+function personCheck(f, editId){
   var name = String(f.name).trim();
-  if (!name){ ui.err = tr('err.personName'); render(); return; }
-  if (!String(f.phone).trim()){ ui.err = tr('err.phoneReq'); render(); return; }
+  if (!name) return { err: tr('err.personName') };
+  if (!String(f.phone).trim()) return { err: tr('err.phoneReq') };
   /* ++++++ NEUTRAL ++++++ порог 5, а не 9: девять — длина местного номера
      в одной стране. Дубликат ловится ПО ЦИФРАМ: формат больше не
      приводится к одному виду, и сравнение строк потеряло бы защиту. */
-  if (phoneDigits(f.phone) < 5){ ui.err = tr('err.phoneShort'); render(); return; }
+  if (phoneDigits(f.phone) < 5) return { err: tr('err.phoneShort') };
   var city = String(f.city).trim();
   var phone = normPhone(f.phone);
   var dup = null, phoneK = phoneKey(phone);
   actPeople().forEach(function(x){
-    if (x.id === f.editId) return;
+    if (x.id === editId) return;
     if (phoneKey(x.phone) && phoneKey(x.phone) === phoneK) dup = x;
   });
-  if (dup){ ui.err = tr('err.phoneDup', {name: dup.name}); render(); return; }
+  if (dup) return { err: tr('err.phoneDup', {name: dup.name}) };
+  return { name: name, phone: phone, city: city };
+}
+/* Создаёт человека по уже проверенному; возвращает его id. */
+function personCreate(f, chk){
+  var perId = uid('per');
+  state.people.push({ id: perId, name:chk.name, phone:chk.phone, city:chk.city,
+    shop: String(f.shop).trim(), note: String(f.note || '').trim(),
+    createdAt: new Date().toISOString() });
+  touch(perId);
+  return perId;
+}
+/* ==================================================================
+ * ++++++ NEW BUYER ++++++   «НОВЫЙ ПОКУПАТЕЛЬ» В ФОРМАХ ВЫДАЧИ И ОПЛАТЫ
+ *
+ * Первым пунктом списка «Кому» / «От кого» стоит служебный NEW_BUYER. Он не
+ * значение: обработчик change в форму его не пишет, список возвращается к
+ * прежнему человеку, поверх открывается окно с теми же полями и теми же
+ * правилами, что в «Люди» (personFieldsHTML, personCheck, personCreate).
+ *
+ * ДАННЫЕ ФОРМЫ ОКНО НЕ ТРОГАЕТ ВОВСЕ: меняется ровно одно поле —
+ * personId, и только при успешном сохранении. Остальное живёт в ui.form и
+ * переживает render() само.
+ *
+ * У окна СВОЙ черновик, а не ui.form.person: на «Люди» может лежать
+ * полунабранный человек, и окно не вправе его затереть. Поля окна без
+ * data-f — общие слушатели input/change/submit их не видят, окно слушает
+ * себя само. Закрытие — через dialog(): Escape, «Назад» Android и фон
+ * работают без единой новой строки.
+ * ================================================================== */
+var NEW_BUYER = '__new__';
+function newBuyerItems(){ return [[NEW_BUYER, tr('ppl.newBuyer')]].concat(personItems()); }
+function newBuyerOpen(key){
+  if ($('fNewBuyer')) return;
+  var draft = { name:'', phone:'', city:'', shop:'', note:'' };
+  dialog({ title: tr('ppl.newBuyer'), closeX: true, bare: true,
+    html: '<form id="fNewBuyer" novalidate><div class="note err" id="nbErr" hidden></div>' +
+      personFieldsHTML(draft, function(k, o){ o.id = 'nb_' + k; return input(o); }, 'nbTwin') +
+      '<div class="btns"><button type="button" class="btn sec" data-key="">' + esc(tr('w.cancel')) + '</button>' +
+      saveBtn(tr('w.add')).replace(' block', '') + '</div></form>' });
+  var form = $('fNewBuyer'), back = form.closest('.modal-back');
+  form.addEventListener('input', function(e){
+    var k = e.target.id && e.target.id.indexOf('nb_') === 0 ? e.target.id.slice(3) : '';
+    if (!k) return;
+    draft[k] = e.target.value;
+    if (k === 'name'){ var n = $('nbTwin'); if (n) n.innerHTML = personTwinText(draft); }
+  });
+  form.addEventListener('submit', function(e){
+    e.preventDefault(); e.stopPropagation();
+    var chk = personCheck(draft, '');
+    if (chk.err){ var er = $('nbErr'); er.textContent = chk.err; er.hidden = false; return; }
+    var pid = personCreate(draft, chk);
+    setF(key, pid);
+    toast(tr('msg.personAdded', {name: chk.name}), 'ok');
+    back.__done(null);
+    commit();
+  });
+  var nm = $('nb_name'); if (nm) nm.focus({ preventScroll: true });
+}
+function savePerson(){
+  var f = ui.form.person;
+  ui.err = '';
+  var chk = personCheck(f, f.editId);
+  if (chk.err){ ui.err = chk.err; render(); return; }
+  var name = chk.name, phone = chk.phone, city = chk.city;
   if (f.editId){
     var p = personById(f.editId);
     if (!p){ ui.err = tr('err.personGone'); render(); return; }
@@ -26753,11 +26836,7 @@ function savePerson(){
     toast(tr('msg.personUpdated', {name: name}), 'ok');
     commit(); return;
   }
-  var perId = uid('per');
-  state.people.push({ id: perId, name:name, phone:phone, city:city,
-    shop: String(f.shop).trim(), note: String(f.note).trim(),
-    createdAt: new Date().toISOString() });
-  touch(perId);
+  personCreate(f, chk);
   resetPersonForm(); ui.seg.people = 'list';
   toast(tr('msg.personAdded', {name: name}), 'ok');
   commit();
