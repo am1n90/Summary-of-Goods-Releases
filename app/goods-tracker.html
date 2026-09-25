@@ -492,6 +492,10 @@
   .btn.sec,.btn.ghost{background:var(--surface);color:var(--accent);border-color:var(--line)}
   .btn.sec:hover,.btn.ghost:hover{background:var(--accent-soft);filter:none}
   .btn.sec:active,.btn.ghost:active{background:var(--accent-soft);filter:brightness(.96)}
+  /* ++++++ MULTI FORM ++++++ кнопка-строка под блоком товара. Высота 44 px —
+     палец не промахивается, хотя рамки нет. */
+  .addlink{display:block;margin:0 auto 14px;padding:12px 16px;min-height:44px;background:none;border:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer}
+  .addlink:hover{text-decoration:underline}
   /* Разрушающее — КРАСНЫЙ КОНТУР. Было мягкой заливкой без рамки и
      терялось рядом со вторичной. */
   .btn.danger{background:var(--surface);color:var(--bad);border-color:var(--bad)}
@@ -1705,7 +1709,16 @@ var STORAGE_KEY = 'goods-tracker/v1';
        прибыль при одной валюте — точная разность.
        Документ старее v22 просто не имеет ключа и берёт пустой список —
        ветки по версии нет, пустой список не скармливается bakSig(). */
-var SCHEMA_VERSION = 22;
+/* ++++++ MULTI HANDOUT ++++++ v23: transactions[].handoutId — НЕОБЯЗАТЕЛЬНЫЙ номер выдачи.
+       Выдача из нескольких товаров — это несколько обычных записей
+       transactions (строка = одна запись, как всегда), и у каждой один и
+       тот же handoutId — id первой строки. Ключ пишется только там, где
+       строк две и больше: у одиночной выдачи его НЕТ вовсе (правило 64),
+       и она лежит побайтово как до v23. Документ старее v23 просто не
+       имеет ключа — ветки по версии нет, переноса данных нет. Считающие
+       функции номера не читают: доля себестоимости, возврат и снимок
+       курса и так у каждой строки свои. */
+var SCHEMA_VERSION = 23;
 
 /* Status keys are the stable identifiers; never compare by label.
    The labels themselves live in the dictionary below, as status.<key>. */
@@ -3705,6 +3718,31 @@ var STR = {
 'ppl.newBuyer':  { en:'New buyer',                          ru:'Новый покупатель' },
 'tx.pickProduct':{ en:'Choose a product',                   ru:'Выберите товар' },
 'tx.record':     { en:'Record the handout',                 ru:'Записать выдачу' },
+/* ++++++ MULTI FORM ++++++ */
+'tx.lineN':      { en:'Product {n}',                        ru:'Товар {n}' },
+'tx.addLine':    { en:'+ Add a product',                    ru:'+ Добавить товар' },
+'tx.total':      { en:'Handout total: {sum}',               ru:'Итого по выдаче: {sum}' },
+'tx.notFilled':  { en:'{n} more product(s) not filled in yet', ru:'ещё не заполнено товаров: {n}' },
+'tx.handTitle':  { en:'Handout: {n}',                       ru:'Выдача: {n}' },
+'led.handN':     { en:'{n} in one handout',                 ru:'{n} в одной выдаче' },
+'ret.btnOf':     { en:'Return: {name}',                     ru:'Возврат: {name}' },
+'disc.markSum':  { en:'discount {sum}',                     ru:'скидка {sum}' },
+'mr.handSum':    { en:'Handout total ({n})',                ru:'Итого по выдаче ({n})' },
+'trash.pLines':  { en:'{n} more of this handout ({q} pcs)', ru:'ещё {n} этой выдачи ({q} шт)' },
+'msg.handoutSaved': { en:'Handout saved: {n}, {q} pcs — stock reduced.',
+                      ru:'Выдача записана: {n}, {q} шт — склад уменьшен.' },
+'msg.linesTrashed': { en:'Moved to the trash: {n}.', ru:'Убрано в корзину: {n}.' },
+'dlg.delHandTitle': { en:'Delete the whole handout?', ru:'Удалить выдачу целиком?' },
+'dlg.delHandBody':  { en:'<p><b>{person}</b> &mdash; {n}:<br>{lines}</p>' +
+                          '<p><b>{qty}</b> unit(s) will go back into stock and {total} will be removed from that person\'s due.</p>',
+                      ru:'<p><b>{person}</b> &mdash; {n}:<br>{lines}</p>' +
+                          '<p><b>{qty}</b> шт. вернутся на склад, а {total} уйдут из начислений этого человека.</p>' },
+'faq.a.txWhat4':    { en:'One handout can hold several products: under a product press <b>+ Add a product</b>. ' +
+                          'The handout is saved whole, and in the list and in the person\'s History it is one line with ' +
+                          'the total. A return is made for each product separately; a delete takes the whole handout.',
+                       ru:'В одну выдачу можно записать несколько товаров: под товаром нажмите <b>«+ Добавить товар»</b>. ' +
+                          'Выдача сохраняется целиком, а в списке и в «Истории» человека стоит одной строкой с общей ' +
+                          'суммой. Возврат делается по каждому товару отдельно, удаление уносит всю выдачу.' },
 'tx.inStock':    { en:'{n} in stock',                       ru:'на складе {n} шт' },
 'tx.willStore':  { en:'{q} &times; {v} {cur} = {sum} will be stored',
                    ru:'{q} &times; {v} {cur} = {sum} будет записано' },
@@ -6695,8 +6733,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.26.0';
-var APP_BUILD = '2026-09-24T08:12:54.459Z';
+var APP_VERSION = '1.27.0';
+var APP_BUILD = '2026-09-25T07:11:06.239Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -8679,7 +8717,13 @@ function baseOf(doc){
    НЕЗНАКОМЫЙ номер конверта, обязан остановиться, а не «понять как
    сможет»: испортить чужие записи хуже, чем не синхронизироваться. */
 
-var SYNC_ENVELOPE = 1;
+/* ++++++ MULTI FORM ++++++ конверт 2 (решение владельца 25.09.2026). В нём
+   ездят выдачи из нескольких товаров — строки с общим handoutId. Ядро
+   старее v23 номер не знает, выбросило бы его при чтении и следующим
+   оборотом отправило бы выдачу рассыпанной на отдельные строки. Номер
+   конверта 2 такое ядро честно отвергает («обновите программу»), и
+   рассыпать ему нечего. Конверт 1 это ядро читает как прежде. */
+var SYNC_ENVELOPE = 2;
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -12521,7 +12565,8 @@ function bakSig(){
 /** сколько записей сейчас — те же четыре .length, что печатает диалог импорта */
 function bakCounts(){
   return { prod: actProducts().length, ppl: actPeople().length,
-           tx: actTx().length, pay: actPay().length };
+           /* ++++++ MULTI FORM ++++++ выдача из трёх товаров — одна выдача */
+           tx: handoutCountIn(actTx()), pay: actPay().length };
 }
 /** целых суток прошло с момента iso, или null, если метка нечитаема.
  *  Никогда не отрицательное: часы, переведённые назад, и метка «из
@@ -13494,10 +13539,18 @@ function validate(obj){
       if (!isInt(t.qty) || t.qty < 1) throw new Error(tr('v.txBadQty', {n:i+1}));
       if (!isInt(t.unitPriceCents) || t.unitPriceCents < 0) throw new Error(tr('v.txBadPrice', {n:i+1}));
       var te = entryOf(t);
-      out.transactions.push(trashPut({ id:takeId(t.id, tr('v.eTransaction')), personId:t.personId, productId:t.productId,
+      var trec = { id:takeId(t.id, tr('v.eTransaction')), personId:t.personId, productId:t.productId,
         qty:t.qty, unitPriceCents:t.unitPriceCents, date:dateOf(t.date),
         entryCur:te.cur, entryMinor:te.minor, rateSnap:snapOf(t),
-        createdAt: typeof t.createdAt==='string'?t.createdAt:'' }, t));
+        createdAt: typeof t.createdAt==='string'?t.createdAt:'' };
+      /* ++++++ MULTI HANDOUT ++++++ v23. Ключ пишется, только когда он есть и годен, —
+         идиома lotId у партии. Кривой номер выбрасывает СЕБЯ, а не
+         запись: строка без номера — обычная одиночная выдача, и деньги
+         в ней верны. На ссылку номер не проверяется: это ярлык группы,
+         а не указатель, — голова группы может лежать в корзине. */
+      if (typeof t.handoutId === 'string' && t.handoutId && t.handoutId !== '__proto__')
+        trec.handoutId = t.handoutId;
+      out.transactions.push(trashPut(trec, t));
     } catch(e){ dropRec(e); } });
     arr('payments').forEach(function(p,i){ try {
       if (!p || typeof p !== 'object') throw new Error(tr('v.badRecord', {what:tr('v.ePayment'), n:i+1}));
@@ -15990,7 +16043,7 @@ var FAQ = [
   key: 'tx.what', topic: 'tx', icon: false,
   q: function(){ return tr('faq.q.txWhat'); },
   html: function(){ return infoP(tr('faq.a.txWhat1')) + infoP(tr('faq.a.txWhat2')) +
-                           infoP(tr('faq.a.txWhat3')); },
+                           infoP(tr('faq.a.txWhat3')) + infoP(tr('faq.a.txWhat4')); },
   see: ['goods.stock', 'people.debt', 'tx.discount']
 },
 {
@@ -17768,7 +17821,8 @@ function importBackup(file){
     var impBody = impStampHTML(parsed) +
       (res.dropped && res.dropped.length ? '<p>' + dropLine(res.dropped) + '</p>' : '') +
       tr('dlg.impBody', {prod: d.products.length, ppl: d.people.length,
-                         tx: d.transactions.length, pay: d.payments.length}) +
+                         /* ++++++ MULTI FORM ++++++ выдач, а не строк */
+                         tx: handoutCountIn(d.transactions), pay: d.payments.length}) +
       (d.returns.length ? tr('dlg.impRet', {n: d.returns.length}) : '') +
       /* ++++++ EXPENSES ++++++ говорится только когда есть о чём: копия без
          расходов печатает диалог байт в байт прежний. */
@@ -17899,9 +17953,12 @@ function resetPersonForm(){
    пустая: подстановка привязана к ВЫБОРУ ТОВАРА, а не к сбросу. */
 function resetTxForm(keepPerson){
   discErrDrop();
+  /* ++++++ MULTI FORM ++++++ строки новой формы — одна пустая; якоря
+     прежней формы к ней отношения не имеют */
+  txAnchorsDrop();
   var p = keepPerson || '';
   ui.form.tx = { personId:p, productId:'', qty:'', price:'', cur:lastTxCurFor(p),
-    date:todayISO(), editId:'' };
+    date:todayISO(), editId:'', txId:'', more:[] };
   ui.edit.tx = null;
 }
 function resetPayForm(keepPerson){
@@ -18373,8 +18430,10 @@ function earnCardHTML(personId, ps, hs){
 
 /* Негодный процент — состояние НАБИРАЕМОЙ формы, и в документе ему делать
    нечего: модульная переменная, как prodEditAnchor и moneyAnchor. */
-var discErr = '';
-function discErrDrop(){ discErr = ''; }
+/* ++++++ MULTI FORM ++++++ у каждой строки выдачи своя пара «цена ↔ скидка %», и
+   ошибка процента — своя: номер строки → текст. */
+var discErrs = {};
+function discErrDrop(){ discErrs = {}; }
 
 /** Разбор процента. Отдельный от денег, потому что процент — не деньги: у
  *  него бывает знак (минус = наценка), а parseMoneyToCents() знака не
@@ -18410,19 +18469,22 @@ function discPriceValue(usualMajor, pct){
 }
 
 /** Обычная цена выбранного товара, базовые копейки, или null. */
-function txUsualCents(){
-  return discUsualCents(productById(ui.form.tx.productId));
+function txUsualCents(i){
+  var l = txLine(i || 0);
+  return discUsualCents(productById(l ? l.productId : ''));
 }
 /** Цена из поля, приведённая к базовым копейкам, или null. */
-function txPriceCents(){
-  var m = parseMoneyToCents(ui.form.tx.price);
-  return m === null ? null : toBaseCents(m, ui.form.tx.cur);
+function txPriceCents(i){
+  var l = txLine(i || 0);
+  if (!l) return null;
+  var m = parseMoneyToCents(l.price);
+  return m === null ? null : toBaseCents(m, l.cur);
 }
 /** Текст поля «скидка %» — ПРОИЗВОДНОЕ от цены, нигде не хранимое.
  *  Пустая строка честнее нуля: ноль здесь значит «цена ровно обычная», а
  *  это утверждение. */
-function txDiscText(){
-  var u = txUsualCents(), c = txPriceCents();
+function txDiscText(i){
+  var u = txUsualCents(i), c = txPriceCents(i);
   if (u === null || c === null) return '';
   return String(pctOf(u - c, u));
 }
@@ -18431,34 +18493,36 @@ function txDiscText(){
  *  НИКОГДА НЕ ПЕРЕПИСЫВАЕТСЯ. Второе — производное, его значение просто
  *  ставится. Ни таймеров, ни перерисовки формы: трогаются ровно два узла,
  *  и ни один из них не предок того, в котором печатают (область 12). */
-function discSyncPair(source){
-  var f = ui.form.tx, pctEl = $('txDiscIn');
-  if (!pctEl) return;
-  var priceEl = document.querySelector('#fTx input[data-f="tx.price"]');
-  discErr = '';
+function discSyncPair(source, i){
+  i = i || 0;
+  var l = txLine(i), pctEl = $('txDiscIn' + txSfx(i));
+  if (!l || !pctEl) return;
+  var pricePath = txPath(i, 'price');
+  var priceEl = document.querySelector('#fTx input[data-f="' + pricePath + '"]');
+  discErrs[i] = '';
   if (source === 'pct'){
     var raw = pctEl.value;
     /* стёрли процент — цену не трогаем: стирание не значит «даром» */
     if (String(raw).trim() !== ''){
-      var u = txUsualCents(), pct = parsePct(raw);
-      if (u === null) discErr = tr('disc.noPrice');
-      else if (pct === null) discErr = tr('disc.errRange');
+      var u = txUsualCents(i), pct = parsePct(raw);
+      if (u === null) discErrs[i] = tr('disc.noPrice');
+      else if (pct === null) discErrs[i] = tr('disc.errRange');
       else {
-        var um = convertFor(u, f.cur);
+        var um = convertFor(u, l.cur);
         var v = um === null ? null : discPriceValue(um, pct);
-        if (v === null) discErr = tr('disc.errNeg');
+        if (v === null) discErrs[i] = tr('disc.errNeg');
         else {
           var txt = v.toFixed(2);
-          setF('tx.price', txt);
+          setF(pricePath, txt);
           /* ++++++ R14 ++++++ якорь двигается вместе с ценой: иначе первое
              же переключение валюты пересчитает не от того числа. */
-          moneyAnchorSet('tx.price', txt);
+          moneyAnchorSet(pricePath, txt);
           if (priceEl && document.activeElement !== priceEl) priceEl.value = txt;
         }
       }
     }
   } else if (document.activeElement !== pctEl){
-    pctEl.value = txDiscText();
+    pctEl.value = txDiscText(i);
   }
 }
 
@@ -19407,6 +19471,7 @@ function mrData(ym){
              discCents: d.kind === DISC_DOWN ? d.totalCents : 0,
              noCost: !(s && own(s.cogsOf, t.id)) };
   });
+  tx = mrGroupTx(tx);                      /* ++++++ MULTI FORM ++++++ строки выдачи подряд */
   var pay = actPay().filter(function(p){ return inRange(p.date, b.from, b.to); }).sort(mrCmp).map(function(p){
     return { id: p.id, date: p.date, person: nameH(p.personId), amountCents: p.amountCents, note: p.note || '' };
   });
@@ -19656,10 +19721,7 @@ function mrLayout(d, made){
      { title: tr('mr.colProduct'), width: 135 }, { title: tr('mr.colQty'), width: 38, align: 'right' },
      { title: tr('mr.colPrice'), width: 58, align: 'right' }, { title: tr('mr.colSum', { cur: cur }), width: 66, align: 'right' },
      { title: tr('mr.colDisc'), width: MR_W - 2 * MR_M - 447, align: 'right' }],
-    d.tx.map(function(t){
-      return [day(t.date), who(t.person), t.noCost ? { text: who(t.product), note: tr('mr.noCostRow') } : who(t.product),
-              units(t.qty), mrMoney(t.unitCents), mrMoney(t.totalCents), t.discCents ? mrMoney(t.discCents) : '—'];
-    }),
+    mrTxRows(d.tx, day, who),               /* ++++++ MULTI FORM ++++++ */
     [tr('mr.total'), '', '', units(d.tx.reduce(function(a, t){ return a + t.qty; }, 0)), '', mrMoney(d.sums.tx), mrMoney(d.sums.disc)],
     tr('mr.noneTx'));
 
@@ -22037,8 +22099,21 @@ function notePhoneSheet(){
 }
 function ledgerEvents(personId){
   var evts = [];
+  /* ++++++ MULTI FORM ++++++ выдача из нескольких товаров — ОДНО событие: общая
+     сумма и список строк (ledHandEvent). Выдача из одного товара — прежнее
+     событие побайтово. Остаток копится по той же сумме: delta события —
+     сумма delta его строк. */
+  var hGroups = {}, hOrder = [];
   actTx().forEach(function(t){
     if (t.personId !== personId) return;
+    var hk = handoutKey(t);
+    if (!own(hGroups, hk)){ hGroups[hk] = []; hOrder.push(hk); }
+    hGroups[hk].push(t);
+  });
+  hOrder.forEach(function(hk){
+    var hl = handoutLinesIn(hGroups[hk], hk);
+    if (hl.length > 1){ evts.push(ledHandEvent(hl)); return; }
+    var t = hl[0];
     var p = productById(t.productId);
     /* ++++++ DISCOUNT ++++++ лента человека читает БАЗОВУЮ валюту —
        baseOne() строкой выше, — и метка стоит на том же основании, что
@@ -22144,15 +22219,11 @@ function ledDetail(kind, id, ps){
   if (kind === 'take'){
     t = txById(id);
     if (!t) return null;
-    p = productById(t.productId);
-    s = own(ps, t.productId) ? ps[t.productId] : null;
-    has = !!(s && own(s.cogsOf, t.id));         /* own(): id вроде «constructor» (R20) */
-    total = t.qty * t.unitPriceCents;
-    cost = has ? s.cogsOf[t.id] : null;
-    return { kind:'take', rec:t, name: p ? p.name : '', qty:t.qty, date:t.date,
-             unitCents:t.unitPriceCents, totalCents:total, disc: discTx(t),
-             costCents:cost, earnCents: cost === null ? null : total - cost,
-             retN: retQtyOf(t.id) };
+    /* ++++++ MULTI FORM ++++++ значения одной записи — ledTakeOf(), прежнее тело
+       этой ветки без единой правки; выдача из нескольких товаров —
+       те же значения по каждой строке и их сумма. */
+    var hl = handoutLinesOf(handoutKey(t));
+    return hl.length > 1 ? ledHandDetail(hl, ps) : ledTakeOf(t, ps);
   }
   if (kind === 'pay'){
     y = payById(id);
@@ -22183,6 +22254,7 @@ function ledDetail(kind, id, ps){
 function ledSheetHTML(d){
   var pcs = function(n){ return units(n) + ' ' + tr('w.pcs'); };
   var h = '';
+  if (d.kind === 'hand') return ledHandSheetHTML(d);   /* ++++++ MULTI FORM ++++++ */
   if (d.kind === 'take'){
     h += row({ cls:'wrap', k: tr('tx.qty'), v: pcs(d.qty),
                sub: d.retN > 0 ? tr('led.retNote', {n: units(d.retN)}) : '' });
@@ -22230,8 +22302,11 @@ function ledOpen(arg){
   if (!d) return;                         /* записи нет — молчим, а не рисуем пустое */
   if (ledNode && ledNode.__done) ledNode.__done(null);
   var from = document.activeElement, mine = null;
-  var title = d.kind === 'take' ? tr('led.d.take') : (d.kind === 'pay' ? tr('led.payment') : tr('led.ret'));
-  dialog({ title: title, sub: d.kind === 'pay' ? '' : esc(d.name || '—'),
+  /* ++++++ MULTI FORM ++++++ у выдачи из нескольких товаров подзаголовок — сколько их */
+  var title = (d.kind === 'take' || d.kind === 'hand') ? tr('led.d.take') :
+    (d.kind === 'pay' ? tr('led.payment') : tr('led.ret'));
+  dialog({ title: title, sub: d.kind === 'pay' ? '' :
+             (d.kind === 'hand' ? nq(d.lines.length, 'product') : esc(d.name || '—')),
            html: '<div class="rows">' + ledSheetHTML(d) + '</div>',
            closeX: true, buttons: [], cancelLabel: tr('w.close') })
     .then(function(){
@@ -22324,7 +22399,10 @@ function formRet(){
   if (!t) return '';
   var f = ui.form.ret, left = retLeftOf(t);
   var h = '<div class="retwrap"><form id="fRet" novalidate>' + errNote();
-  h += '<div class="body">' + tr('ret.priceLine', {price: baseOne(t.unitPriceCents)}) + '</div>';
+  /* ++++++ MULTI FORM ++++++ в выдаче из нескольких товаров форма называет, ЧЕЙ возврат */
+  var rp = t.handoutId ? productById(t.productId) : null;
+  h += '<div class="body">' + (rp ? '<b>' + esc(rp.name) + '</b> · ' : '') +
+    tr('ret.priceLine', {price: baseOne(t.unitPriceCents)}) + '</div>';
   h += '<div class="f"><div class="two">' +
     '<label class="f" style="margin:0"><span>' + tr('inv.qty') + '</span>' +
       input({ f:'ret.qty', value:f.qty, mode:'numeric' }) + '</label>' +
@@ -22433,7 +22511,15 @@ function viewPersonCard(){
     var extra = '';
     if (e.kind === 'take' && e.retN > 0) extra = ' · ' + tr('led.retNote', {n: units(e.retN)});
     var act = '';
-    if (e.kind === 'take' && e.retLeft > 0){
+    if (e.kind === 'take' && e.retLeft > 0 && e.lines){
+      /* ++++++ MULTI FORM ++++++ возврат — свой у каждого товара выдачи: кнопка на
+         каждую строку, где есть что возвращать */
+      act = '<div class="evb">' + e.lines.filter(function(l){ return retLeftOf(l) > 0; }).map(function(l){
+        var lp = productById(l.productId);
+        return '<button type="button" class="chipf" data-act="ret-open" data-arg="' + esc(l.id) + '">' +
+          tr('ret.btnOf', {name: esc(lp ? lp.name : '—')}) + '</button>';
+      }).join(' ') + '</div>';
+    } else if (e.kind === 'take' && e.retLeft > 0){
       act = '<div class="evb"><button type="button" class="chipf" data-act="ret-open" data-arg="' +
         esc(e.txId) + '">' + tr('ret.btn') + '</button></div>';
     }
@@ -22452,7 +22538,8 @@ function viewPersonCard(){
       '<small>' + (e.run >= 0 ? tr('led.debtNow', {sum: baseOne(e.run)})
                               : tr('led.creditNow', {sum: baseOne(-e.run)})) + '</small></div></div>';
     /* форма возврата — под своей выдачей */
-    if (e.kind === 'take' && ui.retFor === e.txId) rows += formRet();
+    if (e.kind === 'take' && (ui.retFor === e.txId ||
+        (e.lines && e.lines.some(function(l){ return l.id === ui.retFor; })))) rows += formRet();   /* ++++++ MULTI FORM ++++++ */
   });
   h += '<section class="card"><div class="t">' +
     tr('ppl.card.historyIn', {cur: esc(state.settings.baseCurrency)}) + '</div>' +
@@ -22488,7 +22575,8 @@ var SEARCH = {
   txQuery:        { noun:'transaction', status:null,
                     title:function(){ return ''; },
                     hits:function(){ return txHits(); },
-                    total:function(){ return actTx().length; },
+                    /* ++++++ MULTI FORM ++++++ строка списка — выдача */
+                    total:function(){ return handoutCountIn(actTx()); },
                     list:function(){ return txListHTML(); } },
   payQuery:       { noun:'payment', status:null,
                     title:function(){ return ''; },
@@ -22649,15 +22737,25 @@ function viewTx(){
 /* Выдача ищется и по человеку, и по товару: в строке крупным напечатан товар,
    а человек подписью, и искать хочется по обоим. */
 function txHits(){
-  return actTx().slice().sort(cmpDateDesc).filter(function(t){
+  var seen = {}, out = [];
+  actTx().slice().sort(cmpDateDesc).forEach(function(t){
+    var k = handoutKey(t);
+    if (own(seen, k)) return;
     var p = productById(t.productId), per = personById(t.personId);
-    return qMatch(ui.txQuery, [per ? per.name : '', p ? p.name : '']);
+    if (!qMatch(ui.txQuery, [per ? per.name : '', p ? p.name : ''])) return;
+    seen[k] = true;
+    out.push(t);
   });
+  return out;
 }
 function txListHTML(){
   var sec = 'transactions', hits = txHits(), rows = '';
   if (!hits.length) return noHits('txQuery');
   hits.forEach(function(t){
+    /* ++++++ MULTI FORM ++++++ выдача из нескольких товаров — одной строкой:
+       общая сумма и список позиций */
+    var ls = handoutLinesOf(handoutKey(t));
+    if (ls.length > 1){ rows += txHandRowHTML(ls); return; }
     var p = productById(t.productId), per = personById(t.personId);
     /* ++++++ DISCOUNT ++++++ метка идёт ВТОРОЙ подписью, а не приклеена
        к первой через « · »: sub обрезается многоточием, а sub2 переносится
@@ -22682,49 +22780,40 @@ function formTx(){
   h += field({ label: tr('tx.toWhom'),
     control: select({ f:'tx.personId', value:f.personId, items:hItems,
       ph: tr('tx.pickPerson') }) });
-  h += field({ label: tr('tx.what'),
-    control: select({ f:'tx.productId', value:f.productId, items:pItems,
-      ph: actProducts().length ? tr('tx.pickProduct') : tr('sel.addProductFirst') }) });
-  h += '<div class="f"><div class="two">' +
-    '<label class="f" style="margin:0"><span>' + tr('inv.qty') + '</span>' +
-      input({ f:'tx.qty', value:f.qty, mode:'numeric' }) + '</label>' +
-    '<label class="f" style="margin:0"><span>' + tr('w.date') + '</span>' +
-      input({ f:'tx.date', value:f.date, type:'date' }) + '</label></div></div>';
-  /* ++++++ DISCOUNT ++++++ два поля в одном ряду, подсказка под ними —
-     та же самая, на том же месте, с тем же id. Ряд переносится на узком
-     экране (.two.wrap): без переноса полю цены достаётся 39 px, и вместо
-     «500.00» видно «00». Поле процента выключено, когда сравнивать не с
-     чем, — у товара нет цены продажи или товар не выбран. */
-  var uCents = txUsualCents();
-  h += '<div class="f"><div class="two wrap">' +
-    '<label class="f" style="margin:0"><span>' + tr('w.unitPrice') + '</span>' +
-      money2('tx.price', f.price, 'tx.cur', f.cur) + '</label>' +
-    '<label class="f" style="margin:0"><span>' + tr('disc.pctField') + '</span>' +
-      input({ d:true, id:'txDiscIn', value: txDiscText(), mode:'decimal',
-              dis: uCents === null }) + '</label></div>' +
-    '<small class="hint" id="txHint">' + txHintText() + '</small></div>';
+  /* ++++++ MULTI FORM ++++++ дата — одна на всю выдачу, под «Кому»: человек
+     пришёл один раз (решение владельца 25.09.2026) */
+  h += field({ label: tr('w.date'), control: input({ f:'tx.date', value:f.date, type:'date' }) });
+  var n = txLineN(), i;
+  for (i = 0; i < n; i++) h += txLineHTML(i, n, pItems);
+  /* «+ Добавить товар» — под блоком, когда в последнем блоке товар выбран:
+     добавлять второй пустой блок к пустому незачем */
+  if (txLine(n - 1).productId)
+    h += '<button type="button" class="addlink" data-act="txl-add">' + tr('tx.addLine') + '</button>';
+  h += '<div id="txTotal">' + txTotalHTML() + '</div>';
   h += '<div class="btns">' + saveBtn(tr(f.editId ? 'w.saveChanges' : 'tx.record')) +
     (f.editId ? btn(tr('w.cancelEdit'), 'tx-cancel', 'ghost') : '') + '</div>';
   return h + '</form>';
 }
-function txHintText(){
-  var f = ui.form.tx, out = [];
-  if (f.productId){
-    out.push(tr('tx.inStock', {n: units(remainingFor(f.productId, f.editId || null))}));
+function txHintText(i){
+  i = i || 0;
+  var l = txLine(i), out = [];
+  if (!l) return '';
+  if (l.productId){
+    out.push(tr('tx.inStock', {n: units(txAvailFor(l.productId, i))}));
   }
-  var q = parseIntStrict(f.qty), m = parseMoneyToCents(f.price);
+  var q = parseIntStrict(l.qty), m = parseMoneyToCents(l.price);
   if (q && m !== null){
-    var cents = toBaseCents(m, f.cur);
-    if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
-    else out.push(tr('tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(f.cur),
+    var cents = toBaseCents(m, l.cur);
+    if (cents === null) out.push(tr('conv.noRate', {cur: esc(l.cur)}));
+    else out.push(tr('tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(l.cur),
       sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
   }
-  /* ++++++ DISCOUNT ++++++ третья часть, через тот же « · ». Прежние две
-     не тронуты. Негодный процент вытесняет рассказ о скидке: пока в поле
-     стоит то, чего не бывает, говорить «скидка 9.1%» было бы неправдой. */
-  if (discErr) out.push(discErr);
+  /* ++++++ DISCOUNT ++++++ третья часть, через тот же « · ». Негодный
+     процент вытесняет рассказ о скидке: пока в поле стоит то, чего не
+     бывает, говорить «скидка 9.1%» было бы неправдой. */
+  if (discErrs[i]) out.push(discErrs[i]);
   else {
-    var u = txUsualCents(), c = txPriceCents();
+    var u = txUsualCents(i), c = txPriceCents(i);
     if (u !== null && c !== null){
       var dd = discOf(u, c, q || 1), base = esc(state.settings.baseCurrency);
       if (dd.kind === DISC_DOWN) out.push(tr('disc.hint',
@@ -22732,7 +22821,7 @@ function txHintText(){
       else if (dd.kind === DISC_UP) out.push(tr('disc.hintUp',
         {v: money(-dd.unitCents, state.settings.baseCurrency) + ' ' + base, pct: String(-dd.pct)}));
       else out.push(tr('disc.none'));
-    } else if (u === null && f.productId) out.push(tr('disc.noPrice'));
+    } else if (u === null && l.productId) out.push(tr('disc.noPrice'));
   }
   return out.join(' · ');
 }
@@ -24937,11 +25026,22 @@ function trashParts(items, headId){
             orders:0 };                             /* ++++++ OWN ORDERS ++++++ */
   var qTx = 0, qRet = 0, mPay = 0, mExp = 0, i, it, out = [];
   var mRep = {};                                       /* ++++++ CASH LOANS ++++++ по валютам */
+  /* ++++++ MULTI FORM ++++++ строки ТОЙ ЖЕ выдачи, что и голова, — «ещё N
+     товаров этой выдачи»; прочие выдачи считаются ВЫДАЧАМИ, а не строками. */
+  var txKeys = {}, sameN = 0, qSame = 0, headKey = '';
+  for (i = 0; i < items.length; i++)
+    if (items[i].rec.id === headId && items[i].col === 'transactions') headKey = handoutKey(items[i].rec);
   for (i = 0; i < items.length; i++){
     it = items[i];
     if (it.rec.id === headId) continue;
+    if (it.col === 'transactions'){
+      var ik = handoutKey(it.rec);
+      if (headKey && ik === headKey){ sameN++; qSame += it.rec.qty; continue; }
+      if (!own(txKeys, ik)){ txKeys[ik] = true; n.transactions++; }
+      qTx += it.rec.qty;
+      continue;
+    }
     n[it.col]++;
-    if (it.col === 'transactions') qTx += it.rec.qty;
     if (it.col === 'returns') qRet += it.rec.qty;
     if (it.col === 'payments') mPay += it.rec.amountCents;
     if (it.col === 'expenses') mExp += it.rec.amountCents;
@@ -24950,6 +25050,7 @@ function trashParts(items, headId){
   }
   if (n.products) out.push(nq(n.products, 'product'));
   if (n.people) out.push(nq(n.people, 'person'));
+  if (sameN) out.push(tr('trash.pLines', { n: nq(sameN, 'product'), q: units(qSame) }));   /* ++++++ MULTI FORM ++++++ */
   if (n.transactions) out.push(tr('trash.pWithQty', { n: nq(n.transactions, 'transaction'), q: units(qTx) }));
   if (n.returns) out.push(tr('trash.pWithQty', { n: nq(n.returns, 'return'), q: units(qRet) }));
   if (n.payments) out.push(tr('trash.pWithSum', { n: nq(n.payments, 'payment'), sum: baseOne(mPay) }));
@@ -26072,8 +26173,9 @@ function live(){
        render() звать здесь нельзя (область 12): он пересоздал бы форму
        под рукой. Порядок важен: пара считает discErr, подсказка его
        печатает. */
-    discSyncPair(liveDiscSource);
-    n = $('txHint'); if (n) n.innerHTML = txHintText(); }
+    /* ++++++ MULTI FORM ++++++ то же самое для КАЖДОЙ строки выдачи и итог под
+       ними — txLiveAll(). Узлы те же: пара, подсказка, итог. */
+    txLiveAll(); }
   /* ++++++ EXPENSES ++++++ два узла, не форма: курсор в поле суммы
      остаётся на месте, пока подсказка и предварительное деление
      пересчитываются на каждую букву. Ни один из них не предок поля. */
@@ -26339,6 +26441,9 @@ var moneyAnchor = {};                       /* путь поля -> {text, cur} 
 function moneyCurPath(path){
   if (path === 'tx.price')   return 'tx.cur';
   if (path === 'pay.amount') return 'pay.cur';
+  /* ++++++ MULTI FORM ++++++ цена прочих строк выдачи — рядом со своей валютой */
+  var mtx = String(path).match(/^tx\.more\.(\d+)\.price$/);
+  if (mtx) return 'tx.more.' + mtx[1] + '.cur';
   var m = String(path).match(/^product\.lines\.(\d+)\.sell$/);
   if (m) return 'product.lines.' + m[1] + '.sellCur';
   m = String(path).match(/^product\.lines\.(\d+)\.(boxPrice|cost)$/);
@@ -26429,7 +26534,9 @@ document.addEventListener('input', function(e){
      оно пишет не в форму, а в ЦЕНУ, потому что источник истины один и это
      цена. Ветка стоит после проверки на SELECT (область 50) и до разбора
      data-f — у поля процента его нет вовсе. */
-  if (el.getAttribute && el.getAttribute('data-d')){ liveDiscSource = 'pct'; live(); liveDiscSource = 'price'; return; }
+  /* ++++++ MULTI FORM ++++++ строку называет id поля: «txDiscIn», «txDiscIn1»… */
+  if (el.getAttribute && el.getAttribute('data-d')){ liveDiscSource = 'pct'; liveDiscLine = txDiscLineOf(el.id);
+    live(); liveDiscSource = 'price'; liveDiscLine = 0; return; }
   var key = el.getAttribute && el.getAttribute('data-f');
   if (!key) return;
   setF(key, el.value);
@@ -26498,6 +26605,16 @@ document.addEventListener('change', function(e){
     if (!ui.form.product.editId){ state.settings.lastSellCur = el.value; save(); }
     render(); return;
   }
+  /* ++++++ MULTI FORM ++++++ валюта прочих строк выдачи: то же, что ветка ниже
+     делает для первой, — перевод от якоря R14 и запомненная валюта. */
+  var txcm = key.match(/^tx\.more\.(\d+)\.cur$/);
+  if (txcm){
+    var tcl = parentOf(key).obj;
+    tcl.price = convText(tcl.price, tcl.cur, el.value, 'tx.more.' + txcm[1] + '.price');
+    tcl.cur = el.value;
+    state.settings.lastTxCur = el.value; save();
+    render(); return;
+  }
   if (AMOUNT_OF[key]){
     var t2 = parentOf(key), old = t2.obj[t2.key];
     var a = parentOf(AMOUNT_OF[key]);
@@ -26526,14 +26643,16 @@ document.addEventListener('change', function(e){
      Отсюда же берётся якорь R14 — иначе первое переключение валюты
      пересчитало бы не от того числа. resetTxForm() при этом не тронут:
      подстановка привязана к ВЫБОРУ ТОВАРА, а не к сбросу формы. */
-  if (key === 'tx.productId'){
-    var uc = txUsualCents();
-    if (uc !== null && !String(ui.form.tx.price || '').trim()){
-      var mv = convertFor(uc, ui.form.tx.cur);
+  /* ++++++ MULTI FORM ++++++ та же подстановка в КАЖДОЙ строке выдачи */
+  var txi = /productId$/.test(key) ? txLineOfPath(key) : -1;
+  if (txi > -1){
+    var tln = txLine(txi), uc = txUsualCents(txi);
+    if (uc !== null && !String(tln.price || '').trim()){
+      var mv = convertFor(uc, tln.cur);
       if (mv !== null){
         var mt = mv.toFixed(2);
-        setF('tx.price', mt);
-        moneyAnchorSet('tx.price', mt);
+        setF(txPath(txi, 'price'), mt);
+        moneyAnchorSet(txPath(txi, 'price'), mt);
       }
     }
     discErrDrop();
@@ -26845,53 +26964,679 @@ function savePerson(){
 function saveTx(){
   var f = ui.form.tx;
   ui.err = '';
-  if (!f.personId){ ui.err = tr('err.txPerson'); render(); return; }
-  if (!f.productId){ ui.err = tr('err.txProduct'); render(); return; }
-  var qty = parseIntStrict(f.qty);
-  if (!qty || qty < 1){ ui.err = tr('err.txQty'); render(); return; }
-  var m = parseMoneyToCents(f.price);
-  if (m === null){ ui.err = tr('err.txPrice'); render(); return; }
-  var cents = toBaseCents(m, f.cur);
-  if (cents === null){ ui.err = noRateText(f.cur); render(); return; }
-  var rem = remainingFor(f.productId, f.editId || null);
-  if (qty > rem){
-    var pr = productById(f.productId);
-    ui.err = tr('err.txStock', {n: rem, name: pr ? pr.name : '', q: qty});
-    render(); return;
+  var lines = txLinesAll(), wasEdit = !!f.editId;
+  /* правка выдачи из ОДНОГО товара одной строкой — это она сама, даже если
+     форма не знает номера строки: так её задаёт всякий, кто знал прежнюю
+     форму (только editId). Без этого правка записала бы новую строку, а
+     прежнюю унесла в корзину. */
+  if (wasEdit && lines.length === 1 && !lines[0].txId){
+    var hl0 = handoutLinesOf(f.editId);
+    if (hl0.length === 1) lines[0].txId = hl0[0].id;
   }
-  if (f.editId){
-    var t = txById(f.editId);
-    if (!t){ ui.err = tr('err.txGone'); render(); return; }
-    /* ++++++ GOODS RETURN ++++++ ниже возвращённого выдачу не урезать:
-       возвраты ссылаются на неё, и Σ возвратов ≤ количества — инвариант
-       валидатора. Сообщение называет возвращённое. */
-    var retQ = retQtyOf(t.id);
-    if (retQ > 0 && qty < retQ){ ui.err = tr('err.retTxQty', {n: units(retQ)}); render(); return; }
-    t.personId = f.personId; t.productId = f.productId; t.qty = qty;
-    t.unitPriceCents = cents; t.date = f.date;
-    t.entryCur = f.cur; t.entryMinor = m;
-    touch(t.id);
+  var r = handoutSave({ personId: f.personId, date: f.date, key: f.editId || '', lines: lines });
+  if (!r.ok){ ui.err = r.err; render(); return; }
+  if (wasEdit){
     resetTxForm(); ui.seg.tx = 'list';
-    toast(tr('msg.txUpdated'), 'ok');
+    toast(tr('msg.txUpdated') + (r.removed ? ' ' + tr('msg.linesTrashed', {n: nq(r.removed, 'product')}) : ''), 'ok');
     commit(); return;
   }
-  /* ++++++ DISPLAY CURRENCY ++++++ курсы на день записи. Пишутся только
-     здесь и только при создании: правка курса в настройках не должна
-     двигать то, что уже выдано. */
-  var txId = uid('tx');
-  state.transactions.push({ id: txId, personId:f.personId, productId:f.productId,
-    qty:qty, unitPriceCents:cents, entryCur:f.cur, entryMinor:m, rateSnap: rateSnapshot(),
-    date:f.date, createdAt: new Date().toISOString() });
-  touch(txId);
+  var qSum = 0;
+  lines.forEach(function(l){ qSum += parseIntStrict(l.qty); });
+  var l0 = lines[0], m0 = parseMoneyToCents(l0.price);
   var keepPerson = f.personId, keepDate = f.date;
   resetTxForm(keepPerson);
   ui.form.tx.date = keepDate;
   ui.seg.tx = 'list';
-  toast(tr('msg.txSaved', {n: qty,
-    entry: (f.cur !== state.settings.baseCurrency)
-      ? tr('entry.inline', {v: fmtMinor(m), cur: f.cur}) : ''}), 'ok');
+  if (lines.length > 1) toast(tr('msg.handoutSaved', {n: nq(lines.length, 'product'), q: units(qSum)}), 'ok');
+  else toast(tr('msg.txSaved', {n: qSum,
+    entry: (l0.cur !== state.settings.baseCurrency)
+      ? tr('entry.inline', {v: fmtMinor(m0), cur: l0.cur}) : ''}), 'ok');
   commit();
 }
+
+/* ================================================ ++++++ MULTI HANDOUT ++++++
+ * ВЫДАЧА ИЗ НЕСКОЛЬКИХ ТОВАРОВ — этап 1: запись и сохранение.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: СТРОКА ВЫДАЧИ — ЭТО ОБЫЧНАЯ ЗАПИСЬ
+ * `transactions`. Один человек пришёл один раз и взял три товара — это три
+ * записи, как если бы владелец внёс их подряд, плюс общий номер выдачи
+ * `handoutId` на каждой. Ровно так приход по накладной даёт N партий с общим
+ * `lotId` (saveProduct()).
+ *
+ * Из него:
+ *   · НИ ОДНА СЧИТАЮЩАЯ ФУНКЦИЯ НЕ ТРОГАЕТСЯ. Доля себестоимости ложится в
+ *     cogsOf[t.id] каждой строки, возврат ссылается на строку, снимок курса
+ *     у строки свой — всё это уже так, потому что строка и есть запись.
+ *     Итог выдачи — только сумма строк, второй формулы нет;
+ *   · СТАРАЯ ОДИНОЧНАЯ ВЫДАЧА — ЭТО ВЫДАЧА ИЗ ОДНОЙ СТРОКИ. Номера у неё нет
+ *     и не появится: ключ выдачи — handoutId, а без него — id самой записи.
+ *     Переноса данных нет вовсе;
+ *   · НОМЕР ПИШЕТСЯ ТОЛЬКО ТАМ, ГДЕ СТРОК ДВЕ И БОЛЬШЕ. Выдача из одной
+ *     строки записывается побайтово как сегодня — ключа нет вовсе, а не
+ *     пустой (bakSig() хеширует ИМЕНА ключей записи — правило 64);
+ *   · ЧЕЛОВЕК И ДАТА ОБЩИЕ, и хранятся в каждой строке. Правка выдачи
+ *     пишет их во ВСЕ строки — иначе строки одной выдачи разъедутся по
+ *     разным людям и разным месяцам отчёта;
+ *   · КУРС — СВОЙ У КАЖДОЙ СТРОКИ (решение владельца 24.09.2026): строка
+ *     получает rateSnapshot() в момент СВОЕГО создания и больше его не
+ *     меняет. Строки, сохранённые одним нажатием, получают одинаковые
+ *     курсы; строка, добавленная позже, — курсы дня добавления. Ровно так
+ *     приход в уже существующий товар получает свой снимок;
+ *   · ЦЕЛИКОМ ИЛИ НИКАК: все строки проверяются до первой записи, как
+ *     накладная в saveProduct().
+ *
+ * Модуль ничего не рисует и не сохраняет: handoutSave() правит `state` и
+ * возвращает ответ, commit() зовёт вызывающий — форма (этап 2).
+ * ================================================================== */
+
+/** Ключ выдачи, к которой относится запись: общий номер, а без него — id
+ *  самой записи. Одиночная выдача любой давности — выдача из одной строки. */
+function handoutKey(t){
+  if (!t) return '';
+  return (typeof t.handoutId === 'string' && t.handoutId) ? t.handoutId : t.id;
+}
+/** Строки выдачи в списке записей — в порядке ввода: createdAt, потом
+ *  положение в массиве. Положение, а не id: строки одного нажатия несут
+ *  одинаковый createdAt, а id сравнивается строкой и счётчик в нём «10»
+ *  оказался бы раньше «9». */
+function handoutLinesIn(list, key){
+  var out = [], i;
+  for (i = 0; i < list.length; i++){
+    if (list[i] && handoutKey(list[i]) === key) out.push({ t: list[i], i: i });
+  }
+  out.sort(function(a, b){
+    var ca = a.t.createdAt || '', cb = b.t.createdAt || '';
+    if (ca !== cb) return ca < cb ? -1 : 1;
+    return a.i - b.i;
+  });
+  return out.map(function(o){ return o.t; });
+}
+/** Активные строки выдачи — корзина отсечена тем же аксессором, что везде. */
+function handoutLinesOf(key){
+  return key ? handoutLinesIn(actTx(), key) : [];
+}
+
+/** Сохранить выдачу — новую или правку существующей. ЕДИНСТВЕННЫЙ писатель
+ *  выдачи из нескольких строк.
+ *
+ *  o = { personId, date, key, lines: [{ txId, productId, qty, price, cur }] }
+ *    key   — ключ правимой выдачи (handoutKey её строки) или '' для новой;
+ *    txId  — у строки, которая уже есть в этой выдаче; '' — новая строка;
+ *    qty, price — ТЕКСТ полей, как их держит форма; разбор тот же, что в
+ *            saveTx(): parseIntStrict, parseMoneyToCents, toBaseCents.
+ *
+ *  Ответ: { ok:false, err, line } — ничего не записано; line — номер
+ *  строки с 1, если отказ про одну строку.
+ *         { ok:true, key, ids, removed, retRemoved } — записано в state,
+ *  commit() за вызывающим.
+ *
+ *  Строка, убранная из выдачи при правке, уходит в КОРЗИНУ вместе со своими
+ *  возвратами — тем же каскадом, что «Удалить» у одиночной выдачи. */
+function handoutSave(o){
+  o = o || {};
+  var lines = (o.lines && o.lines.length) ? o.lines : [];
+  var many = lines.length > 1;
+  var tag = function(i, msg){ return many ? tr('err.linePrefix', {n: i + 1, msg: msg}) : msg; };
+  var no = function(msg, i){ return { ok:false, err: msg, line: (i === undefined ? 0 : i + 1) }; };
+
+  if (!o.personId || !personById(o.personId)) return no(tr('err.txPerson'));
+  if (!lines.length) return no(tr('err.txProduct'));
+
+  /* правимая выдача: её строки и то, что из них остаётся */
+  var key = o.key || '', old = key ? handoutLinesOf(key) : [];
+  if (key && !old.length) return no(tr('err.txGone'));
+  var oldById = {}, kept = {}, i, j;
+  for (i = 0; i < old.length; i++) oldById[old[i].id] = old[i];
+
+  /* 1. каждая строка — те же проверки и те же слова, что у saveTx() */
+  var parsed = [];
+  for (i = 0; i < lines.length; i++){
+    var l = lines[i] || {};
+    var was = null;
+    if (l.txId){
+      if (!own(oldById, l.txId) || own(kept, l.txId)) return no(tag(i, tr('err.txGone')), i);
+      was = oldById[l.txId];
+      kept[l.txId] = true;
+    }
+    if (!l.productId || !productById(l.productId)) return no(tag(i, tr('err.txProduct')), i);
+    var qty = parseIntStrict(l.qty);
+    if (!qty || qty < 1) return no(tag(i, tr('err.txQty')), i);
+    var m = parseMoneyToCents(l.price);
+    if (m === null) return no(tag(i, tr('err.txPrice')), i);
+    /* ++++++ MULTI FORM ++++++ цена строки не тронута — то же число в той же
+       валюте, что записано, — значит и хранимая сумма та же. Форма
+       открывает правку в валюте ввода, и пересчёт по сегодняшнему курсу
+       сдвинул бы уже проданное (домен-правило 6). */
+    var cents = (was && l.cur === was.entryCur && m === was.entryMinor)
+      ? was.unitPriceCents : toBaseCents(m, l.cur);
+    if (cents === null) return no(tag(i, noRateText(l.cur)), i);
+    /* ++++++ GOODS RETURN ++++++ строку ниже возвращённого не урезать —
+       тот же отказ и те же слова, что у одиночной выдачи в saveTx().
+       Смену ТОВАРА у строки с возвратами saveTx() сегодня разрешает, и
+       здесь она разрешена так же: второго правила о возвратах не
+       заводится (находка записана в README задачи). */
+    if (was){
+      var retQ = retQtyOf(was.id);
+      if (retQ > 0 && qty < retQ) return no(tag(i, tr('err.retTxQty', {n: units(retQ)})), i);
+    }
+    parsed.push({ was: was, productId: l.productId, qty: qty, cents: cents, cur: l.cur, m: m });
+  }
+
+  /* 2. склад — по ТОВАРУ, а не по строке. Две строки одного товара по 5 шт
+     при остатке 6 прошли бы каждая по отдельности, а в сумме дали бы 10:
+     документ сохранился бы, а при следующем открытии validate() отверг бы
+     его целиком (перебор склада — отказ уровня документа).
+     Доступно = remainingFor() + то, что строки ЭТОЙ ЖЕ выдачи уже держат:
+     оставляемая строка отдаёт всё своё количество (её возвраты остаются),
+     убираемая — количество минус возвраты (они уходят в корзину вместе с
+     ней). Та же алгебра, что у remainingFor(id, ignoreTxId) в saveTx(). */
+  var need = {}, order = [];
+  for (i = 0; i < parsed.length; i++){
+    var pid = parsed[i].productId;
+    if (!own(need, pid)){ need[pid] = 0; order.push(pid); }
+    need[pid] += parsed[i].qty;
+  }
+  for (i = 0; i < order.length; i++){
+    var p = order[i], avail = remainingFor(p);
+    for (j = 0; j < old.length; j++){
+      if (old[j].productId !== p) continue;
+      avail += own(kept, old[j].id) ? old[j].qty : old[j].qty - retQtyOf(old[j].id);
+    }
+    if (need[p] > avail){
+      var pr = productById(p);
+      return no(tr('err.txStock', {n: avail, name: pr ? pr.name : '', q: need[p]}));
+    }
+  }
+
+  /* 3. запись. Номер выдачи — только при двух строках и больше: выдача из
+     одной строки лежит побайтово как сегодня. У новой выдачи номер — id
+     её первой строки (голова, как у группы корзины); у правимой —
+     прежний ключ, ПОКА его строка остаётся в выдаче. Строку-голову убрали
+     в корзину — номер берётся у первой строки заново: иначе голова,
+     возвращённая из корзины, молча вошла бы обратно в выдачу, из которой
+     её убрали. */
+  var at = new Date().toISOString(), ids = [], hid = '';
+  for (i = 0; i < parsed.length; i++){
+    var x = parsed[i];
+    if (x.was){ ids.push(x.was.id); continue; }
+    x.id = uid('tx');
+    ids.push(x.id);
+  }
+  if (parsed.length > 1) hid = (key && own(kept, key)) ? key : ids[0];
+
+  for (i = 0; i < parsed.length; i++){
+    var y = parsed[i];
+    if (y.was){
+      var t = y.was, moved = false;
+      var set = function(k, v){ if (t[k] !== v){ t[k] = v; moved = true; } };
+      set('personId', o.personId); set('productId', y.productId); set('qty', y.qty);
+      set('unitPriceCents', y.cents); set('date', o.date);
+      set('entryCur', y.cur); set('entryMinor', y.m);
+      if (hid) set('handoutId', hid);
+      else if (Object.prototype.hasOwnProperty.call(t, 'handoutId')){ delete t.handoutId; moved = true; }
+      /* rateSnap НЕ трогается: курс строки заморожен в день её создания */
+      if (moved) touch(t.id);
+    } else {
+      var rec = { id: y.id, personId: o.personId, productId: y.productId,
+        qty: y.qty, unitPriceCents: y.cents, entryCur: y.cur, entryMinor: y.m,
+        rateSnap: rateSnapshot(), date: o.date, createdAt: at };
+      if (hid) rec.handoutId = hid;
+      state.transactions.push(rec);
+      touch(rec.id);
+    }
+  }
+
+  /* 4. строки, которых в выдаче больше нет, — в корзину ОДНОЙ группой, со
+     своими возвратами */
+  var gone = [], retGone = 0;
+  for (i = 0; i < old.length; i++){
+    if (own(kept, old[i].id)) continue;
+    gone.push(old[i].id);
+    retGone += retQtyOf(old[i].id);
+  }
+  if (gone.length) handoutTrashIds(state, gone, nowISO(), touch);
+
+  return { ok:true, key: hid || ids[0], ids: ids, removed: gone.length, retRemoved: retGone };
+}
+
+/** Отправить в корзину ОДНОЙ группой несколько выдач-строк вместе с их
+ *  возвратами. Каскад — тот же trashCascade(), что у trashMark(); отличие
+ *  одно: голова группы — первая строка, и все строки ложатся в неё, а не
+ *  каждая в свою. Иначе «Восстановить» вернуло бы одну строку, а остальные
+ *  лежали бы отдельными группами. */
+function handoutTrashIds(doc, ids, atISO, touchFn){
+  var plan = {}, n = 0, i, j, k, c, list, part;
+  if (!ids || !ids.length) return { group: '', n: 0 };
+  for (i = 0; i < TRASH_COLS.length; i++) plan[TRASH_COLS[i]] = {};
+  for (i = 0; i < ids.length; i++){
+    part = trashCascade(doc, 'transactions', ids[i]);
+    for (j = 0; j < TRASH_COLS.length; j++){
+      c = TRASH_COLS[j];
+      for (k = 0; k < part[c].length; k++) plan[c][part[c][k]] = true;
+    }
+  }
+  var group = ids[0];
+  for (i = 0; i < TRASH_COLS.length; i++){
+    c = TRASH_COLS[i];
+    list = doc[c] || [];
+    for (j = 0; j < list.length; j++){
+      if (!Object.prototype.hasOwnProperty.call(plan[c], list[j].id)) continue;
+      list[j].trashedAt = atISO;
+      list[j].trashGroup = group;
+      n++;
+      if (touchFn) touchFn(list[j].id);
+    }
+  }
+  return { group: group, n: n };
+}
+/** Удалить выдачу ЦЕЛИКОМ: все её активные строки — одной группой корзины. */
+function handoutTrash(doc, key, atISO, touchFn){
+  var list = (doc.transactions || []).filter(function(t){ return !trashIs(t); });
+  var lines = handoutLinesIn(list, key), ids = [], i;
+  for (i = 0; i < lines.length; i++) ids.push(lines[i].id);
+  return handoutTrashIds(doc, ids, atISO, touchFn);
+}
+/* ++++++ MULTI HANDOUT END ++++++ */
+
+/* ================================================== ++++++ MULTI FORM ++++++
+ * ВЫДАЧА ИЗ НЕСКОЛЬКИХ ТОВАРОВ — этап 3: форма и показ.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: ФОРМА ТОЛЬКО СОБИРАЕТ СТРОКИ, А ПИШЕТ
+ * ИХ handoutSave() ЭТАПА 1. Второго писателя выдачи нет: проверки, склад по
+ * товару, курс у каждой строки и корзина для убранных строк — там, и форма
+ * их не повторяет. Показ ничего не считает заново: итог выдачи — сумма её
+ * строк, доля себестоимости — готовая cogsOf[t.id] каждой строки.
+ *
+ * СТРОКИ ФОРМЫ. Первая — плоские поля ui.form.tx (productId, qty, price,
+ * cur, txId), остальные — ui.form.tx.more[]. Не один массив потому, что
+ * адреса первой строки — «tx.productId», «tx.qty», «tx.price», «tx.cur» —
+ * это договор с двумя десятками наборов, живой проверкой и ветками
+ * обработчиков (якорь R14, пара «цена ↔ скидка», запомненная валюта).
+ * Выдача из одного товара остаётся ровно той формой, что была, а разницу
+ * между «плоской» и «прочими» строками прячут четыре функции ниже:
+ * txLineN / txLine / txPath / txLineOfPath. Мимо них к more[] не ходит
+ * никто.
+ *
+ * ДАТА — ОДНА НА ВЫДАЧУ (решение владельца 25.09.2026): человек пришёл
+ * один раз. Поле стоит под «Кому», а не в блоке товара.
+ * ================================================================== */
+
+/** Сколько строк в форме. */
+function txLineN(){
+  var m = ui.form.tx.more;
+  return 1 + (m && m.length ? m.length : 0);
+}
+/** Строка формы по номеру с нуля: объект с productId, qty, price, cur, txId. */
+function txLine(i){
+  if (i === 0) return ui.form.tx;
+  var m = ui.form.tx.more || [];
+  return m[i - 1] || null;
+}
+/** Адрес поля строки для data-f. */
+function txPath(i, k){
+  return i === 0 ? 'tx.' + k : 'tx.more.' + (i - 1) + '.' + k;
+}
+/** Номер строки по адресу поля, или -1: адрес не про строку товара. */
+function txLineOfPath(path){
+  var s = String(path), m;
+  if (/^tx\.(productId|qty|price|cur)$/.test(s)) return 0;
+  m = s.match(/^tx\.more\.(\d+)\.(productId|qty|price|cur)$/);
+  return m ? parseInt(m[1], 10) + 1 : -1;
+}
+/** Хвост id узлов строки: у первой его нет — «txHint», «txDiscIn», как было. */
+function txSfx(i){ return i ? String(i) : ''; }
+
+/** Все строки формы — копиями, в порядке ввода. */
+function txLinesAll(){
+  var out = [], i, l;
+  for (i = 0; i < txLineN(); i++){
+    l = txLine(i);
+    out.push({ txId: l.txId || '', productId: l.productId || '', qty: l.qty,
+               price: l.price, cur: l.cur });
+  }
+  return out;
+}
+/** Разложить строки обратно: первая — в плоские поля, остальные — в more. */
+function txLinesPut(list){
+  var f = ui.form.tx, a = list[0], i, rest = [];
+  f.txId = a.txId || ''; f.productId = a.productId || ''; f.qty = a.qty;
+  f.price = a.price; f.cur = a.cur;
+  for (i = 1; i < list.length; i++){
+    rest.push({ txId: list[i].txId || '', productId: list[i].productId || '',
+                qty: list[i].qty, price: list[i].price, cur: list[i].cur });
+  }
+  f.more = rest;
+}
+/** Якоря R14 строк выдачи — долой. Строки при удалении сдвигаются, и якорь
+ *  «tx.more.1.price» начал бы означать ДРУГУЮ строку: первое же
+ *  переключение валюты пересчитало бы не то число. Пустой якорь безвреден —
+ *  им становится то, что стоит в поле. */
+function txAnchorsDrop(){
+  var k;
+  for (k in moneyAnchor){
+    if (Object.prototype.hasOwnProperty.call(moneyAnchor, k) &&
+        (k === 'tx.price' || k.indexOf('tx.more.') === 0)) delete moneyAnchor[k];
+  }
+}
+/** Добавить пустую строку. Валюта — та же, что у последней: вторую позицию
+ *  одной выдачи набирают в той же валюте, что и первую. */
+function txLineAdd(){
+  var f = ui.form.tx, last = txLine(txLineN() - 1);
+  if (!f.more) f.more = [];
+  f.more.push({ txId:'', productId:'', qty:'', price:'',
+                cur: (last && last.cur) || lastTxCurFor(f.personId) });
+}
+/** Убрать строку i. Последняя оставшаяся не убирается: выдача без товара —
+ *  не выдача. Убранная строка правимой выдачи уйдёт в корзину при
+ *  сохранении — это решает handoutSave(), а не форма. */
+function txLineDel(i){
+  var list = txLinesAll();
+  if (list.length < 2 || i < 0 || i >= list.length) return false;
+  list.splice(i, 1);
+  txLinesPut(list);
+  discErrDrop();
+  txAnchorsDrop();
+  return true;
+}
+
+/** Сколько этого товара можно выдать В ЭТОЙ строке. Та же алгебра, что у
+ *  handoutSave(): остаток склада плюс то, что строки правимой выдачи уже
+ *  держат, минус то, что заняли ДРУГИЕ строки формы с тем же товаром. Для
+ *  выдачи из одной строки это ровно прежнее remainingFor(товар, id). */
+function txAvailFor(productId, i){
+  var f = ui.form.tx, avail = remainingFor(productId), j, l, q;
+  var old = f.editId ? handoutLinesOf(f.editId) : [];
+  for (j = 0; j < old.length; j++) if (old[j].productId === productId) avail += old[j].qty;
+  for (j = 0; j < txLineN(); j++){
+    if (j === i) continue;
+    l = txLine(j);
+    if (l.productId !== productId) continue;
+    q = parseIntStrict(l.qty);
+    if (q) avail -= q;
+  }
+  return avail;
+}
+
+/** Итог под блоками — только когда строк две и больше. Считается в
+ *  основной валюте тем же toBaseCents(), каким сохранит handoutSave();
+ *  незаполненная строка в сумму не входит и названа. */
+function txTotalHTML(){
+  var n = txLineN(), i, l, q, m, c, qSum = 0, cSum = 0, filled = 0, noRate = false;
+  if (n < 2) return '';
+  for (i = 0; i < n; i++){
+    l = txLine(i);
+    q = parseIntStrict(l.qty); m = parseMoneyToCents(l.price);
+    if (!l.productId || !q || m === null) continue;
+    c = toBaseCents(m, l.cur);
+    if (c === null){ noRate = true; continue; }
+    filled++; qSum += q; cSum += q * c;
+  }
+  if (!filled) return '';
+  var s = '<b>' + tr('tx.total', {sum: baseOne(cSum)}) + '</b><br>' +
+    tr('inv.linesQty', {n: filled, lines: plur(filled, 'product'), q: units(qSum)});
+  if (filled < n && !noRate) s += '<br>' + tr('tx.notFilled', {n: n - filled});
+  return '<div class="note calc">' + s + '</div>';
+}
+
+/** Разметка одной строки формы — карточка с «Что» и, когда товар выбран,
+ *  полями количества, цены, валюты и скидки. */
+function txLineHTML(i, n, pItems){
+  var l = txLine(i), sfx = txSfx(i);
+  var h = '<section class="card"><div class="t">' + tr('tx.lineN', {n: i + 1});
+  if (n > 1){
+    h += ' · <button type="button" data-act="txl-del" data-arg="' + i + '" ' +
+      'style="background:none;border:none;padding:0;color:var(--bad);font:inherit;font-weight:600;cursor:pointer">' +
+      tr('inv.lineDel') + '</button>';
+  }
+  h += '</div><div class="b">';
+  h += field({ label: tr('tx.what'),
+    control: select({ f: txPath(i, 'productId'), value: l.productId, items: pItems,
+      ph: actProducts().length ? tr('tx.pickProduct') : tr('sel.addProductFirst') }) });
+  /* блок полей появляется, когда товар выбран: до выбора спрашивать
+     количество и цену не о чем */
+  if (l.productId){
+    h += field({ label: tr('inv.qty'),
+      control: input({ f: txPath(i, 'qty'), value: l.qty, mode: 'numeric' }) });
+    /* ++++++ DISCOUNT ++++++ пара «цена ↔ скидка %» — своя у каждой строки */
+    var uCents = txUsualCents(i);
+    h += '<div class="f" style="margin-bottom:0"><div class="two wrap">' +
+      '<label class="f" style="margin:0"><span>' + tr('w.unitPrice') + '</span>' +
+        money2(txPath(i, 'price'), l.price, txPath(i, 'cur'), l.cur) + '</label>' +
+      '<label class="f" style="margin:0"><span>' + tr('disc.pctField') + '</span>' +
+        input({ d:true, id:'txDiscIn' + sfx, value: txDiscText(i), mode:'decimal',
+                dis: uCents === null }) + '</label></div>' +
+      '<small class="hint" id="txHint' + sfx + '">' + txHintText(i) + '</small></div>';
+  }
+  return h + '</div></section>';
+}
+
+/** Живой пересчёт формы: пара и подсказка каждой строки, итог. Ни одного
+ *  узла-предка поля под кареткой (область 12). */
+var liveDiscLine = 0;
+function txLiveAll(){
+  var i, n = txLineN(), node;
+  for (i = 0; i < n; i++){
+    discSyncPair(i === liveDiscLine ? liveDiscSource : 'price', i);
+    node = $('txHint' + txSfx(i)); if (node) node.innerHTML = txHintText(i);
+  }
+  node = $('txTotal'); if (node) node.innerHTML = txTotalHTML();
+}
+/** Номер строки поля скидки — по id: «txDiscIn» — первая, «txDiscIn2» — третья. */
+function txDiscLineOf(id){
+  var m = String(id || '').match(/^txDiscIn(\d*)$/);
+  return m ? (m[1] ? parseInt(m[1], 10) : 0) : 0;
+}
+
+/** Строка формы из записи — для правки. ЦЕНА В ВАЛЮТЕ ВВОДА (решение
+ *  владельца 25.09.2026): то число и в той валюте, что набирали. Валюта
+ *  выключена или провенанса нет (запись старше v5) — основная валюта и
+ *  хранимое число, как открывала прежняя форма. Сохранение без правки
+ *  цены не двигает хранимую сумму ни на копейку: это держит handoutSave(). */
+function txLineFromRec(t){
+  var e = recEntry(t), b = state.settings.baseCurrency;
+  if (e && currencyCodes().indexOf(e.cur) > -1)
+    return { txId: t.id, productId: t.productId, qty: String(t.qty),
+             price: (e.minor / 100).toFixed(2), cur: e.cur };
+  return { txId: t.id, productId: t.productId, qty: String(t.qty),
+           price: (t.unitPriceCents / 100).toFixed(2), cur: b };
+}
+
+/* ---- показ выдачи целиком ---------------------------------------- */
+
+/** Сколько ВЫДАЧ в списке записей — разных ключей, а не строк. */
+function handoutCountIn(list){
+  var seen = {}, n = 0, i, k;
+  for (i = 0; i < (list || []).length; i++){
+    if (!list[i]) continue;
+    k = handoutKey(list[i]);
+    if (!Object.prototype.hasOwnProperty.call(seen, k)){ seen[k] = true; n++; }
+  }
+  return n;
+}
+/** Сумма выдачи: валюта ввода, если у всех строк она одна, под ней
+ *  основная — тем же recV(), что у одиночной выдачи. Строки в разных
+ *  валютах сложить без курса нельзя, поэтому тогда — только основная. */
+function handoutV(lines){
+  var cents = 0, cur = null, minor = 0, same = true, i, t, e;
+  for (i = 0; i < lines.length; i++){
+    t = lines[i];
+    cents += t.qty * t.unitPriceCents;
+    e = recEntry(t);
+    if (!e){ same = false; continue; }
+    if (cur === null) cur = e.cur;
+    else if (cur !== e.cur) same = false;
+    minor += e.minor * t.qty;
+  }
+  if (!same || cur === null) return baseOne(cents);
+  return recV(cents, { entryCur: cur, entryMinor: minor }, 1);
+}
+/** Строки выдачи словами: «2 × Чайник, 1 × Ложка». */
+function handoutLinesText(lines){
+  return lines.map(function(t){
+    var p = productById(t.productId);
+    return units(t.qty) + ' × ' + esc(p ? p.name : '—');
+  }).join(', ');
+}
+/** Строка списка «Выдачи» для выдачи из нескольких товаров. Выдача из
+ *  одного товара печатается прежней строкой, побайтово. */
+function txHandRowHTML(lines){
+  var sec = 'transactions', t0 = lines[0], per = personById(t0.personId), q = 0, disc = 0;
+  lines.forEach(function(t){
+    q += t.qty;
+    var d = discTx(t);
+    if (d.kind === DISC_DOWN) disc += d.totalCents;
+  });
+  return row({ lead: avsq(units(q)),
+    k: tr('tx.handTitle', {n: nq(lines.length, 'product')}),
+    sub: esc(per ? per.name : '—') + ' · ' + fmtDateLong(t0.date),
+    sub2: handoutLinesText(lines) + (disc ? ' <span class="dmark disc">' +
+      tr('disc.markSum', {sum: secBare(sec, disc)}) + '</span>' : ''),
+    v: handoutV(lines), act:'tx-open', arg: t0.id });
+}
+
+/** Событие «Истории» для выдачи из нескольких товаров: одна строка с общей
+ *  суммой и списком позиций. Остаток ленты копится по той же сумме, что
+ *  копился бы по строкам поодиночке: delta — сумма их delta. */
+function ledHandEvent(ls){
+  var t0 = ls[0], at = t0.createdAt || '', delta = 0, retLeft = 0, text = [];
+  ls.forEach(function(t){
+    var p = productById(t.productId);
+    if ((t.createdAt || '') < at) at = t.createdAt || '';
+    delta += t.qty * t.unitPriceCents;
+    var rq = retQtyOf(t.id);
+    retLeft += retLeftOf(t);
+    /* возврат назван у СВОЕЙ строки: «возвращено 1 шт» на всю выдачу не
+       говорило бы, какого товара */
+    text.push(units(t.qty) + ' × ' + esc(p ? p.name : '—') +
+      (rq > 0 ? ' (' + tr('led.retNote', {n: units(rq)}) + ')' : ''));
+  });
+  return { date: t0.date, createdAt: at, kind:'take', txId: t0.id, lines: ls,
+           retN: 0, retLeft: retLeft, text: text.join('<br>'),
+           sub: tr('led.handN', {n: nq(ls.length, 'product')}), delta: delta };
+}
+
+/** Окно выдачи из нескольких товаров в «Истории»: по строке на товар и
+ *  итог. Значения — те же, что окно одиночной выдачи берёт у своей записи
+ *  (ledTakeOf), сложенные; ни одного своего округления. */
+function ledHandDetail(ls, ps){
+  var out = { kind:'hand', date: ls[0].date, lines: [], recs: ls,
+              totalCents: 0, costCents: 0, qty: 0 }, noCost = false;
+  ls.forEach(function(t){
+    var d = ledTakeOf(t, ps);
+    out.lines.push(d);
+    out.totalCents += d.totalCents; out.qty += d.qty;
+    if (d.costCents === null) noCost = true; else out.costCents += d.costCents;
+  });
+  if (noCost) out.costCents = null;
+  out.earnCents = out.costCents === null ? null : out.totalCents - out.costCents;
+  return out;
+}
+/** Строки окна выдачи из нескольких товаров. ТОЛЬКО форматирование, теми же
+ *  вызовами, что окно одиночной выдачи: baseOne(), recV(), discMarkHTML(). */
+function ledHandSheetHTML(d){
+  var h = row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
+  d.lines.forEach(function(x){
+    h += row({ cls:'wrap', k: units(x.qty) + ' × ' + esc(x.name || '—'),
+      sub: tr('led.perUnit', {v: baseOne(x.unitCents)}) +
+           (x.retN > 0 ? ' · ' + tr('led.retNote', {n: units(x.retN)}) : ''),
+      sub2: discMarkHTML(x.disc, baseOne), v: recV(x.totalCents, x.rec, x.qty) });
+  });
+  h += row({ cls:'wrap', k: tr('led.d.sum'), v: handoutV(d.recs) });
+  h += d.costCents === null
+    ? row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: '—', sub2: tr('led.d.noCost') })
+    : row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: baseOne(d.costCents),
+            sub: tr('sum.atAvgCost') });
+  h += d.earnCents === null
+    ? row({ cls:'wrap', k: tr('earn.earned'), v: '—', sub2: tr('led.d.noEarn') })
+    : row({ cls:'wrap', k: tr('earn.earned'), v: baseOne(d.earnCents),
+            vcls: d.earnCents < 0 ? 'neg' : '' });
+  return h;
+}
+
+/** Отчёт за месяц: строки одной выдачи — подряд, в порядке ввода, и у
+ *  каждой пометка hand {i, n, qty, totalCents, discCents}. Выдача из одной
+ *  строки идёт как шла: без пометки и на прежнем месте. Суммы — сложение
+ *  уже посчитанных строк; итог таблицы от этого не меняется ни на копейку. */
+function mrGroupTx(rows){
+  var by = {}, order = [], out = [];
+  rows.forEach(function(r){
+    var t = txById(r.id), k = t ? handoutKey(t) : r.id;
+    if (!own(by, k)){ by[k] = []; order.push(k); }
+    by[k].push(r);
+  });
+  order.forEach(function(k){
+    var g = by[k];
+    if (g.length > 1){
+      var pos = {}, q = 0, c = 0, dc = 0;
+      handoutLinesIn(g.map(function(r){ return txById(r.id); }), k)
+        .forEach(function(t, i){ pos[t.id] = i; });
+      g.sort(function(a, b){ return pos[a.id] - pos[b.id]; });
+      g.forEach(function(r){ q += r.qty; c += r.totalCents; dc += r.discCents; });
+      g.forEach(function(r, i){ r.hand = { i: i, n: g.length, qty: q, totalCents: c, discCents: dc }; });
+    }
+    Array.prototype.push.apply(out, g);
+  });
+  return out;
+}
+/** Строки таблицы выдач отчёта. У второй и дальше строк выдачи дата и
+ *  человек не повторяются, после последней — «Итого по выдаче». */
+function mrTxRows(list, day, who){
+  var out = [];
+  list.forEach(function(t){
+    var cont = !!(t.hand && t.hand.i > 0);
+    out.push([cont ? '' : day(t.date), cont ? '' : who(t.person),
+              t.noCost ? { text: who(t.product), note: tr('mr.noCostRow') } : who(t.product),
+              units(t.qty), mrMoney(t.unitCents), mrMoney(t.totalCents), t.discCents ? mrMoney(t.discCents) : '—']);
+    if (t.hand && t.hand.i === t.hand.n - 1)
+      out.push(['', '', tr('mr.handSum', {n: nq(t.hand.n, 'product')}), units(t.hand.qty), '',
+                mrMoney(t.hand.totalCents), t.hand.discCents ? mrMoney(t.hand.discCents) : '—']);
+  });
+  return out;
+}
+function txHandSheet(ls){
+  var sec = 'transactions', t0 = ls[0], per = personById(t0.personId), rows = '';
+  ls.forEach(function(t){
+    var p = productById(t.productId);
+    rows += row({ cls:'wrap', k: units(t.qty) + ' × ' + esc(p ? p.name : '—'),
+      sub: tr('led.perUnit', {v: secOne(sec, t.unitPriceCents)}),
+      sub2: discMarkHTML(discTx(t), function(c){ return secBare(sec, c); }),
+      v: recV(t.qty * t.unitPriceCents, t, t.qty) });
+  });
+  rows += row({ cls:'wrap', k: '<b>' + tr('w.total') + '</b>', v: '<b>' + handoutV(ls) + '</b>' });
+  var body = '<div class="body">' + esc(per ? per.name : '—') + ' · ' + fmtDateLong(t0.date) +
+    ' · ' + nq(ls.length, 'product') + '</div><div class="rows">' + rows + '</div>';
+  dialog({ title: tr('tab.transactions'), html: body, cancelLabel: tr('w.close'),
+    buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
+    .then(function(k){
+      if (k === 'edit') startTxEdit(t0.id);
+      if (k === 'del') deleteTx(t0.id);
+    });
+}
+function delTxBodyHTML(ls){
+  var t0 = ls[0], per = personById(t0.personId), q = 0, sum = 0, parts = [];
+  ls.forEach(function(t){
+    var p = productById(t.productId);
+    q += t.qty; sum += t.qty * t.unitPriceCents;
+    parts.push(units(t.qty) + ' &times; ' + esc(p ? p.name : '—') + ' @ ' + baseOne(t.unitPriceCents));
+  });
+  var p0 = productById(t0.productId);
+  if (ls.length < 2) return tr('dlg.delTxBody', {person: esc(per ? per.name : '—'), qty: units(t0.qty),
+    product: esc(p0 ? p0.name : '—'), price: baseOne(t0.unitPriceCents), total: baseOne(sum)});
+  return tr('dlg.delHandBody', {person: esc(per ? per.name : '—'), n: nq(ls.length, 'product'),
+    lines: parts.join('<br>'), qty: units(q), total: baseOne(sum)});
+}
+function ledTakeOf(t, ps){
+  var p = productById(t.productId);
+  var s = own(ps, t.productId) ? ps[t.productId] : null;
+  var has = !!(s && own(s.cogsOf, t.id));         /* own(): id вроде «constructor» (R20) */
+  var total = t.qty * t.unitPriceCents;
+  var cost = has ? s.cogsOf[t.id] : null;
+  return { kind:'take', rec:t, name: p ? p.name : '', qty:t.qty, date:t.date,
+           unitCents:t.unitPriceCents, totalCents:total, disc: discTx(t),
+           costCents:cost, earnCents: cost === null ? null : total - cost,
+           retN: retQtyOf(t.id) };
+}
+/* ++++++ MULTI FORM END ++++++ */
 
 function savePay(){
   var f = ui.form.pay;
@@ -26989,6 +27734,10 @@ function pickProductSheet(){
     cancelLabel: tr('w.close'), buttons: [] });
 }
 function txSheet(t){
+  var ls = handoutLinesOf(handoutKey(t));
+  /* ++++++ MULTI FORM ++++++ выдача из нескольких товаров — все строки и
+     итог; кнопки — на всю выдачу целиком */
+  if (ls.length > 1){ txHandSheet(ls); return; }
   var p = productById(t.productId), per = personById(t.personId);
   var body = '<div class="body">' +
     tr('tx.sheetLine', {person: esc(per ? per.name : '—'), q: units(t.qty),
@@ -27069,10 +27818,15 @@ function startPersonEdit(id){
 function startTxEdit(id){
   var t = txById(id);
   if (!t) return;
-  var b = state.settings.baseCurrency;
-  ui.form.tx = { personId:t.personId, productId:t.productId, qty:String(t.qty),
-    price: (t.unitPriceCents / 100).toFixed(2), cur:b, date:t.date, editId:t.id };
-  ui.edit.tx = t.id;
+  /* ++++++ MULTI FORM ++++++ правится ВЫДАЧА целиком: все её строки, в
+     валюте ввода каждой (решение владельца 25.09.2026) */
+  var key = handoutKey(t), ls = handoutLinesOf(key);
+  if (!ls.length) ls = [t];
+  discErrDrop(); txAnchorsDrop();
+  ui.form.tx = { personId:t.personId, productId:'', qty:'', price:'', cur:'',
+    date:t.date, editId:key, txId:'', more:[] };
+  txLinesPut(ls.map(txLineFromRec));
+  ui.edit.tx = key;
   ui.tab = 'tx'; ui.seg.tx = 'new'; ui.detail = null; ui.err = '';
   navClear();                              /* ++++++ BACK STACK ++++++ корневой переход */
   render(); scrTo(0);
@@ -27093,21 +27847,29 @@ function startPayEdit(id){
 function deleteTx(id){
   var t = txById(id);
   if (!t) return;
+  /* ++++++ MULTI FORM ++++++ удаляется ВЫДАЧА целиком: все её строки и их
+     возвраты — одной группой корзины, «Восстановить» вернёт всё сразу */
+  var key = handoutKey(t), ls = handoutLinesOf(key);
+  var retN = 0, retQ = 0, ids = {};
+  ls.forEach(function(l){ ids[l.id] = true; });
+  if (!ls.length) ids[id] = true;
   /* ++++++ GOODS RETURN ++++++ выдача уносит свои возвраты с собой: возврат
      без выдачи — ссылка в никуда, validate() такой документ не примет.
      Когда возвраты есть, подтверждение называет их ДО выбора; без них
      диалог дословно прежний (область 44: предупреждение без повода). */
-  var retN = 0, retQ = 0;
-  actRet().forEach(function(x){ if (x.txId === id){ retN++; retQ += x.qty; } });
-  confirmBox(tr('dlg.delTxTitle'),
-    tr('dlg.delTxBody') + (retN ? tr('dlg.delTxRet', {n: retN, q: units(retQ)}) : '') +
+  actRet().forEach(function(x){ if (own(ids, x.txId)){ retN++; retQ += x.qty; } });
+  var many = ls.length > 1;
+  confirmBox(tr(many ? 'dlg.delHandTitle' : 'dlg.delTxTitle'),
+    delTxBodyHTML(ls.length ? ls : [t]) +
+      (retN ? tr('dlg.delTxRet', {n: retN, q: units(retQ)}) : '') +
       trashNoteHTML(),
     tr('dlg.trashOk'), true).then(function(okd){
     if (!okd) return;
     /* ++++++ TRASH ++++++ каскад не переписан: trashCascade() спрашивает у
        документа ровно то, что здесь снимали два dropFrom. */
-    trashMark(state, 'transactions', id, nowISO(), touch);
-    if (ui.form.tx.editId === id) resetTxForm();
+    if (many) handoutTrash(state, key, nowISO(), touch);
+    else trashMark(state, 'transactions', id, nowISO(), touch);
+    if (ui.form.tx.editId === key) resetTxForm();
     toast(tr('msg.trashed'), 'ok');
     commit();
   });
@@ -27940,6 +28702,15 @@ function handleAct(act, arg, e, srcEl){
   /* ++++++ CURRENCY VAT ++++++ галочка правит ЧЕРНОВИК. render() здесь
      безопасен: поля читаются из ui.form.vat, куда обработчик input их уже
      записал, а каретки в момент нажатия по кнопке нет. */
+  /* ++++++ MULTI FORM ++++++ строки формы выдачи. Новый блок получает фокус на
+     «Что» — БЕЗ прокрутки фокусом (правило 105) и с прокруткой к нему. */
+  if (act === 'txl-add'){
+    txLineAdd(); ui.err = ''; render();
+    var tns = document.querySelector('#fTx select[data-f="' + txPath(txLineN() - 1, 'productId') + '"]');
+    if (tns){ tns.focus({ preventScroll: true }); if (tns.scrollIntoView) tns.scrollIntoView({block:'center'}); }
+    return;
+  }
+  if (act === 'txl-del'){ txLineDel(parseInt(arg, 10)); ui.err = ''; render(); return; }
   if (act === 'line-add'){
     ui.form.product.lines.push(newLine());
     ui.err = ''; render();
@@ -29908,6 +30679,9 @@ window.GoodsTracker = {
   /* ++++++ PERSON EARN ++++++ набор проверок спрашивает пять цифр той же
      функцией, которой их печатает карточка, и тот же разрешённый период. */
   earn: personEarn, earnRange: earnRange,
+  /* ++++++ MULTI HANDOUT ++++++ наборы и живая проверка сохраняют выдачу той же
+     функцией, которой её сохранит форма (этап 2). */
+  handout: { save: handoutSave, key: handoutKey, lines: handoutLinesOf, trash: handoutTrash },
   /* ++++++ REMAINDER REPORT ++++++ the one builder the window is made of */
   remainder: remainderReport,
   /* ++++++ REMINDER LIST ++++++ the one debtor-data function and the one
