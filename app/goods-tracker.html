@@ -6733,8 +6733,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.27.0';
-var APP_BUILD = '2026-09-25T07:11:06.239Z';
+var APP_VERSION = '1.27.1';
+var APP_BUILD = '2026-09-25T13:47:47.912Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -24743,9 +24743,13 @@ function lotNameSheet(){
       /* Номер выдаётся ЗДЕСЬ, если его ещё нет: поездке без номера
          привязываться нечем. То же делает присоединение. */
       var id = lotEnsureId(lot);
-      lotRecSet(state, id, { name: nEl.value, date: dEl ? dEl.value : '',
-                             note: tEl ? tEl.value : '' });
-      touch(id);
+      var lotO = { name: nEl.value, date: dEl ? dEl.value : '', note: tEl ? tEl.value : '' };
+      /* ++++++ TOMBS KEEP ++++++ стёртое имя — удаление записи, и доезжает оно
+         только надгробием: dropFrom() — единственная дверь, где оно
+         ставится. Прежде запись снималась splice() и возвращалась
+         обменом. */
+      if (lotRecEmpty(lotO)) dropFrom('lots', function(r){ return !r || r.id !== id; });
+      else { lotRecSet(state, id, lotO); touch(id); }
       ui.detail = { type:'lot', id: id };
       toast(tr('msg.lotNamed'), 'ok');
       commit();
@@ -29608,6 +29612,58 @@ function syncConflictSheet(){
 }
 
 /* Окружение для syncCycle(): всё, чего он не умеет сам. */
+/* ================================= ++++++ TOMBS KEEP ++++++ ==
+ * НАДГРОБИЕ НЕ ИСЧЕЗАЕТ НИ НА ОДНОМ ШАГЕ ОБОРОТА.
+ *
+ * Надгробие — единственное, что делает удаление окончательным: без него
+ * сосед, ещё не знающий об удалении, приносит запись обратно при первом же
+ * обмене (mergeCollection: `R && !L` берётся всегда). Прежде оборот терял
+ * надгробия в двух местах:
+ *
+ *   · apply() клал в `state` документ слияния, а в нём надгробий нет —
+ *     они едут рядом, в merged.tombstones. `state.syncTombs` становился
+ *     пустым и тут же писался на диск. Вернуть их могла только remember(),
+ *     а её зовут лишь после УДАЧНОЙ отправки: сбой сети, отказ Диска или
+ *     гонка двух устройств — и удалённое возвращалось;
+ *   · remember() ПЕРЕЗАПИСЫВАЛА карты итогом оборота и стирала всё, что
+ *     изменилось на устройстве, пока шла отправка: удаление, сделанное в
+ *     эти секунды, теряло надгробие, правка — метку.
+ *
+ * Правило теперь одно: карты оборота НАКЛАДЫВАЮТСЯ на живые, а не
+ * заменяют их. Движок слияния не тронут ни байтом.
+ */
+
+/** Копия карты «id → время». */
+function syncMapCopy(m){
+  var out = {}, k;
+  if (!m) return out;
+  for (k in m) if (Object.prototype.hasOwnProperty.call(m, k)) out[k] = m[k];
+  return out;
+}
+
+/** Итог оборота `base` плюс то, что изменилось на устройстве с момента
+ *  применения слияния: `was` — карта сразу после apply(), `now` — карта
+ *  сейчас. Новое и изменённое берётся из `now`; снятое здесь (touch()
+ *  снимает надгробие, dropFrom() — метку удалённой записи) — снимается и
+ *  в итоге. `early` — правило надгробий: из двух времён удаления
+ *  остаётся РАННЕЕ, ровно как в mergeTombs(). Снимка нет — всё живое
+ *  ложится поверх итога: потерять надгробие хуже, чем оставить лишнее. */
+function syncMapOver(base, was, now, early){
+  var out = syncMapCopy(base), k, has = Object.prototype.hasOwnProperty;
+  was = was || {};
+  now = now || {};
+  for (k in now) if (has.call(now, k)){
+    if (has.call(was, k) && was[k] === now[k]) continue;
+    if (early && has.call(out, k) && String(out[k]) < String(now[k])) continue;
+    out[k] = now[k];
+  }
+  for (k in was) if (has.call(was, k) && !has.call(now, k)) delete out[k];
+  return out;
+}
+
+/* Обмен, запрошенный, пока идёт оборот: 0 — нет, 1 — тихо, 2 — громко.
+   Прежде такой вызов пропадал, и правка ждала следующего запуска. */
+var syncAgain = 0;
 function syncEnv(){
   /* ++++++ TRANSPORT ++++++ ОДИН транспорт на весь оборот, и это не
      стиль. Транспорт Drive ХРАНИТ номер найденного файла; у GitHub
@@ -29617,6 +29673,8 @@ function syncEnv(){
      одновременно с нами» на единственном устройстве. Повтор оборота
      берёт его же и упирается в то же самое. */
   var syncTport = transportFor(syncCfgFull());
+  var syncApplied = null;   /* ++++++ TOMBS KEEP ++++++ карты сразу после apply() — от них
+     remember() отсчитывает, что изменилось, пока шла отправка */
   return {
     cfg: syncCfgFull,
     localDoc: function(){ return state; },
@@ -29640,7 +29698,14 @@ function syncEnv(){
       try{ res = validate(JSON.parse(JSON.stringify(doc))); }
       catch(e){ done('parse'); return; }
       if (!res.ok){ done(res.error); return; }
+      /* ++++++ TOMBS KEEP ++++++ надгробия в документе слияния не едут — они
+         рядом, в merged.tombstones. Без этого `state.syncTombs` стал бы
+         пустым и так ушёл бы на диск: при сбое отправки удалённое
+         вернулось бы следующим же обменом. */
+      var keepT = state.syncTombs || {};
       state = res.data;
+      state.syncTombs = mergeTombs(keepT, state.syncTombs || {});
+      syncApplied = { tombs: syncMapCopy(state.syncTombs), meta: syncMapCopy(state.syncMeta) };
       save();
       render();
       /* ++++++ SILENT DROP ++++++ ПОСЛЕ render(): banner() пишет в
@@ -29670,8 +29735,12 @@ function syncEnv(){
          их изменение (syncSettingsTouch). */
       cur.settingsAt = o.settingsAt || cur.settingsAt || '';
       syncWrite(cur);
-      state.syncTombs = o.tombs || {};
-      state.syncMeta = o.meta || {};
+      /* ++++++ TOMBS KEEP ++++++ НАКЛАДЫВАЕТСЯ, а не заменяет: удаление или
+         правка, сделанные, пока шла отправка, в отправленном документе
+         не было — перезапись стёрла бы их надгробие и метку. */
+      var ap = syncApplied || {};
+      state.syncTombs = syncMapOver(o.tombs || {}, ap.tombs, state.syncTombs, true);
+      state.syncMeta = syncMapOver(o.meta || {}, ap.meta, state.syncMeta, false);
       save();
     }
   };
@@ -29680,8 +29749,11 @@ function syncEnv(){
 /* Один обмен. Зовётся кнопкой, стартом приложения и отложенной отправкой. */
 function syncRun(loud){
   if (!syncCfgFull()){ if (loud){ syncStatus.err = 'off'; render(); } return; }
-  if (syncStatus.busy) return;
+  /* ++++++ TOMBS KEEP ++++++ оборот уже идёт — запросить следующий: правка
+     или удаление, сделанные сейчас, в идущем обороте не едут. */
+  if (syncStatus.busy){ syncAgain = (loud || syncAgain === 2) ? 2 : 1; return; }
   syncStatus.busy = true;
+  var carriesWipe = wipeSent;   /* ++++++ TOMBS KEEP ++++++ нёс ли ЭТОТ оборот удаление */
   syncStatus.err = '';
   /* ++++++ SYNC ROW ++++++ вид кнопки — отдельно от самого отказа:
      кнопка гаснет через две секунды, а пояснение живёт до удачного
@@ -29701,7 +29773,7 @@ function syncRun(loud){
          пустую программу без единого слова о том, почему. */
       wipeDelBarPaint(r.stats);
       /* И ответ на необратимое нажатие: доехало или ждёт сети. */
-      if (wipeSent){ wipeSent = false; banner('wipe-done', 'ok', esc(tr('wipe.doneAll'))); }
+      if (carriesWipe && wipeSent){ wipeSent = false; banner('wipe-done', 'ok', esc(tr('wipe.doneAll'))); }
       /* ++++++ GDRIVE ++++++ дорога у режимов разная, и сообщение об
          успехе обязано её называть: в продуктовой сборке нет ни
          репозитория, ни учётной записи GitHub, и слово «GitHub» на
@@ -29723,7 +29795,7 @@ function syncRun(loud){
       syncStatus.base = (r && r.base) || null; baseSyncBarPaint();   /* ++++++ BASE SYNC ++++++ */
       /* ++++++ ERASE SPLIT ++++++ оборот не удался — удаление осталось
          здесь и ждёт сети. Молчать нельзя: нажатие было необратимым. */
-      if (wipeSent){ wipeSent = false; banner('wipe-done', 'warn', esc(tr('wipe.donePending'))); }
+      if (carriesWipe && wipeSent){ wipeSent = false; banner('wipe-done', 'warn', esc(tr('wipe.donePending'))); }
       if (r && r.conflicts && r.conflicts.length){
         syncStatus.conflicts = r.conflicts;
         syncBarPaint();
@@ -29736,6 +29808,7 @@ function syncRun(loud){
        успеть нажать. */
     render();
     syncBtnDone(syncStatus.err);
+    if (syncAgain){ var again = syncAgain === 2; syncAgain = 0; syncRun(again); }   /* ++++++ TOMBS KEEP ++++++ */
   });
 }
 
