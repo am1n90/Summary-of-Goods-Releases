@@ -3223,6 +3223,29 @@ var STR = {
 'acct.noLink':   { en:'Sync is not connected',              ru:'Обмен не подключён' },
 'acct.onlyHere': { en:'records are kept on this device only',
                    ru:'записи хранятся только на этом устройстве' },
+/* ++++++ KEY ACCESS ++++++ отказ хранилища ключа входа: полоса, подпись, причина */
+'key.short':      { en:'the saved sign-in could not be read',
+                    ru:'сохранённый вход не прочитался' },
+'key.bar.read.win':   { en:'Sync has stopped: Windows refused to read the saved Google sign-in. Your records are intact — sign in again.',
+                        ru:'Обмен остановлен: Windows не дала прочитать сохранённый вход в Google. Записи целы — войдите заново.' },
+'key.bar.read.and':   { en:'Sync has stopped: the phone refused to read the saved Google sign-in. Your records are intact — sign in again.',
+                        ru:'Обмен остановлен: телефон не дал прочитать сохранённый вход в Google. Записи целы — войдите заново.' },
+'key.bar.nosafe.win': { en:'Sync has stopped: the Windows protected storage is unavailable, so the saved Google sign-in cannot be read. Your records are intact.',
+                        ru:'Обмен остановлен: защищённое хранилище Windows недоступно, и сохранённый вход в Google не прочитать. Записи целы.' },
+'key.bar.nosafe.and': { en:'Sync has stopped: the phone protected storage is unavailable, so the saved Google sign-in cannot be read. Your records are intact.',
+                        ru:'Обмен остановлен: защищённое хранилище телефона недоступно, и сохранённый вход в Google не прочитать. Записи целы.' },
+'key.bar.write.win':  { en:'Signed in, but Windows refused to save the sign-in: after the program restarts you will have to sign in again.',
+                        ru:'Вход выполнен, но Windows не дала его сохранить: после перезапуска программы придётся войти снова.' },
+'key.bar.write.and':  { en:'Signed in, but the phone refused to save the sign-in: after the program restarts you will have to sign in again.',
+                        ru:'Вход выполнен, но телефон не дал его сохранить: после перезапуска программы придётся войти снова.' },
+'key.note.read.win':  { en:'Windows denied the program access to the saved Google sign-in. This happens when the program was moved to another computer or another Windows account, when an administrator reset the Windows password, or when the program files were damaged. The previous sign-in cannot be recovered. Your records on this computer and on Google Drive are intact: sign in again with the same Google account and sync will continue.',
+                        ru:'Windows отказала программе в доступе к сохранённому входу в Google. Так бывает, если программу перенесли на другой компьютер или в другую учётную запись Windows, если пароль Windows сбросил администратор или повредились файлы программы. Прежний вход уже не вернуть. Записи на этом компьютере и на Google Диске целы: войдите заново той же учётной записью Google, и обмен продолжится.' },
+'key.note.read.and':  { en:'The phone denied the program access to the saved Google sign-in. Your records on the phone and on Google Drive are intact: sign in again with the same Google account and sync will continue.',
+                        ru:'Телефон отказал программе в доступе к сохранённому входу в Google. Записи на телефоне и на Google Диске целы: войдите заново той же учётной записью Google, и обмен продолжится.' },
+'key.note.nosafe.win':{ en:'The Windows protected storage is unavailable right now, so the program cannot read the saved Google sign-in. Close the program and open it again; if that does not help, restart the computer. Your records are intact.',
+                        ru:'Защищённое хранилище Windows сейчас недоступно, поэтому программа не может прочитать сохранённый вход в Google. Закройте программу и откройте снова; если не поможет — перезагрузите компьютер. Записи целы.' },
+'key.note.nosafe.and':{ en:'The phone protected storage is unavailable right now, so the program cannot read the saved Google sign-in. Close the program and open it again; if that does not help, restart the phone. Your records are intact.',
+                        ru:'Защищённое хранилище телефона сейчас недоступно, поэтому программа не может прочитать сохранённый вход в Google. Закройте программу и откройте снова; если не поможет — перезагрузите телефон. Записи целы.' },
 'acct.gdrive':   { en:'Google Drive',                       ru:'Google Диск' },
 'acct.syncLast': { en:'Last sync',                          ru:'Последняя синхронизация' },
 'acct.syncFail': { en:'sync did not go through',            ru:'обмен не прошёл' },
@@ -4199,6 +4222,8 @@ var STR = {
 'rmd.t.due':     { en:'Total due: {sum}',             ru:'Начислено: {sum}' },
 'rmd.t.paid':    { en:'Paid: {sum}',                  ru:'Оплачено: {sum}' },
 'rmd.t.left':    { en:'Balance remaining: {sum}',     ru:'Остаток к оплате: {sum}' },
+/* ++++++ RMD CENTS ++++++ сноска к «≈»: те же слова, что у заказов (ord.apxTitle) */
+'rmd.t.apx':     { en:'≈ — converted at today’s rate', ru:'≈ — пересчитано по сегодняшнему курсу' },
 'rmd.t.bye':     { en:'Please write when it would be convenient to settle. Thank you!',
                    ru:'Подскажите, пожалуйста, когда будет удобно рассчитаться. Спасибо!' },
 
@@ -4868,6 +4893,12 @@ var STR = {
                  ru:'место на Диске — узнаем при первом обмене' },
 'as.eNet':     { en:'No connection — the files will travel later.',
                  ru:'Нет связи — файлы уедут позже.' },
+'as.eDriveDenied': { en:'Google Drive refused access — sign out and sign in again, ticking the Drive access.',
+                 ru:'Google Диск отказал в доступе — выйдите и войдите заново, отметив доступ к Диску.' },
+'as.eBadSecret': { en:'Google did not accept the key of the app itself — a new build of the app is needed.',
+                 ru:'Google не принял ключ самой программы — нужна новая сборка программы.' },
+'as.eDaily':     { en:'Google Drive has used up the daily request limit — the files will travel on their own, usually the next day.',
+                 ru:'Google Диск исчерпал дневной предел запросов — файлы поедут сами, обычно на следующий день.' },
 'as.eAuth':    { en:'Access expired — sign in to Google again.',
                  ru:'Доступ истёк — войдите в Google заново.' },
 'as.eGone':    { en:'The file is not on the Drive any more.',
@@ -4931,8 +4962,20 @@ var STR = {
                   ru:'Обмен работает в установленных приложениях.' },
 'gd.eNet':      { en:'No network. Nothing is lost — the app works offline and the changes will go on their own once the network is back.',
                   ru:'Нет сети. Ничего не потеряно — программа работает и без неё, а изменения уедут сами, когда сеть вернётся.' },
-'gd.eAuth':     { en:'Google no longer accepts the sign-in: access may have been revoked or expired. Sign in again — the records are where they were.',
-                  ru:'Google больше не принимает вход: доступ мог быть отозван или истёк. Войдите заново — записи на месте.' },
+'gd.eAuth':     { en:'The sign-in has expired: Google no longer accepts the saved sign-in. This happens once a week while the app is not yet published in Google, after a Google password change, or if the access of the app was revoked in the Google settings. Sign in again — the records are where they were.',
+                  ru:'Вход истёк: Google больше не принимает сохранённый вход. Так бывает раз в неделю, пока программа не опубликована в Google, после смены пароля Google или если доступ программы отозвали в настройках Google. Войдите заново — записи на месте.' },
+'gd.eAuthRefused': { en:'Google refused the sign-in: no access was granted, so you are not signed in. Try again; if it repeats, check that the right account is chosen.',
+                  ru:'Google отказал при входе: доступ не выдан, вход не выполнен. Попробуйте ещё раз; если повторится — проверьте, та ли учётная запись выбрана.' },
+'gd.eDriveDenied': { en:'You are signed in, but Google Drive refused the app access. Sign out and sign in again — and tick the Drive access in the Google window.',
+                  ru:'Вход выполнен, но Google Диск отказал программе в доступе. Выйдите и войдите заново — и в окне Google отметьте доступ к Диску.' },
+'gd.eBadSecret': { en:'Google did not accept the key of the app itself — this is not about your account, and signing in again will not help. A new build of the app is needed; the records are where they were.',
+                  ru:'Google не принял ключ самой программы — дело не в вашей учётной записи, и повторный вход не поможет. Нужна новая сборка программы; записи на месте.' },
+'gd.eDaily':     { en:'Google Drive has used up the daily request limit of the app. The records are intact; sync will resume on its own once the limit resets — usually the next day.',
+                  ru:'Google Диск исчерпал дневной предел запросов программы. Записи целы; обмен продолжится сам, когда предел обновится — обычно на следующий день.' },
+'gd.lostBar':    { en:'Sync has stopped: the Google sign-in expired ({at}). The records are intact — sign in again.',
+                  ru:'Обмен остановлен: вход в Google истёк ({at}). Записи целы — войдите заново.' },
+'gd.lostShort':  { en:'the sign-in expired — sync has stopped',
+                  ru:'вход истёк — обмен остановлен' },
 'gd.eDenied':   { en:'The sign-in was cancelled. The app works as before, just without syncing.',
                   ru:'Вход отменён. Программа работает как прежде, только без обмена.' },
 'gd.eState':    { en:'The answer did not match our request. Nobody was signed in — try again.',
@@ -6733,8 +6776,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.27.1';
-var APP_BUILD = '2026-09-25T13:47:47.912Z';
+var APP_VERSION = '1.28.0';
+var APP_BUILD = '2026-09-27T18:03:47.345Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -9291,7 +9334,7 @@ function gdReq(o, cb){
     }
     /* Ошибку двоичного ответа читать как текст нельзя — но и разбирать
        её нечем: причина берётся из кода состояния, как и раньше. */
-    cb(gdErrOf(status, o.binary ? '' : t), null, status, head);
+    cb(gdErrAt(o.url, status, gdErrOf(status, o.binary ? '' : t), o.binary ? '' : t), null, status, head);
   })['catch'](function(){ cb('net', null, status, head); });
 }
 
@@ -9734,6 +9777,10 @@ function gdErrKey(err){
     nofetch:  'gd.eBrowser',
     net:      'gd.eNet',
     auth:     'gd.eAuth',
+    authrefused: 'gd.eAuthRefused',                       /* ++++++ AUTH WORDS ++++++ */
+    drivedenied: 'gd.eDriveDenied',                       /* ++++++ AUTH WORDS ++++++ */
+    badsecret:   'gd.eBadSecret',                         /* ++++++ AUTH WORDS ++++++ */
+    daily:       'gd.eDaily',                             /* ++++++ AUTH WORDS ++++++ */
     denied:   'gd.eDenied',
     state:    'gd.eState',
     norefresh:'gd.eNoRefresh',
@@ -9753,7 +9800,8 @@ function gdErrKey(err){
 /* Беда, которая пройдёт сама, — не повод дёргать владельца. Отсюда
    решается, повторять ли обмен позже молча. */
 function gdRetryable(err){
-  return err === 'net' || err === 'rate' || err === 'server' || err === 'busy';
+  return err === 'net' || err === 'rate' || err === 'server' || err === 'busy' ||
+         err === 'daily';   /* ++++++ AUTH WORDS ++++++ тон «пройдёт сам», повтора молча нет */
 }
 
 
@@ -10979,6 +11027,7 @@ function attErrKey(err){
   var M = {
     off: 'as.eOff', nofetch: 'as.eBrowser', net: 'as.eNet',
     auth: 'as.eAuth', expired: 'as.eAuth', badclient: 'as.eAuth',
+    drivedenied: 'as.eDriveDenied', badsecret: 'as.eBadSecret', daily: 'as.eDaily',   /* ++++++ AUTH WORDS ++++++ */
     notfound: 'as.eGone', quota: 'as.eQuota', rate: 'as.eRate',
     big: 'as.eBig', nofile: 'as.eGone', badid: 'as.eGone'
   };
@@ -20249,6 +20298,46 @@ function rmdDays(iso){
   return n < 0 ? 0 : n;
 }
 
+/* ++++++ RMD CENTS ++++++ Находка Б4 глубокого аудита (подтверждена 27.09.2026):
+ * строки товаров в тексте напоминания расходились с «Начислено» на цент за
+ * каждый возврат, когда «Сводка» читается не в основной валюте. Строка
+ * считалась одним переводом остатка, dcCents((выдано − возвращено) × цена),
+ * а «Начислено» (dcStats) — выдачей и каждым возвратом ПО ОТДЕЛЬНОСТИ, и
+ * round(a) − round(b) ≠ round(a − b). Теперь строка идёт теми же шагами.
+ *
+ * И второе (решение владельца 27.09): сумма, пересчитанная по СЕГОДНЯШНЕМУ
+ * курсу, помечается «≈», как суммы заказов. Сама dcRateOf() не трогается —
+ * её сверяют побайтово соседние задачи; условие повторено здесь, а что оно
+ * с ней не разойдётся, держит набор задачи. */
+
+/** Приближённая ли сумма одной записи: пересчитана по СЕГОДНЯШНЕМУ курсу.
+ *  Так бывает ровно тогда, когда dcRateOf() не берёт снимок записи: валюта
+ *  показа не основная, а снимка нет, он снят в другой базе или этой валюты в
+ *  нём нет. Нулевая сумма от курса не зависит и приближённой не бывает;
+ *  валюта без курса печатает прочерк, и знаку там стоять не у чего. */
+function rmdApxRec(cents, snap){
+  /* курс спрашивается у dcRateOf(): семья напоминаний сама курсов не читает
+     (набор reminder-list это держит) — снимок null даёт ровно сегодняшний */
+  var c = dcCur();
+  if (!cents || c === state.settings.baseCurrency || dcRateOf(null, c) === null) return false;
+  var s = snapLive(snap);
+  if (s && own(s.rates, c)){
+    var r = s.rates[c];
+    if (typeof r === 'number' && isFinite(r) && r > 0) return false;
+  }
+  return true;
+}
+/** Самая большая строка напоминания — ей достаётся остаток округлений
+ *  выдачи, возвращённой целиком, если своей строки у товара нет. Приём
+ *  allocShares(): остаток к большей доле. При равных — первая по порядку. */
+function rmdBiggest(items){
+  var b = null, i;
+  for (i = 0; i < items.length; i++){
+    if (!b || (items[i].amtD !== null && (b.amtD === null || items[i].amtD > b.amtD))) b = items[i];
+  }
+  return b;
+}
+
 /** ЕДИНСТВЕННЫЙ источник данных о должниках. Список, блок, сортировка и
  *  генератор текста читают только его, поэтому разойтись им негде.
  *
@@ -20263,7 +20352,9 @@ function rmdDays(iso){
  *    unknown  срок неизвестен: ни одной читаемой даты
  *    fromPay  отсчёт идёт от оплаты (иначе — от первой выдачи)
  *    overdue  30 суток и больше
- *    items    [{name, qty, amtD}] — что взято, по товарам
+ *    items    [{name, qty, amtD, apx}] — что взято, по товарам
+ *    apx      {due, paid, out} — итог пересчитан по сегодняшнему курсу;
+ *             у строки то же — полем apx (++++++ RMD CENTS ++++++)
  */
 function rmdList(d, hs){
   hs = hs || personStats();
@@ -20277,16 +20368,26 @@ function rmdList(d, hs){
     if (rmdDays(t.date) === null) return;
     if (!own(first, t.personId) || t.date < first[t.personId]) first[t.personId] = t.date;
   });
+  var payApx = {};                                     /* ++++++ RMD CENTS ++++++ */
   actPay().forEach(function(y){
+    /* ++++++ RMD CENTS ++++++ «Оплачено» приближённое, если хоть одна оплата
+       пересчитана по сегодняшнему курсу. ДО проверки даты: в сумму
+       оплата входит и с нечитаемой датой. */
+    if (rmdApxRec(y.amountCents, y.rateSnap)) payApx[y.personId] = true;
     if (rmdDays(y.date) === null) return;             /* нечитаемая дата не решает ничего */
     if (!own(lastPay, y.personId) || y.date > lastPay[y.personId]) lastPay[y.personId] = y.date;
   });
   /* ++++++ GOODS RETURN ++++++ сколько возвращено по каждой выдаче: строки
      сообщения обязаны быть ЧИСТЫМИ, иначе напоминание требует вернуть то,
      что уже вернули. */
-  var retBy = {};
+  var retBy = {}, retQs = {};
   actRet().forEach(function(r){
     retBy[r.txId] = (own(retBy, r.txId) ? retBy[r.txId] : 0) + r.qty;
+    /* ++++++ RMD CENTS ++++++ и каждый возврат ОТДЕЛЬНО: «Начислено» (dcStats)
+       переводит и округляет выдачу и каждый её возврат по одному, и
+       строки обязаны пройти теми же шагами (находка Б4). */
+    if (!own(retQs, r.txId)) retQs[r.txId] = [];
+    retQs[r.txId].push(r.qty);
   });
 
   var out = [];
@@ -20323,25 +20424,55 @@ function rmdList(d, hs){
       if (ca !== cb) return ca < cb ? -1 : 1;
       return a.i - b.i;
     }).map(function(o){ return o.t; });
+    var rest = {}, restKeys = [];                                     /* ++++++ RMD CENTS ++++++ */
     mine.forEach(function(t){
       /* ++++++ GOODS RETURN ++++++ выдача за вычетом её возвратов; выдача,
          возвращённая целиком, в сообщение не попадает вовсе. */
       var q = t.qty - (own(retBy, t.id) ? retBy[t.id] : 0);
-      if (q <= 0) return;
+      /* ++++++ RMD CENTS ++++++ Сумма выдачи — ТЕМИ ЖЕ шагами, что в dcStats():
+         выдача целиком минус КАЖДЫЙ возврат по отдельности, всё курсом
+         ТОЙ ЖЕ продажи. Здесь стоял один перевод остатка,
+         dcCents(q × цена), а round(a) − round(b) ≠ round(a − b): строки
+         расходились с «Начислено» на цент за возврат (находка Б4). */
+      var v = dcCents(t.qty * t.unitPriceCents, t.rateSnap);
+      var rq = own(retQs, t.id) ? retQs[t.id] : [], k;
+      for (k = 0; k < rq.length; k++) v = dcSub(v, dcCents(rq[k] * t.unitPriceCents, t.rateSnap));
+      var apx = rmdApxRec(t.qty * t.unitPriceCents, t.rateSnap);
+      if (q <= 0){
+        /* вернули целиком: строки нет, а остаток округлений (цент за
+           возврат) в «Начислено» есть — он уходит в строки ниже */
+        if (!own(rest, t.productId)){ rest[t.productId] = { v:0, apx:false }; restKeys.push(t.productId); }
+        rest[t.productId].v = dcAdd(rest[t.productId].v, v);
+        if (apx) rest[t.productId].apx = true;
+        return;
+      }
       var pr = productById(t.productId);
       var it;
       if (own(seen, t.productId)) { it = seen[t.productId]; }
-      else { it = seen[t.productId] = { name: pr ? pr.name : '—', qty:0, amtD:0 }; items.push(it); }
+      else { it = seen[t.productId] = { name: pr ? pr.name : '—', qty:0, amtD:0, apx:false }; items.push(it); }
       it.qty += q;
       /* Курс ТОЙ ЖЕ продажи — dcCents() и снимок записи, как во всей
          «Сводке». Поэтому сумма строк равна начисленному до копейки. */
-      it.amtD = dcAdd(it.amtD, dcCents(q * t.unitPriceCents, t.rateSnap));
+      it.amtD = dcAdd(it.amtD, v);
+      if (apx) it.apx = true;
     });
+    /* ++++++ RMD CENTS ++++++ Остаток выдачи, возвращённой целиком, — в строку
+       того же товара, а если её нет, в самую большую (приём
+       allocShares(): остаток к большей доле). Так сумма строк равна
+       «Начислено» всегда, а не «почти всегда». */
+    restKeys.forEach(function(pid){
+      var to = own(seen, pid) ? seen[pid] : rmdBiggest(items);
+      if (!to) return;
+      to.amtD = dcAdd(to.amtD, rest[pid].v);
+      if (rest[pid].apx) to.apx = true;
+    });
+    var dueApx = items.some(function(i){ return i.apx; }), paidApx = own(payApx, p.id);
 
     out.push({ person:p, st:st, dueD:x.dueD, paidD:x.paidD, outD:x.outD,
                days:days, unknown: days === null, fromPay:fromPay,
                overdue: days !== null && days >= RMD_OVERDUE_DAYS,
-               items:items });
+               items:items,
+               apx: { due: dueApx, paid: paidApx, out: dueApx || paidApx } });   /* ++++++ RMD CENTS ++++++ */
   });
 
   /* Сначала самые давние. Дальше — по убыванию долга, потом по имени и, в
@@ -20367,9 +20498,11 @@ function rmdList(d, hs){
  *  ячейки отчёта, — второго форматтера у «Сводки» нет и не будет
  *  (хрупкое место 19). Код валюты дописывается словом, как требует
  *  сообщение: получатель не видит, что выбрано в программе. */
-function rmdPlain(dm){
+function rmdPlain(dm, apx){
   var n = dcBare(dm);
-  return (dm === null || dm === undefined) ? n : n + ' ' + dcCur();
+  /* ++++++ RMD CENTS ++++++ «≈» — сумма пересчитана по сегодняшнему курсу, тот же
+     знак, что у заказов (ordApx). У прочерка знака нет: числа нет. */
+  return (dm === null || dm === undefined) ? n : (apx ? '≈ ' : '') + n + ' ' + dcCur();
 }
 function rmdCompose(rec){
   var L = [], i;
@@ -20381,13 +20514,16 @@ function rmdCompose(rec){
     L.push(tr('rmd.t.itemsHead'));
     for (i = 0; i < rec.items.length; i++){
       L.push(tr('rmd.t.item', { name: rec.items[i].name, qty: units(rec.items[i].qty),
-                                sum: rmdPlain(rec.items[i].amtD) }));
+                                sum: rmdPlain(rec.items[i].amtD, rec.items[i].apx) }));
     }
   }
   L.push('');
-  L.push(tr('rmd.t.due',  { sum: rmdPlain(rec.dueD) }));
-  L.push(tr('rmd.t.paid', { sum: rmdPlain(rec.paidD) }));
-  L.push(tr('rmd.t.left', { sum: rmdPlain(rec.outD) }));
+  var ap = rec.apx || {};                                /* ++++++ RMD CENTS ++++++ */
+  L.push(tr('rmd.t.due',  { sum: rmdPlain(rec.dueD, ap.due) }));
+  L.push(tr('rmd.t.paid', { sum: rmdPlain(rec.paidD, ap.paid) }));
+  L.push(tr('rmd.t.left', { sum: rmdPlain(rec.outD, ap.out) }));
+  /* сноска — только когда знак где-то стоит */
+  if (ap.due || ap.paid) L.push(tr('rmd.t.apx'));
   L.push('');
   L.push(tr('rmd.t.bye'));
   return L.join('\n');
@@ -25306,9 +25442,12 @@ function acctCardHTML(){
     h += '<div class="acct"><span class="ava anon" style="--s:56px">' + ico('person') + '</span>' +
          '<div class="who"><b>' +
            esc(modeIsProduct() ? tr('acct.noSignIn') : tr('acct.noLink')) + '</b>' +
-         '<small>' + esc(tr('acct.onlyHere')) + '</small></div></div>';
+         '<small>' + esc(gdKeyShort()) + '</small></div></div>';   /* ++++++ KEY ACCESS ++++++ */
+    h += gdErrNoteHTML();   /* ++++++ AUTH WORDS ++++++ беда входа — и не вошедшему */
+    var kn = gdKeyNoteHTML();   /* ++++++ KEY ACCESS ++++++ причина отказа, если он был */
     if (modeIsProduct() && gdBridgeReady() && modeConfigured())
-      h += '<div class="signrow">' + btn(tr('gd.signIn'), 'gd-signin', 'block') + '</div>';
+      h += '<div class="signrow">' + kn + btn(tr('gd.signIn'), 'gd-signin', 'block') + '</div>';
+    else if (kn) h += '<div class="signrow">' + kn + '</div>';
     return h + '</section>';
   }
   var n = acctName(b);
@@ -29967,7 +30106,7 @@ function gdAuthLive(cb){
       if (err === 'expired') err = 'auth';
       /* Отозванный доступ — не сетевая беда: чинится только новым
          входом, и сказать об этом надо словами. */
-      if (err === 'auth') gdForgetTokens();
+      if (err === 'auth'){ gdForgetTokens(); gdLostMark(err); }   /* ++++++ AUTH WORDS ++++++ причина переживает перезапуск */
       cb(err); return;
     }
     gdTokens.access = t.access;
@@ -29981,12 +30120,91 @@ function gdAuthLive(cb){
   });
 }
 
+/* ==================================================================
+ * ++++++ KEY ACCESS ++++++   ОТКАЗ ХРАНИЛИЩА КЛЮЧА ВХОДА — СЛОВАМИ
+ *
+ * Ключ входа в Google хранит оболочка: на Windows — защищённым
+ * хранилищем Windows (safeStorage), на телефоне — Keystore. На чтение
+ * она отвечает {ok:true, value} или {ok:false, err:'nosafe'|'read'}, на
+ * запись — {ok:true} или {ok:false, err:'nosafe'|'write'}.
+ *
+ * До этой правки ядро ответ отказа выбрасывало: чтение превращало его в
+ * «ключа нет» (карточка печатала «Вход не выполнен · записи хранятся
+ * только на этом устройстве», без причины), ответ записи не читало вовсе
+ * (вход «удавался», а после перезапуска его не было).
+ *
+ * ИЗМЕРЕНО 27.09.2026 на «Бухгалтере ТЕСТ», Windows, настоящими отказами:
+ * когда Windows не раскрывает защищённый ключ профиля (он повреждён или
+ * файла с ним нет), оболочка отвечает 'read', а Electron САМ заводит
+ * новый ключ и переписывает `Local State` — прежний вход не вернуть
+ * ничем, кроме нового входа. Настоящий сон компьютера (26 минут и почти
+ * пять часов) к отказу не приводит: ключ читается сразу после
+ * пробуждения. Разбор — _claude_lab/key-access/README.md.
+ *
+ * Состояние — одна модульная переменная, а не документ: это факт об
+ * устройстве, в копию и в обмен ему нельзя.
+ * ================================================================== */
+var gdKeyErr = '';
+
+/** Ответ оболочки → '' или вид отказа. При чтении 'nosafe' — хранилище
+ *  недоступно вовсе, всё прочее — 'read': главное, что прочитать не
+ *  удалось. При записи любой отказ — 'write'. */
+function gdKeyErrOf(r, writing){
+  if (!r || r.ok !== false) return '';
+  if (writing) return 'write';
+  return r.err === 'nosafe' ? 'nosafe' : 'read';
+}
+/** Текст отказа. Устройство названо своим именем: одна строка на два
+ *  устройства врёт одному из них (правило 121). part — 'bar' (полоса)
+ *  или 'note' (карточка учётной записи). */
+function gdKeyText(kind, part){
+  var and = uiPlat() === 'and';
+  if (part === 'bar'){
+    if (kind === 'write')  return tr(and ? 'key.bar.write.and'  : 'key.bar.write.win');
+    if (kind === 'nosafe') return tr(and ? 'key.bar.nosafe.and' : 'key.bar.nosafe.win');
+    return tr(and ? 'key.bar.read.and' : 'key.bar.read.win');
+  }
+  if (kind === 'nosafe') return tr(and ? 'key.note.nosafe.and' : 'key.note.nosafe.win');
+  return tr(and ? 'key.note.read.and' : 'key.note.read.win');
+}
+/** Подпись под «Вход не выполнен». «Записи хранятся только на этом
+ *  устройстве» при прочитанном отказе — неправда: они и на Диске. */
+function gdKeyShort(){
+  if (!gdKeyErr && gdLostRead()) return tr('gd.lostShort');   /* ++++++ AUTH WORDS ++++++ «только на этом устройстве» — неправда:
+     вход был, записи на Диске */
+  return tr((gdKeyErr === 'read' || gdKeyErr === 'nosafe') ? 'key.short' : 'acct.onlyHere');
+}
+/** Причина в карточке учётной записи — только при отказе ЧТЕНИЯ: при
+ *  отказе записи владелец вошёл, и карточка у него другая. */
+function gdKeyNoteHTML(){
+  if (gdKeyErr !== 'read' && gdKeyErr !== 'nosafe') return '';
+  return '<div class="note warn">' + esc(gdKeyText(gdKeyErr, 'note')) + '</div>';
+}
+/** Полоса. Один узел в #alerts, никогда render(). Кнопка входа — там,
+ *  где вход и есть выход; при отказе записи владелец уже вошёл. */
+function gdKeyPaint(){
+  if (!gdKeyErr){ removeBanner('key-access'); return; }
+  var h = esc(gdKeyText(gdKeyErr, 'bar'));
+  if (gdKeyErr !== 'write' && gdBridgeReady() && modeConfigured())
+    h += '<span class="rb"><button type="button" class="go" data-act="gd-signin">' +
+         esc(tr('gd.signIn')) + '</button></span>';
+  banner('key-access', 'warn', h);
+}
+/* ++++++ KEY ACCESS END ++++++ */
 function gdSaveRefresh(v){
   var br = gdBridge();
-  if (br && br.secretSet) br.secretSet(GD_SLOT, String(v));
+  if (!br || !br.secretSet) return;
+  var p = br.secretSet(GD_SLOT, String(v));
+  /* ++++++ KEY ACCESS ++++++ ответ записи ЧИТАЕТСЯ: отказ Windows или телефона
+     значит, что после перезапуска входа не будет, и сказать это надо
+     сейчас, а не молча выкинуть владельца из входа завтра. */
+  if (!p || !p.then) return;
+  p.then(function(r){ gdKeyErr = gdKeyErrOf(r, true); gdKeyPaint(); })
+   ['catch'](function(){ gdKeyErr = 'write'; gdKeyPaint(); });
 }
 function gdForgetTokens(){
   gdTokens = null;
+  gdKeyErr = ''; removeBanner('key-access');   /* ++++++ KEY ACCESS ++++++ ключа больше нет — и отказа тоже */
   var br = gdBridge();
   if (br && br.secretClear) br.secretClear(GD_SLOT);
 }
@@ -30010,6 +30228,88 @@ function gdRandom(n){
   return out;
 }
 
+/* ++++++ AUTH WORDS ++++++ ИМЯ БЕДЕ — ТАМ, ГДЕ ОНА СЛУЧИЛАСЬ, И ОНА ВИДНА.
+   Разные беды входа назывались одним именем `auth` и одними словами «войдите
+   заново» (жалоба владельца 24.09.2026), а когда владелец НЕ вошёл, причину
+   не печатал никто: строка обмена в карточке только у вошедшего (находка Г1
+   аудита). Теперь у каждой беды своё имя и свои слова:
+     auth         — вход истёк или отозван: рождается ТОЛЬКО обновлением
+                    ключа в gdAuthLive() и забывает ключ;
+     badsecret    — 401 от точки выдачи ключей: Google не принял ключ САМОЙ
+                    программы. Вход владельца тут ни при чём — ключ входа при
+                    обновлении НЕ забывается (находка Г2);
+     authrefused  — Google не выдал доступ при ВХОДЕ;
+     drivedenied  — вход есть, а Google Диск отказал в доступе;
+     daily        — дневной предел запросов Диска (прежде звался `auth`).
+   gdErrOf() не тронут: он не знает, КУДА шёл запрос, а знает gdReq(). */
+
+/** Имя беды по месту: адрес запроса, код и тело ответа. «Место кончилось»
+ *  и «слишком часто» gdErrOf() уже назвал своими именами. */
+function gdErrAt(url, status, err, text){
+  var u = String(url || ''), reason = '';
+  if (status === 401 && u.indexOf(GD_TOKEN) === 0) return 'badsecret';
+  if (err !== 'auth') return err;
+  if (status === 403){
+    try{
+      var j = JSON.parse(text || '');
+      if (j && j.error && j.error.errors && j.error.errors.length) reason = String(j.error.errors[0].reason || '');
+    }catch(e){ reason = ''; }
+    if (reason === 'dailyLimitExceeded') return 'daily';
+  }
+  if ((status === 401 || status === 403) &&
+      (u.indexOf(GD_API + '/') === 0 || u.indexOf(GD_UPLOAD) === 0)) return 'drivedenied';
+  return err;
+}
+/** На ВХОДЕ `auth` значит одно: Google не выдал доступ. Истёкшего ключа
+ *  здесь не бывает — ключа ещё нет. */
+function gdAtSignIn(err){ return err === 'auth' ? 'authrefused' : err; }
+
+/* ---- потерянный вход не забывается при перезапуске ----------------
+   Истёкший вход — самая частая беда (пока программа в Google на проверке,
+   раз в неделю), и после неё владелец НЕ вошёл: причину держит одна память,
+   и первый же перезапуск её стирает. Отметка лежит в записи УСТРОЙСТВА
+   (goods-tracker/sync-v1), не в документе: это факт об этом устройстве, в
+   копию и обмен ей нельзя. Снимается входом; выход её не переносит —
+   signOutKeep() берёт только привязку. */
+function gdLostRead(){
+  var o = syncRead();
+  if (!o || !o.lost || typeof o.lost !== 'object' || typeof o.lost.err !== 'string' || !o.lost.err) return null;
+  return { err: o.lost.err, at: String(o.lost.at || '') };
+}
+function gdLostMark(err){
+  var o = syncRead() || {};
+  o.lost = { err: String(err), at: nowISO() };
+  syncWrite(o);
+  gdLostPaint();
+}
+function gdLostClear(){
+  var o = syncRead();
+  if (o && o.lost){ delete o.lost; syncWrite(o); }
+  removeBanner('auth-lost');
+}
+/** Полоса на любом экране, пока вход потерян. Не про сеть — про
+ *  состояние: обмен стоит, пока владелец не войдёт, поэтому правило
+ *  «отказ при старте молчит» (оно о сетевых бедах) сюда не относится.
+ *  Один узел в #alerts, никогда render(). */
+function gdLostPaint(){
+  var rec = gdLostRead();
+  if (!rec || gdTokens){ removeBanner('auth-lost'); return; }
+  if (!syncStatus.err) syncStatus.err = rec.err;
+  var h = esc(tr('gd.lostBar', { at: bakStamp(rec.at) }));
+  if (gdBridgeReady() && modeConfigured())
+    h += '<span class="rb"><button type="button" class="go" data-act="gd-signin">' +
+         esc(tr('gd.signIn')) + '</button></span>';
+  banner('auth-lost', 'warn', h);
+}
+/** Причина в карточке «Вход не выполнен» — тем же построителем, что у
+ *  строки обмена вошедшего: второго способа сказать беду нет. */
+function gdErrNoteHTML(){
+  var e = syncStatus.err;
+  if (!modeIsProduct() || !e || e === 'off' || e === 'busy' || e === 'conflict') return '';
+  return syncErrHTML(e);
+}
+/* ++++++ AUTH WORDS END ++++++ */
+
 function gdSignIn(){
   if (!gdBridgeReady()){ syncStatus.err = 'nobridge'; render(); return; }
   if (!modeConfigured()){ syncStatus.err = 'noclient'; render(); return; }
@@ -30030,7 +30330,7 @@ function gdSignIn(){
         /* Каждая беда своим именем. Прежде здесь стояло одно 'auth' на
            все случаи, и «браузер не открылся» читалось как «Google
            больше не принимает вход» — совет вёл не туда. */
-        syncStatus.err = (r && r.err) ? r.err : 'auth';
+        syncStatus.err = gdAtSignIn((r && r.err) ? r.err : 'auth');
         render(); return;
       }
       /* Разбор ответа и сверка `state` — здесь, настоящие. Без сверки
@@ -30038,7 +30338,7 @@ function gdSignIn(){
          программе чужой код авторизации, и данные уехали бы в чужую
          учётную запись. */
       var back = gdParseBack(r.url, state1);
-      if (!back.ok){ syncStatus.err = back.err; render(); return; }
+      if (!back.ok){ syncStatus.err = gdAtSignIn(back.err); render(); return; }
 
       /* Обмен идёт на ТОТ ЖЕ адрес возврата, который был у окна входа.
          Оболочка выбирает свободный порт при каждом входе и сообщает
@@ -30050,15 +30350,15 @@ function gdSignIn(){
       /* ++++++ SECRET IN SHELL ++++++ */
       gdSecret(function(secret){
       gdExchange(GOOGLE_CLIENT_ID, secret, usedRedirect, back.code, verifier, function(eErr, tok){
-        if (eErr){ syncStatus.err = eErr; render(); return; }
+        if (eErr){ syncStatus.err = gdAtSignIn(eErr); render(); return; }
         gdWhoAmI(tok.access, function(wErr, who){
-          if (wErr){ syncStatus.err = wErr; render(); return; }
+          if (wErr){ syncStatus.err = gdAtSignIn(wErr); render(); return; }
           gdAfterSignIn(tok, who);
         });
       });
       });
     })['catch'](function(){
-      syncStatus.busy = false; syncStatus.err = 'auth'; render();
+      syncStatus.busy = false; syncStatus.err = gdAtSignIn('auth'); render();
     });
   });
 }
@@ -30088,6 +30388,7 @@ function gdAfterSignIn(tok, who){
     syncWrite(o);
   }
   gdTokens = tok;
+  gdLostClear();   /* ++++++ AUTH WORDS ++++++ вход есть — потерянного больше нет */
   gdSaveRefresh(tok.refresh);
   syncStatus.err = '';
   render();
@@ -30115,6 +30416,7 @@ function gdApplySwitch(plan, tok, who){
   if (plan.resetSync) o = bindResetSync(o);
   syncWrite(o);
   gdTokens = tok;
+  gdLostClear();   /* ++++++ AUTH WORDS ++++++ */
   gdSaveRefresh(tok.refresh);
   syncStatus.err = '';
   save();
@@ -30169,8 +30471,12 @@ function gdBoot(){
   var p = br.secretGet(GD_SLOT);
   if (!p || !p.then) return;
   p.then(function(r){
+    /* ++++++ KEY ACCESS ++++++ отказ хранилища — не «ключа нет»: запомнить вид
+       отказа и сказать его полосой и в карточке учётной записи. */
+    var ke = gdKeyErrOf(r, false);
+    if (ke){ gdKeyErr = ke; gdKeyPaint(); render(); return; }
     var refresh = (r && r.value) || '';
-    if (!refresh) return;
+    if (!refresh){ gdLostPaint(); render(); return; }   /* ++++++ AUTH WORDS ++++++ */
     gdTokens = { access: '', refresh: refresh, until: 0 };
     syncRun(false);
   })['catch'](function(){});
@@ -30780,6 +31086,8 @@ window.GoodsTracker = {
          split: expShares },
   /* ++++++ TRASH ++++++ набор проверок спрашивает корзину напрямую — теми
      же функциями, которыми её показывает экран. */
+  /* ++++++ KEY ACCESS ++++++ живая проверка зовёт ту же запись ключа, что и вход */
+  keyAccess: { err: function(){ return gdKeyErr; }, save: gdSaveRefresh },
   trash: { count: trashCount, groups: trashGroups, group: trashGroupOf,
            is: trashIs, find: trashFind, active: trashActive, only: trashOnly,
            cascade: trashCascade, mark: trashMark, restore: trashRestore,
