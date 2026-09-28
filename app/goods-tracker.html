@@ -3778,6 +3778,9 @@ var STR = {
 'pay.left':      { en:'Left to pay {sum}',                  ru:'Остаток {sum}' },
 'pay.willStore': { en:'{v} {cur} &rarr; {sum} {base} will be stored',
                    ru:'{v} {cur} &rarr; {sum} {base} будет записано' },
+/* ++++++ PAY EDIT KEEP ++++++ сумму правки не трогали — она не пересчитывается */
+'pay.keepStore': { en:'{v} {cur} &rarr; {sum} {base} — as recorded on the day of the entry, not recalculated at today’s rate',
+                   ru:'{v} {cur} &rarr; {sum} {base} — как записано в день записи, по сегодняшнему курсу не пересчитывается' },
 /* ++++++ PAY FILL ++++++ R30: переплата НАЗЫВАЕТСЯ. Приставка `pay.` — та
    же, что у остальных подписей формы платежа. */
 /* ++++++ PAY LIVE ++++++ переплата, набранная руками. Приставка `pay.` — та
@@ -6776,8 +6779,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.28.0';
-var APP_BUILD = '2026-09-27T18:03:47.345Z';
+var APP_VERSION = '1.28.1';
+var APP_BUILD = '2026-09-28T15:48:06.542Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -23141,6 +23144,61 @@ function payFillOverCents(){
  * (область 12).
  * ================================================================== */
 
+/* ========================================= ++++++ PAY EDIT KEEP ++++++ ==
+ * ПРАВКА ЗАПИСИ НЕ ПЕРЕСЧИТЫВАЕТ ТО, ЧЕГО НЕ ТРОГАЛИ (находка А4 аудита).
+ *
+ * ЧТО БЫЛО. Форма правки оплаты ставила в поле не набранное число, а
+ * хранимую сумму, пересчитанную по СЕГОДНЯШНЕМУ курсу, и сохранение
+ * безусловно переписывало сумму и «введено». Курс USD 3.6725 → 3.80 —
+ * «Изменить → Сохранить» без единой правки: 100.00 USD стали «96.64 USD»;
+ * «исправили» на 100 — записалось 380.00 AED вместо 367.25, и человеку
+ * зачтено больше, чем он дал. Домен-правило 6: смена курса не
+ * переписывает записанные суммы.
+ *
+ * ПРАВИЛО — ТО ЖЕ, ЧТО У ВЫДАЧ (txLineFromRec, handoutSave): форма
+ * открывается с ТЕМ, ЧТО НАБИРАЛИ, и если валюта и число не тронуты,
+ * хранимая сумма и «введено» остаются как были. У расхода защита была
+ * наполовину — пересчёт курсом снимка записи, — и после смены основной
+ * валюты она сдвигала сумму (находка А9); теперь та же проверка.
+ *
+ * ВОПРОС «СКОЛЬКО ЗАПИШЕТСЯ» — ОДИН на сохранение и обе подсказки под
+ * полем: payCentsOf() / expCentsOf(). Иначе подсказка обещала бы 380.00,
+ * а сохранилось бы 367.25 — так сегодня ошибается форма выдачи (Г8).
+ * ================================================================== */
+
+/** Не тронута ли сумма записи: та же валюта и то же число, что набирали
+ *  (провенанс), — или основная валюта и хранимое число: так форма
+ *  открывает запись без провенанса или с выключенной валютой ввода.
+ *  Общая для оплат и расходов: поля у них одни — amountCents и пара
+ *  entryCur/entryMinor. */
+function recEditKeeps(rec, cur, m){
+  if (!rec || m === null) return false;
+  var e = recEntry(rec);
+  if (e && cur === e.cur && m === e.minor) return true;
+  return cur === state.settings.baseCurrency && m === rec.amountCents;
+}
+/** ЕДИНСТВЕННЫЙ ответ «сколько базовых копеек запишет форма оплаты»:
+ *  не тронутая сумма правки — хранимая, иначе перевод по сегодняшнему
+ *  курсу. null — числа нет или курса нет. */
+function payCentsOf(f){
+  var m = parseMoneyToCents(f.amount);
+  if (m === null) return null;
+  if (f.editId){
+    var y = payById(f.editId);
+    if (recEditKeeps(y, f.cur, m)) return y.amountCents;
+  }
+  return toBaseCents(m, f.cur);
+}
+/** То же для формы расхода: не тронутая сумма правки — хранимая, иначе
+ *  перевод курсом самой записи (expToBase). */
+function expCentsOf(f){
+  var m = parseMoneyToCents(f.amount);
+  if (m === null) return null;
+  var x = f.editId ? expById(f.editId) : null;
+  if (x && recEditKeeps(x, f.cur, m)) return x.amountCents;
+  return expToBase(m, f.cur, x ? x.rateSnap : null);
+}
+
 /** Долг этого человека БЕЗ учёта редактируемой оплаты: её собственная
  *  сумма не должна считаться дважды. Считается из тех же двух чисел, что
  *  и `personStats()`, — своей арифметики здесь нет. */
@@ -23162,7 +23220,7 @@ function payDueCents(){
 function payGapCents(){
   var f = ui.form.pay;
   var m = parseMoneyToCents(f.amount);
-  var c = m === null ? 0 : toBaseCents(m, f.cur);
+  var c = m === null ? 0 : payCentsOf(f);           /* ++++++ PAY EDIT KEEP ++++++ та же сумма, что запишется */
   return payDueCents() - (c === null ? 0 : c);
 }
 /** Есть ли что добавлять кнопкой. */
@@ -23184,9 +23242,14 @@ function payHintText(){
   if (f.personId) out.push(payGapText());
   var m = parseMoneyToCents(f.amount);
   if (m !== null){
-    var cents = toBaseCents(m, f.cur);
+    var cents = payCentsOf(f);                         /* ++++++ PAY EDIT KEEP ++++++ */
+    /* не тронутая сумма в неосновной валюте — отдельная фраза: стрелка
+       «100.00 USD → 367.25 AED» по сегодняшнему курсу 3.80 читалась бы
+       как ошибка пересчёта */
+    var kept = !!f.editId && f.cur !== state.settings.baseCurrency &&
+               recEditKeeps(payById(f.editId), f.cur, m);
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
-    else out.push(tr('pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
+    else out.push(tr(kept ? 'pay.keepStore' : 'pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
   }
   /* ++++++ PAY FILL ++++++ переплата называется — и только там, где она
@@ -23493,7 +23556,7 @@ function expHintText(){
   var f = ui.form.exp, out = [], x = f.editId ? expById(f.editId) : null;
   var m = parseMoneyToCents(f.amount);
   if (m !== null && m > 0){
-    var cents = expToBase(m, f.cur, x ? x.rateSnap : null);
+    var cents = expCentsOf(f);                         /* ++++++ PAY EDIT KEEP ++++++ */
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
     else out.push(tr('pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
@@ -23640,7 +23703,7 @@ function expSplitBody(){
   }
   var x = f.editId ? expById(f.editId) : null;
   var snap = x ? x.rateSnap : null;
-  var cents = expToBase(m, f.cur, snap);
+  var cents = expCentsOf(f);                           /* ++++++ PAY EDIT KEEP ++++++ */
   /* курса нет — про это уже сказала подсказка под суммой, и повторять её
      второй формулировкой значило бы завести две (область 43) */
   if (cents === null) return '';
@@ -23783,10 +23846,14 @@ function saveExp(){
     if (!x){ ui.err = tr('err.expGone'); render(); return; }
     /* Правка считается курсом ЭТОЙ записи, и снимок при этом не двигается:
        он записан один раз, при создании (тот же контракт, что у выдачи). */
-    var cents = expToBase(m, f.cur, x.rateSnap);
+    var cents = expCentsOf(f);                         /* ++++++ PAY EDIT KEEP ++++++ */
     if (cents === null){ ui.err = noRateText(f.cur); render(); return; }
-    x.cat = f.cat; x.note = String(f.note).trim(); x.amountCents = cents;
-    x.date = f.date; x.entryCur = f.cur; x.entryMinor = m; x.items = picked;
+    /* ++++++ PAY EDIT KEEP ++++++ не тронутая сумма не переписывается — ни хранимое,
+       ни «введено»: даже курс записи после смены основной валюты
+       сдвигал её (находка А9). Проверка — ДО записи. */
+    if (!recEditKeeps(x, f.cur, m)){ x.amountCents = cents; x.entryCur = f.cur; x.entryMinor = m; }
+    x.cat = f.cat; x.note = String(f.note).trim();
+    x.date = f.date; x.items = picked;
     /* Привязка «ко всей партии» — прежний вид записи. Форма открывалась
        с её позициями и сохраняет их поимённо, поэтому старый ключ
        снимается: два источника одного и того же ответа разошлись бы при
@@ -27793,8 +27860,12 @@ function savePay(){
   if (f.editId){
     var y = payById(f.editId);
     if (!y){ ui.err = tr('err.payGone'); render(); return; }
-    y.personId = f.personId; y.amountCents = cents; y.date = f.date;
-    y.note = String(f.note).trim(); y.entryCur = f.cur; y.entryMinor = m;
+    /* ++++++ PAY EDIT KEEP ++++++ сумма не тронута — ни хранимое, ни «введено» не
+       переписываются: пересчёт по сегодняшнему курсу сдвинул бы уже
+       полученные деньги (домен-правило 6). Проверка — ДО записи. */
+    if (!recEditKeeps(y, f.cur, m)){ y.amountCents = cents; y.entryCur = f.cur; y.entryMinor = m; }
+    y.personId = f.personId; y.date = f.date;
+    y.note = String(f.note).trim();
     touch(y.id);
     resetPayForm(); ui.seg.pay = 'list';
     toast(tr('msg.payUpdated'), 'ok');
@@ -27977,10 +28048,17 @@ function startTxEdit(id){
 function startPayEdit(id){
   var y = payById(id);
   if (!y) return;
-  var cur = (y.entryCur && payAllows(y.entryCur) && rateOf(y.entryCur) !== null)
-    ? y.entryCur : payDefaultCur(y.personId);
-  var v = convertFor(y.amountCents, cur);
-  ui.form.pay = { personId:y.personId, amount: v === null ? '' : v.toFixed(2), cur:cur,
+  /* ++++++ PAY EDIT KEEP ++++++ форма открывается с ТЕМ, ЧТО НАБИРАЛИ, — как у
+     выдачи (txLineFromRec). Валюта ввода выключена или провенанса нет —
+     основная валюта и хранимое число: оба без пересчёта. Здесь стоял
+     convertFor() по сегодняшнему курсу. */
+  var e = recEntry(y), cur, amount;
+  if (e && payAllows(e.cur) && rateOf(e.cur) !== null){ cur = e.cur; amount = (e.minor / 100).toFixed(2); }
+  else { cur = state.settings.baseCurrency; amount = (y.amountCents / 100).toFixed(2); }
+  /* якорь набранной суммы принадлежит ПРЕЖНЕЙ форме: с ним смена валюты
+     пересчитала бы не то, что стоит в поле, а давно набранное (R14) */
+  delete moneyAnchor['pay.amount'];
+  ui.form.pay = { personId:y.personId, amount: amount, cur:cur,
     note: y.note || '', date:y.date, editId:y.id };
   ui.edit.pay = y.id; ui.payPrefillCur = cur;
   ui.tab = 'pay'; ui.seg.pay = 'new'; ui.detail = null; ui.err = '';
