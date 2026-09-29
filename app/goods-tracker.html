@@ -2437,8 +2437,14 @@ var STR = {
 'v.txBadPrice':  { en:'transaction #{n} has an invalid price',       ru:'у выдачи №{n} некорректная цена' },
 'v.payNoPerson': { en:'payment #{n} points to a missing person',     ru:'платёж №{n} ссылается на отсутствующего человека' },
 'v.payBadAmount':{ en:'payment #{n} has an invalid amount',          ru:'у платежа №{n} некорректная сумма' },
-'v.stock':       { en:'product "{name}" has more units handed out than its batch quantity',
-                   ru:'у товара «{name}» выдано больше единиц, чем поступило по партиям' },
+/* ++++++ STOCK OVER ++++++ ключ отказа склада ушёл вместе с отказом validate(); полоса перебора */
+'over.title':    { en:'More handed out than bought:',  ru:'Выдано больше, чем куплено:' },
+'over.item':     { en:'“{name}” by {n}',               ru:'«{name}» — на {n} шт' },
+'over.more':     { en:' and {n} more',                 ru:' и ещё {n}' },
+'over.why':      { en:'This happens when two devices hand out the same last units while they are out of touch. The extra units have no purchase cost recorded, so the profit on them is overstated. Check the handouts of this product or record a shipment.',
+                   ru:'Так бывает, когда два устройства без связи выдали одни и те же последние штуки. У лишних штук нет закупки, поэтому прибыль по ним завышена. Проверьте выдачи этого товара или оформите приход.' },
+'over.open':     { en:'Open the product',              ru:'Открыть товар' },
+'over.openAll':  { en:'Open products',                 ru:'Открыть товары' },
 'v.eProduct':    { en:'product',     ru:'товар' },
 'v.ePerson':     { en:'person',      ru:'человек' },
 'v.eTransaction':{ en:'transaction', ru:'выдача' },
@@ -2578,6 +2584,17 @@ var STR = {
                        ru:'Остаток — это «сколько пришло минус сколько выдали». Выдали 12 чайников — ' +
                           'на складе 18. Заплатил человек или нет, на остаток не влияет: товар уже ' +
                           'у него.' },
+/* ++++++ STOCK OVER ++++++ исключение из «больше, чем есть, не выдать»: два устройства без связи */
+'faq.a.goodsStock4': { en:'One exception is two devices out of touch. If a phone without network and a computer hand out ' +
+                          'the same last units, each was right, but after sync more is handed out than bought and the ' +
+                          'stock goes below zero. Sync does not stop: a bar at the top of every screen names the product ' +
+                          'and by how much. The extra units have no purchase cost, so the profit on them is overstated. ' +
+                          'Remove the extra handout or record a shipment, and the bar goes away by itself.',
+                       ru:'Одно исключение — два устройства без связи. Если телефон без сети и компьютер выдали ' +
+                          'одни и те же последние штуки, каждое было право, а после обмена выдано больше, чем куплено, ' +
+                          'и остаток уходит в минус. Обмен при этом не останавливается, а вверху любого экрана встаёт ' +
+                          'полоса: какой товар и на сколько. У лишних штук нет закупки, поэтому прибыль по ним завышена. ' +
+                          'Уберите лишнюю выдачу или оформите приход — и полоса уйдёт сама.' },
 'faq.a.goodsStock3': { en:'The app will not let you hand out more than there is. Try to give 20 out ' +
                           'of 18 and it refuses and says how many are left. Goods that come back go ' +
                           'onto the shelf again and can be handed out a second time.',
@@ -3393,6 +3410,12 @@ var STR = {
                    ru:'Записей разошлось: {n}. Резервная копия этого устройства снята ДО применения, поэтому обе версии сохранятся, что бы вы ни выбрали.' },
 'sy.cMine':      { en:'Keep mine',                           ru:'Оставить мою' },
 'sy.cTheirs':    { en:'Take the other one',                  ru:'Взять с другого устройства' },
+/* ++++++ STOCK OVER ++++++ «Взять с другого» и отказ применения — своими словами */
+'sy.cTheirsNo':  { en:'The version from the other device cannot be taken: {why}. Yours stays.',
+                   ru:'Версию с другого устройства взять нельзя: {why}. Осталась ваша.' },
+'sy.cTheirsGone':{ en:'the record did not pass the check', ru:'запись не прошла проверку' },
+'sync.eApply':   { en:'Sync stopped: the records from the other device do not fit with the ones here ({why}). Nothing was changed on this device; its new records are waiting to be sent.',
+                   ru:'Обмен остановлен: записи с другого устройства не сошлись с записями этого ({why}). На этом устройстве ничего не изменено, его новые записи ждут отправки.' },
 'sy.cShow':      { en:'Show both',                           ru:'Показать обе' },
 'w.pcs':         { en:'pcs',                                ru:'шт' },
 'w.andMore':     { en:'and {n} more',                       ru:'и ещё {n}' },
@@ -6779,8 +6802,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.28.1';
-var APP_BUILD = '2026-09-28T15:48:06.542Z';
+var APP_VERSION = '1.28.2';
+var APP_BUILD = '2026-09-29T06:03:45.631Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -12685,6 +12708,91 @@ function bakBarText(){
  *  узел, — так же как это делают dcPaint() и remPaint() для своих.
  *  Кнопка «Скачать копию» несёт то же data-act="export", что и строка во
  *  вкладке «Ещё → Данные»: путь экспорта в приложении один. */
+/* ========================================= ++++++ STOCK OVER ++++++ ==
+ * ВЫДАНО БОЛЬШЕ, ЧЕМ КУПЛЕНО — ПРЕДУПРЕЖДЕНИЕ, А НЕ ОСТАНОВКА (находка А5).
+ *
+ * Два устройства без связи выдали одни и те же последние штуки: каждое
+ * право, а вместе выдано больше, чем куплено. Прежде validate() отвергал
+ * такой документ целиком, и обмен вставал навсегда со словами «Google
+ * ответил ошибкой». Теперь остаток уходит в минус, а эта полоса говорит,
+ * какой товар и на сколько, почему так бывает и что это значит для
+ * прибыли: у лишних штук нет закупки, cogsAllocate() берёт их без
+ * себестоимости, и прибыль по ним завышена. Разбирается владелец.
+ *
+ * Полоса ПРОИЗВОДНАЯ: считается из productStats() на каждой отрисовке,
+ * ничего не хранит и исчезает сама, как только перебора нет. Один узел в
+ * #alerts, никогда render() — как bakBarPaint(). Кнопка — существующие
+ * действия (open-product, tab): новых действий нет.
+ * ================================================================== */
+
+/** Товары, у которых выдано больше, чем куплено: [{id, name, over}] — по
+ *  убыванию перебора, затем по имени и id (порядок устойчивый). */
+function overStock(ps){
+  var out = [];
+  actProducts().forEach(function(p){
+    var s = own(ps, p.id) ? ps[p.id] : null;
+    if (s && s.remaining < 0) out.push({ id: p.id, name: p.name, over: -s.remaining });
+  });
+  out.sort(function(a, b){
+    if (a.over !== b.over) return b.over - a.over;
+    if (a.name !== b.name) return a.name < b.name ? -1 : 1;
+    return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
+  });
+  return out;
+}
+var OVER_SHOWN = 3;
+/** Текст полосы: товары и на сколько, почему бывает, что значит, что делать. */
+function overBarHTML(list){
+  var names = list.slice(0, OVER_SHOWN).map(function(x){
+    return tr('over.item', { name: esc(x.name), n: units(x.over) });
+  }).join(', ');
+  if (list.length > OVER_SHOWN) names += tr('over.more', { n: list.length - OVER_SHOWN });
+  var btn = list.length === 1
+    ? '<button type="button" data-act="open-product" data-arg="' + esc(list[0].id) + '">' + esc(tr('over.open')) + '</button>'
+    : '<button type="button" data-act="tab" data-arg="products">' + esc(tr('over.openAll')) + '</button>';
+  return '<b>' + esc(tr('over.title')) + '</b> ' + names + '. ' + esc(tr('over.why')) +
+    '<div class="rb">' + btn + '</div>';
+}
+/** Один узел в #alerts: стоит, пока перебор есть; снимается, когда его нет. */
+function overBarPaint(){
+  var box = $('alerts');
+  if (!box) return;
+  var old = box.querySelector('[data-banner="stock-over"]');
+  var list = overStock(productStats());
+  if (!list.length){ if (old) old.remove(); return; }
+  var d = old || document.createElement('div');
+  d.className = 'alert warn';
+  d.setAttribute('data-banner', 'stock-over');
+  d.setAttribute('role', 'status');
+  /* обёртка — как у banner(): .alert — flex-ряд, и без неё заголовок, текст
+     и кнопка встали бы тремя колонками (увидено снимком на 320 px) */
+  d.innerHTML = '<div>' + overBarHTML(list) + '</div>';
+  if (!old) box.appendChild(d);
+}
+/** Отказ применения при обмене — своими словами, с причиной от validate(),
+ *  а не «Google ответил ошибкой»: ответил не Google, не сошлись записи. */
+function syncApplyHTML(){
+  return tr('sync.eApply', { why: esc(syncStatus.detail || '—') });
+}
+/** «Взять с другого»: чужая версия записи — ВХОДЯЩИЕ ДАННЫЕ, и в документ
+ *  она идёт только через validate(), как всё пришедшее. Годится — кладётся
+ *  ПРОВЕРЕННАЯ версия; нет — ничего не меняется, и возвращается причина. */
+function syncTheirsTake(c){
+  var col = c.collection, list = state[col] || [], at = -1, i;
+  for (i = 0; i < list.length; i++) if (list[i].id === c.id){ at = i; break; }
+  if (at < 0) return '';                         /* записи уже нет — как прежде */
+  var trial = JSON.parse(JSON.stringify(state));
+  trial[col][at] = JSON.parse(JSON.stringify(c.remote));
+  var res = validate(trial);
+  if (!res.ok) return res.error;
+  if (res.dropped && res.dropped.length) return res.dropped[0];
+  var got = null, L = res.data[col] || [];
+  for (i = 0; i < L.length; i++) if (L[i].id === c.id){ got = L[i]; break; }
+  if (!got) return tr('sy.cTheirsGone');
+  list[at] = got;
+  return '';
+}
+
 function bakBarPaint(){
   var box = $('alerts');
   if (!box) return;
@@ -13765,38 +13873,17 @@ function validate(obj){
     } catch(e){ dropRec(e); } });
   }catch(e){ return bad(e.message); }
 
-  /* stock sanity: a backup must not contain more taken than exists */
-  var taken = {};
-  /* ++++++ VALIDATE READS ++++++ B2. Здесь стоял голый индекс — на всю
-     функцию единственный. При productId «constructor» первое чтение
-     отзывалось функцией из прототипа, `функция || 0` давало функцию,
-     `функция + число` — строку, а `строка > число` — false: проверка,
-     обязанная остаться смертельной, молча пропускала документ с
-     невозможным складом (измерено: 99 выдано из 2 купленных, остаток −97).
-     own() — идиома R20, та же, что у ids, prodIds, personIds, attIds и
-     alive. */
-  /* ++++++ TRASH ++++++ считаются только АКТИВНЫЕ выдачи и возвраты, и это
-     не косметика. Отказ здесь — уровня ДОКУМЕНТА: «выдал 10, удалил выдачу
-     (в корзину), выдал те же 10 снова» дал бы 20 выданных при qty=10, и
-     документ перестал бы открываться вовсе — на всех устройствах разом. */
-  trashActive(out.transactions).forEach(function(t){
-    taken[t.productId] = (own(taken, t.productId) ? taken[t.productId] : 0) + t.qty;
-  });
-  /* ++++++ GOODS RETURN ++++++ выданное считается ЗА ВЫЧЕТОМ возвращённого:
-     после возврата те же единицы можно выдать снова, и Σ выдач может
-     честно превышать закупку. Документ без возвратов проверяется ровно
-     как раньше. */
-  var txProd = {};
-  out.transactions.forEach(function(t){ txProd[t.id] = t.productId; });
-  trashActive(out.returns).forEach(function(r){
-    if (!own(txProd, r.txId)) return;
-    var pid = txProd[r.txId];
-    taken[pid] = (own(taken, pid) ? taken[pid] : 0) - r.qty;
-  });
-  for (var i=0;i<out.products.length;i++){
-    var p = out.products[i];
-    if ((own(taken, p.id) ? taken[p.id] : 0) > p.qty) return bad(tr('v.stock', {name:p.name}));
-  }
+  /* ++++++ STOCK OVER ++++++ «ВЫДАНО БОЛЬШЕ, ЧЕМ КУПЛЕНО» — БОЛЬШЕ НЕ ОТКАЗ
+     ДОКУМЕНТА (решение владельца 28.09.2026, находка А5 аудита). Здесь
+     стояла смертельная проверка склада, и честный перебор — два
+     устройства без связи выдали одни и те же последние штуки — она
+     превращала в остановку обмена навсегда, а после «Взять с другого» — в
+     документ, который не открывается вовсе (программа пустая). Перебор
+     теперь — состояние, которое программа ПОКАЗЫВАЕТ (overBarPaint), а не
+     документ, который она отвергает. Новую выдачу сверх остатка
+     по-прежнему не пропускает форма (handoutSave, remainingFor).
+     Прежние доводы у этого места (B2 — «constructor»; TRASH — активные
+     записи) были о том, КАК считать отказ; отказа больше нет. */
   /* ++++++ ATTACHMENTS ++++++ the files that came with a backup.
      They are returned BESIDE the document, never inside it: `state` is
      JSON.stringify-ed into localStorage on every commit(), and base64 photos
@@ -16039,7 +16126,7 @@ var FAQ = [
   key: 'goods.stock', topic: 'goods', icon: false,
   q: function(){ return tr('faq.q.goodsStock'); },
   html: function(){ return infoP(tr('faq.a.goodsStock1')) + infoP(tr('faq.a.goodsStock2')) +
-                           infoP(tr('faq.a.goodsStock3')); },
+                           infoP(tr('faq.a.goodsStock3')) + infoP(tr('faq.a.goodsStock4')); },   /* ++++++ STOCK OVER ++++++ */
   see: ['tx.what', 'money.profit', 'lot']
 },
 
@@ -25605,6 +25692,8 @@ function syncBtnHTML(st, err){
 function syncErrHTML(err){
   if (err === 'basediff')                            /* ++++++ BASE SYNC ++++++ */
     return '<div class="syncerr"><div class="note warn">' + esc(tr('gd.eBasediff')) + '</div></div>';
+  if (err === 'apply')                               /* ++++++ STOCK OVER ++++++ */
+    return '<div class="syncerr"><div class="note warn">' + syncApplyHTML() + '</div></div>';
   var key = modeIsProduct() ? gdErrKey(err) : null;
   var text = key ? tr(key) : syncErrText(err);
   var h = '<div class="syncerr"><div class="note ' +
@@ -26358,6 +26447,7 @@ function render(){
      переставляется одним узлом. Никаких таймеров: «сколько дней прошло»
      считается здесь же, из отметки, на каждой отрисовке. */
   bakBarPaint();
+  overBarPaint();                          /* ++++++ STOCK OVER ++++++ */
   /* ++++++ WHAT'S NEW ++++++ по той же причине, что и две строки выше:
      сеть не должна задерживать экран. Уходит в неё, только когда открыта
      «О программе» и обновление найдено. */
@@ -26964,7 +27054,10 @@ function saveProduct(){
     var one = prepared[0], p = productById(f.editId);
     if (!p){ ui.err = tr('err.prodGone'); render(); return; }
     var taken = p.qty - productStats()[p.id].remaining;
-    if (one.qty < taken){ ui.err = tr('err.prodQtyLow', {n: taken}); render(); return; }
+    /* ++++++ STOCK OVER ++++++ при перебранном складе выдано больше, чем куплено, и
+       прежнее условие отказывало бы в любой правке товара — даже в имени.
+       Отказ — только когда количество УМЕНЬШАЮТ ниже выданного. */
+    if (one.qty < taken && one.qty < p.qty){ ui.err = tr('err.prodQtyLow', {n: taken}); render(); return; }
     var other = findProductByName(one.name, p.id);
     if (other){ ui.err = tr('err.prodDup', {name: one.name}); render(); return; }
     p.name = one.name;
@@ -27347,12 +27440,19 @@ function handoutSave(o){
     need[pid] += parsed[i].qty;
   }
   for (i = 0; i < order.length; i++){
-    var p = order[i], avail = remainingFor(p);
+    var p = order[i], avail = remainingFor(p), had = 0;
     for (j = 0; j < old.length; j++){
       if (old[j].productId !== p) continue;
       avail += own(kept, old[j].id) ? old[j].qty : old[j].qty - retQtyOf(old[j].id);
+      had += own(kept, old[j].id) ? old[j].qty : old[j].qty - retQtyOf(old[j].id);
     }
-    if (need[p] > avail){
+    /* ++++++ STOCK OVER ++++++ склад уже перебран (обмен свёл выдачи двух устройств):
+       остаток отрицательный, и прежнее условие отказывало бы в ЛЮБОЙ правке
+       выдачи этого товара — даже в дате или цене. Правка, которая берёт не
+       больше, чем эта выдача уже держала, перебора не ухудшает и проходит;
+       берущая больше — отказ, как прежде. При неотрицательном остатке
+       условие прежнее: had ≤ avail. */
+    if (need[p] > avail && need[p] > had){
       var pr = productById(p);
       return no(tr('err.txStock', {n: avail, name: pr ? pr.name : '', q: need[p]}));
     }
@@ -28722,6 +28822,74 @@ function wipeDelBarPaint(stats){
   banner('sync-del', 'warn', tr('wipe.peerBar', { n: nq(n, 'record') }));
 }
 
+/* ========================================== ++++++ SYNC GONE ++++++ ==
+ * «ПРИШЛО УДАЛЕНИЕ» — ТОЛЬКО ТО, ЧТО ПРИШЛО (находка Г14 аудита).
+ *
+ * Полоса «Пришло удаление: N. Удалено на другом устройстве.» читала
+ * stats.deleted слияния. Слияние кладёт туда ЛЮБУЮ запись, которую
+ * надгробие не пустило в общий документ, — и свою тоже: запись удалили
+ * навсегда здесь, её надгробие ещё едет, а на Диске она пока лежит. Для
+ * слияния это число верное, для полосы — нет: она называла удаление,
+ * сделанное на этом же устройстве, пришедшим с другого (воспроизведено
+ * живьём 28.09.2026, и «Удалить везде» на самом устройстве давало ту же
+ * ложную полосу на все записи).
+ *
+ * Теперь полоса читает не вывод слияния, а ДЕЙСТВИЕ: что было на этом
+ * устройстве в миг применения и чего в слитом документе не стало.
+ * Движок слияния не тронут, обе копии core/merge.js побайтово прежние.
+ * Счёт идёт за весь обмен, по всем заходам: при гонке первый заход уже
+ * унёс запись, и повтор её не видит — прежнее число молчало.
+ * ================================================================== */
+
+/** Записи, которые применение слитого документа унесло с ЭТОГО устройства:
+ *  были в `before`, нет в `after`, и надгробие на них поставлено не здесь.
+ *  `after` — СЛИТЫЙ документ, а не принятый validate(): запись, которую
+ *  отбросила проверка, называет своя полоса (syncNotePaint), и удалением с
+ *  другого устройства она не является. Складывает в `acc` в том же виде,
+ *  что stats слияния — { коллекция: { deleted: n } }: его и читает
+ *  wipeDeletedCount(). */
+function syncGoneAdd(acc, before, after){
+  var tombs = (before && before.syncTombs) || {}, c, col, i, r, n, list, have;
+  for (c = 0; c < WIPE_COLS.length; c++){
+    col = WIPE_COLS[c];
+    have = {};
+    list = (after && after[col]) || [];
+    for (i = 0; i < list.length; i++){
+      r = list[i];
+      if (r && typeof r.id === 'string') have[r.id] = 1;
+    }
+    n = 0;
+    list = (before && before[col]) || [];
+    for (i = 0; i < list.length; i++){
+      r = list[i];
+      if (!r || typeof r.id !== 'string') continue;
+      if (own(have, r.id) || own(tombs, r.id)) continue;
+      n++;
+    }
+    if (n){
+      if (!own(acc, col)) acc[col] = { deleted: 0 };
+      acc[col].deleted += n;
+    }
+  }
+  return acc;
+}
+/** Окружение обмена, которое считает унесённое. Сам apply() не меняется ни
+ *  строкой: до него запоминается документ (apply() ставит на место state
+ *  НОВЫЙ объект, прежний остаётся как был), после удачного — сравнение.
+ *  Слияние и применение идут в одном такте (syncCycle), поэтому документ
+ *  в миг применения — ровно тот, что слился. */
+function syncGoneEnv(env, acc){
+  var apply = env.apply;
+  env.apply = function(doc, done){
+    var before = state;
+    apply(doc, function(err){
+      if (!err) syncGoneAdd(acc, before, doc);
+      done(err);
+    });
+  };
+  return env;
+}
+
 /* ================================================== ОБРАБОТКА КЛИКОВ == */
 function closeAc(){
   ui.ac = null;
@@ -29813,8 +29981,12 @@ function syncConflictSheet(){
   }).then(function(k){
     if (!k) return;
     if (k === 'theirs' && c.remote){
-      var col = c.collection, list = state[col] || [], i;
-      for (i = 0; i < list.length; i++) if (list[i].id === c.id){ list[i] = c.remote; break; }
+      /* ++++++ STOCK OVER ++++++ чужая версия шла в state как есть, и документ,
+         которого validate() не принимает, уходил на диск: при следующем
+         запуске программа открывалась ПУСТОЙ (находка А5). Не годится —
+         остаётся своя версия, спор остаётся в списке, и сказано почему. */
+      var why = syncTheirsTake(c);
+      if (why){ banner('sync-theirs', 'err', tr('sy.cTheirsNo', { why: esc(why) })); return; }
       touch(c.id);
     }
     /* ++++++ ERASE SPLIT ++++++ принять удаление — это существующий
@@ -29977,18 +30149,26 @@ function syncRun(loud){
      оборота (syncStatus.err). */
   syncBtnState = 'busy';
   if (loud) render(); else syncBtnPaint();
-  syncCycle(syncEnv(), function(r){
+  /* ++++++ SYNC GONE ++++++ что обмен унёс с ЭТОГО устройства — за весь обмен,
+     по всем заходам. Полоса «пришло удаление» читает это, а не число
+     слияния (находка Г14). */
+  var gone = {};
+  syncCycle(syncGoneEnv(syncEnv(), gone), function(r){
     syncStatus.busy = false;
     if (r && r.ok){
       syncStatus.err = '';
       syncStatus.conflicts = r.conflicts || [];
       syncStatus.base = null; baseSyncBarPaint();       /* ++++++ BASE SYNC ++++++ */
+      removeBanner('sync-apply');                       /* ++++++ STOCK OVER ++++++ */
       syncBarPaint();
       /* ++++++ ERASE SPLIT ++++++ ПРИШЛО УДАЛЕНИЕ — И ОБ ЭТОМ ГОВОРЯТ.
          Числа возвращает то же слияние, и до этой задачи их никто не
          читал: четыре сотни записей исчезали молча, и владелец видел
          пустую программу без единого слова о том, почему. */
-      wipeDelBarPaint(r.stats);
+      /* ++++++ SYNC GONE ++++++ не r.stats: слияние считает там и СВОЁ удаление,
+         которое ещё едет, и полоса называла его пришедшим с другого
+         устройства (находка Г14, воспроизведено живьём 28.09.2026). */
+      wipeDelBarPaint(gone);
       /* И ответ на необратимое нажатие: доехало или ждёт сети. */
       if (carriesWipe && wipeSent){ wipeSent = false; banner('wipe-done', 'ok', esc(tr('wipe.doneAll'))); }
       /* ++++++ GDRIVE ++++++ дорога у режимов разная, и сообщение об
@@ -30010,9 +30190,17 @@ function syncRun(loud){
     } else {
       syncStatus.err = (r && r.err) || 'server';
       syncStatus.base = (r && r.base) || null; baseSyncBarPaint();   /* ++++++ BASE SYNC ++++++ */
+      /* ++++++ STOCK OVER ++++++ причина отказа применения — рядом с ним, и сам
+         отказ виден полосой на любом экране, а не только на «Аккаунте» */
+      syncStatus.detail = (r && r.detail) || '';
+      if (syncStatus.err === 'apply') banner('sync-apply', 'err', syncApplyHTML());
       /* ++++++ ERASE SPLIT ++++++ оборот не удался — удаление осталось
          здесь и ждёт сети. Молчать нельзя: нажатие было необратимым. */
       if (carriesWipe && wipeSent){ wipeSent = false; banner('wipe-done', 'warn', esc(tr('wipe.donePending'))); }
+      /* ++++++ SYNC GONE ++++++ чужие записи применены, а отправка не прошла: унесённое
+         уже ушло с этого устройства, и следующий обмен его не увидит —
+         промолчать сейчас значит не сказать никогда. */
+      if (wipeDeletedCount(gone)) wipeDelBarPaint(gone);
       if (r && r.conflicts && r.conflicts.length){
         syncStatus.conflicts = r.conflicts;
         syncBarPaint();
