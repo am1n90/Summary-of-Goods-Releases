@@ -2402,6 +2402,23 @@ var STR = {
                          'import a backup to restore.',
                      ru:'Сохранённые в браузере данные выглядят повреждёнными ({err}). Они не загружены и оставлены без изменений — ' +
                          'восстановите их импортом копии.' },
+/* ++++++ LOAD FAIL SYNC ++++++ документ новее программы; обмен включён — вернёт сам; вернул */
+'load.newer':      { en:'The data on this device was written by a newer version of the app (format {n}; this version reads up to {m}), so the app is empty for now. ' +
+                         'Nothing is lost: the data is intact and untouched. Update the app in «Account → About the app», and everything will be read again.',
+                     ru:'Документ на этом устройстве записан более новой версией программы (формат {n}, эта версия читает до {m}), поэтому сейчас программа пуста. ' +
+                         'Ничего не потеряно: документ цел и не тронут. Обновите программу в «Аккаунт → О программе» — и всё прочитается.' },
+'load.badJsonSync':{ en:'Saved data in this browser could not be read (invalid JSON) and was left untouched. ' +
+                         'Sync is on: there is nothing to do — the records will come back here on the next sync.',
+                     ru:'Сохранённые в браузере данные не удалось прочитать (некорректный JSON), они оставлены без изменений. ' +
+                         'Обмен включён: делать ничего не нужно — записи вернутся сюда при ближайшем обмене.' },
+'load.corruptSync':{ en:'Saved data in this browser looks corrupted ({err}). It was not loaded and was left untouched. ' +
+                         'Sync is on: there is nothing to do — the records will come back here on the next sync.',
+                     ru:'Сохранённые в браузере данные выглядят повреждёнными ({err}). Они не загружены и оставлены без изменений. ' +
+                         'Обмен включён: делать ничего не нужно — записи вернутся сюда при ближайшем обмене.' },
+'load.back':       { en:'The data on this device could not be read, so the records were brought back by sync. ' +
+                         'The unreadable data is kept — you can download it in «Account → Backup».',
+                     ru:'Документ этого устройства не прочитался, и записи возвращены обменом. ' +
+                         'Непрочитанный документ сохранён — скачать его можно в «Аккаунт → Резервная копия».' },
 'boot.noStorage':  { en:'<b>Automatic saving is not available in this browser window.</b> Local storage is blocked ' +
                          '(private window, blocked site data, or a browser restriction for files opened from disk). ' +
                          'Your work will be lost when this page is closed — use <b>Currency &amp; Backup &rarr; Export backup</b> ' +
@@ -3022,6 +3039,14 @@ var STR = {
                        ru:'На компьютере программа обновляет себя сама — кнопкой «Обновить» в ' +
                           '«Аккаунт → О программе». Предыдущая версия при этом сохраняется, и ' +
                           'одной кнопкой можно вернуться к ней, если что-то покажется не так.' },
+/* ++++++ LOAD FAIL SYNC ++++++ «вернуться к прежней» — правда, но не вся: прежняя версия
+   документ нового формата не читает (замер отката, measure-rollback.mjs) */
+'faq.a.update2b':    { en:'One caveat: if the new version changed the data format, the previous one cannot read it. ' +
+                          'After going back the app is empty and says what to do — update again; the data ' +
+                          'is intact and untouched.',
+                       ru:'Одна оговорка: если новая версия сменила формат данных, прежняя их прочитать не ' +
+                          'может. Тогда после возврата программа будет пуста и сама скажет, что делать, — ' +
+                          'обновиться снова; данные при этом целы и не тронуты.' },
 'faq.a.update3':     { en:'On a phone it works differently: there the update is a new app file, and ' +
                           'it has to be installed over the old one. Your records are never touched ' +
                           'by an update, on either device — the update replaces the program, not ' +
@@ -3416,6 +3441,13 @@ var STR = {
 'sy.cTheirsGone':{ en:'the record did not pass the check', ru:'запись не прошла проверку' },
 'sync.eApply':   { en:'Sync stopped: the records from the other device do not fit with the ones here ({why}). Nothing was changed on this device; its new records are waiting to be sent.',
                    ru:'Обмен остановлен: записи с другого устройства не сошлись с записями этого ({why}). На этом устройстве ничего не изменено, его новые записи ждут отправки.' },
+/* ++++++ LOAD FAIL SYNC ++++++ отказ обмена — своими словами для каждого случая */
+'sync.eSelfNewer': { en:'Sync stopped: the data on this device was written by a newer version of the app, which this version cannot read. That way nothing gets damaged. Update the app in «Account → About the app».',
+                     ru:'Обмен остановлен: документ на этом устройстве записан более новой версией программы, и эта версия не может его прочитать. Так ничего не испортится. Обновите программу в «Аккаунт → О программе».' },
+'sync.eApplyBroken':{ en:'Sync stopped: the records from the other device could not be accepted ({why}). The data on this device could not be read, so there are no records here right now; nothing was deleted on the other device.',
+                     ru:'Обмен остановлен: записи с другого устройства не удалось принять ({why}). Документ этого устройства не прочитан, поэтому записей здесь сейчас нет; на другом устройстве ничего не удалено.' },
+'sync.eApplyNone': { en:'Sync stopped: the records from the other device do not fit with the ones here ({why}). Nothing was changed on this device.',
+                     ru:'Обмен остановлен: записи с другого устройства не сошлись с записями этого ({why}). На этом устройстве ничего не изменено.' },
 'sy.cShow':      { en:'Show both',                           ru:'Показать обе' },
 'w.pcs':         { en:'pcs',                                ru:'шт' },
 'w.andMore':     { en:'and {n} more',                       ru:'и ещё {n}' },
@@ -4256,8 +4288,10 @@ var STR = {
 /* ++++++ RESCUE ++++++ R6: что стало с нечитаемым документом.
    Приставка `resc.` — своя: `load.*` говорит, ЧТО случилось с документом,
    а эти строки — что приложение с ним СДЕЛАЛО и что можно сделать дальше. */
-'resc.kept':     { en:'It has been kept aside and is not lost — download it, to be safe.',
-                   ru:'Он отложен в запас и не потерян — скачайте его на всякий случай.' },
+/* ++++++ LOAD FAIL SYNC ++++++ «Он» стоял после фразы о ДАННЫХ («они») и отсылал
+   в никуда; после фразы об обмене читался бы как «обмен». */
+'resc.kept':     { en:'The data has been kept aside and is not lost — download it, to be safe.',
+                   ru:'Документ отложен в запас и не потерян — скачайте его на всякий случай.' },
 /* Запас занят: там лежит ДРУГОЙ нечитаемый документ, и перезаписывать его
    нельзя — владелец с ним ещё не разобрался. */
 'resc.occupied': { en:'Another unreadable document is already kept aside, and it was not overwritten.',
@@ -6802,8 +6836,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.28.2';
-var APP_BUILD = '2026-09-29T06:03:45.631Z';
+var APP_VERSION = '1.28.3';
+var APP_BUILD = '2026-09-29T13:10:43.644Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -9816,6 +9850,7 @@ function gdErrKey(err){
     rate:     'gd.eRate',
     big:      'gd.eBig',
     newer:    'gd.eNewer',
+    selfnewer:'sync.eSelfNewer',                          /* ++++++ LOAD FAIL SYNC ++++++ */
     badremote:'gd.eBadRemote',
     conflict: 'gd.eBusy',
     busy:     'gd.eBusy'
@@ -11989,6 +12024,97 @@ function save(){
     return false;
   }
 }
+/* ================================ ++++++ LOAD FAIL SYNC ++++++ ==
+ * ДОКУМЕНТ НЕ ПРОЧИТАЛСЯ — ЗАПИСИ ВОЗВРАЩАЕТ ОБМЕН (находка А12 аудита).
+ *
+ * При отказе чтения state остаётся умолчанием — с ПУСТОЙ основной валютой, —
+ * а метка настроек в записи обмена прежняя, после обычного обмена РАВНАЯ
+ * метке Диска. mergeSettings() при равенстве отдаёт победу своим — пустым,
+ * слитый документ validate() отвергал, и устройство не получало записей ни
+ * первым обменом, ни следующими (подтверждено 29.09.2026 на копии документа
+ * владельца и живьём).
+ *
+ * ДВА СЛУЧАЯ, И РАЗЛИЧАТЬ ИХ НЕСУЩЕЕ (замер отката, measure-rollback.mjs):
+ *   · документ ПОВРЕЖДЁН — устройство о своих настройках не знает ничего.
+ *     В запись обмена ставится пометка `settingsUnknown`, и пока она
+ *     стоит, обмен получает пустую метку — «не знаю», — и берёт с Диска и
+ *     записи, и настройки (правило SETTINGS STAMP, без правки движка).
+ *     ПОМЕТКА, А НЕ СТЁРТАЯ МЕТКА, и это измерено: окно выбора валюты
+ *     сохраняет дважды, второе сохранение двигает метку, и стёртая метка
+ *     снова означала бы «мои настройки новее» — урезанные уехали бы на
+ *     все устройства. Пометку не двигает никакое сохранение; снимают её
+ *     только пришедшие записи и импорт. И она в ЗАПИСИ ОБМЕНА, а не в
+ *     памяти сеанса: переживает перезапуск до первого обмена;
+ *   · документ НОВЕЕ программы (откат после смены формата) — он ЦЕЛ, эта
+ *     версия его просто не читает. С Диска не берётся ничего: взятое
+ *     переписало бы Диск старым форматом и отрезало поля нового, а запись,
+ *     сделанная после обновления и не уехавшая, осталась бы только в
+ *     запасе (измерено). Обмен стоит, на экране — «обновите программу».
+ * ================================================================== */
+var loadBroken = false;   /* документ этого устройства повреждён: записи вернёт обмен */
+var loadNewer  = 0;       /* документ новее программы — номер его формата, иначе 0 */
+
+/** Язык из текста, который не разобрался как JSON. Документ пишется
+ *  JSON.stringify() без пробелов, и настройки стоят в его начале, поэтому
+ *  оборванный документ язык, как правило, ещё несёт. Кавычка внутри
+ *  строкового значения экранирована — `"lang":"…"` встречается только как
+ *  ключ. Нет — пусто, и язык решает прежнее умолчание. */
+function loadLangOf(raw){
+  var m = /"lang"\s*:\s*"([a-z]{2})"/.exec(String(raw || ''));
+  return (m && isLang(m[1])) ? m[1] : '';
+}
+/** Язык и полосы, и всего интерфейса: boot() после чтения берёт язык из
+ *  state.settings.lang, а при отказе там умолчание — поэтому полоса
+ *  выходила английской и тогда, когда язык из документа был прочитан. */
+function loadLangSet(l){
+  if (!isLang(l)) return;
+  setLang(l);
+  state.settings.lang = l;
+}
+/** Пометка «настройки этого устройства неизвестны» в записи обмена:
+ *  ставится при отказе чтения, снимается пришедшими записями и импортом.
+ *  Обмен не настроен — помечать нечего. */
+function loadSettingsUnknown(on){
+  var o = syncRead();
+  if (!o || !!o.settingsUnknown === !!on) return;
+  if (on) o.settingsUnknown = true; else delete o.settingsUnknown;
+  syncWrite(o);
+}
+/** Номер формата документа, если он НОВЕЕ программы, иначе 0. */
+function loadNewerOf(parsed){
+  var v = parsed && parsed.schemaVersion;
+  return (isInt(v) && v > SCHEMA_VERSION) ? v : 0;
+}
+/** Есть ли в документе хоть одна запись (корзина — наравне). */
+function docHasRecords(doc){
+  var i;
+  for (i = 0; i < SYNC_COLS.length; i++)
+    if (doc && doc[SYNC_COLS[i]] && doc[SYNC_COLS[i]].length) return true;
+  return false;
+}
+/** Формат документа на Диске — по тексту конверта, 0 — неизвестно.
+ *  envelopeText() пишет ключи по алфавиту, и `appSchema` в нём ПЕРВЫЙ:
+ *  хватает начала текста, второй разбор мегабайта не нужен. Набор держит
+ *  это свойство — сменись порядок, проверка молча ослепла бы. */
+function syncDiskSchema(text){
+  var m = /^\s*\{\s*"appSchema"\s*:\s*(\d+)\s*[,}]/.exec(String(text || '').slice(0, 200));
+  return m ? +m[1] : 0;
+}
+/** Записан ли документ на диск. Пометку «неизвестны» и красную полосу
+ *  снимает только СОХРАНЁННОЕ: запас занят другим нечитаемым документом
+ *  (R6) — запись остановлена, записи есть лишь на экране, и после
+ *  перезапуска устройство снова пусто. Снятая тогда пометка вернула бы
+ *  А12, а снятая полоса спрятала бы «запись остановлена» (найдено живой
+ *  проверкой 29.09.2026: второй обрыв при занятом запасе). */
+function loadSavedOk(){ return storageUsable && lastSaveOk && !rescBlocked(); }
+/** Есть ли у этого устройства что отправить: без прошлого удачного
+ *  обмена не отправлено всё, что есть. */
+function loadPendingAny(){
+  var o = syncRead();
+  if (!o || !o.base) return docHasRecords(state);
+  return syncPending() > 0;
+}
+/* ++++++ LOAD FAIL SYNC END ++++++ */
 function loadFromStorage(){
   if (!storageUsable) return false;
   var raw;
@@ -12001,7 +12127,17 @@ function loadFromStorage(){
        рассказывает, ЧТО с ним стало, и рассказать она может только
        после того, как это решилось. */
     rescKeep(raw);
-    banner('load-fail','err', tr('load.badJson') + rescBarHTML());
+    /* ++++++ LOAD FAIL SYNC ++++++ повреждён: язык берётся из самого текста (он
+       не разобрался, но язык в его начале обычно цел), а настройки
+       помечаются неизвестными — записи и настройки вернёт обмен. Обмен
+       включён — полоса не советует «начать заново»: делать нечего. Но
+       не тогда, когда запас занят (R6): запись остановлена, решать
+       надо, и «делать ничего не нужно» было бы неправдой — прежний
+       текст (найдено снимком живой проверки 29.09.2026). */
+    loadLangSet(loadLangOf(raw));
+    loadBroken = true;
+    loadSettingsUnknown(true);
+    banner('load-fail','err', tr(wipeSyncOn() && !rescBlocked() ? 'load.badJsonSync' : 'load.badJson') + rescBarHTML());
     return false;
   }
   /* read the language first, so a rejection banner speaks the user's own */
@@ -12010,7 +12146,18 @@ function loadFromStorage(){
   if (!res.ok){
     /* ++++++ RESCUE ++++++ отвергнутый документ — тоже документ */
     rescKeep(raw);
-    banner('load-fail','err', tr('load.corrupt', {err: esc(res.error)}) + rescBarHTML());
+    /* ++++++ LOAD FAIL SYNC ++++++ язык — и полосы, и интерфейса. Документ НОВЕЕ
+       программы цел: с Диска не берётся ничего, и полоса говорит, что
+       делать. Повреждённый — как ветка выше. */
+    if (parsed && parsed.settings) loadLangSet(parsed.settings.lang);
+    loadNewer = loadNewerOf(parsed);
+    if (loadNewer){
+      banner('load-fail','err', tr('load.newer', {n: loadNewer, m: SCHEMA_VERSION}) + rescBarHTML());
+      return false;
+    }
+    loadBroken = true;
+    loadSettingsUnknown(true);
+    banner('load-fail','err', tr(wipeSyncOn() && !rescBlocked() ? 'load.corruptSync' : 'load.corrupt', {err: esc(res.error)}) + rescBarHTML());
     return false;
   }
   state = res.data;
@@ -12772,7 +12919,13 @@ function overBarPaint(){
 /** Отказ применения при обмене — своими словами, с причиной от validate(),
  *  а не «Google ответил ошибкой»: ответил не Google, не сошлись записи. */
 function syncApplyHTML(){
-  return tr('sync.eApply', { why: esc(syncStatus.detail || '—') });
+  /* ++++++ LOAD FAIL SYNC ++++++ «его новые записи ждут отправки» — правда, только
+     когда им есть что отправить; у непрочитанного документа записей
+     нет вовсе, и об этом сказано прямо. */
+  var why = { why: esc(syncStatus.detail || '—') };
+  if (loadBroken) return tr('sync.eApplyBroken', why);
+  if (!loadPendingAny()) return tr('sync.eApplyNone', why);
+  return tr('sync.eApply', why);
 }
 /** «Взять с другого»: чужая версия записи — ВХОДЯЩИЕ ДАННЫЕ, и в документ
  *  она идёт только через validate(), как всё пришедшее. Годится — кладётся
@@ -16448,6 +16601,7 @@ var FAQ = [
   key: 'app.update', topic: 'app', icon: false,
   q: function(){ return tr('faq.q.update'); },
   html: function(){ return infoP(tr('faq.a.update1')) + infoP(tr('faq.a.update2')) +
+                           infoP(tr('faq.a.update2b')) +          /* ++++++ LOAD FAIL SYNC ++++++ */
                            infoP(tr('faq.a.update3')); },
   see: ['backup.why', 'look']
 }
@@ -17825,6 +17979,12 @@ function finishImport(d, atts, res, revive){
     stagedFreeAll();
     resetForms();
     removeBanner('import');
+    /* ++++++ LOAD FAIL SYNC ++++++ документ заменён явно — непрочитанного
+       больше нет, и полоса о нём не стоит до перезапуска; настройки
+       взяты из копии — они снова известны, как при всяком импорте. */
+    removeBanner('load-fail');
+    loadBroken = false; loadNewer = 0;
+    loadSettingsUnknown(false);
     /* ++++++ BACKUP REMINDER ++++++ документ пришёл из файла, и был ли
        ИМЕННО ЭТОТ файл его копией — неизвестно: validate() мог поднять
        схему, поправить даты и пересобрать партии, а сам файл мог быть
@@ -29895,6 +30055,7 @@ function syncErrText(key){
   if (modeIsProduct()) return tr(gdErrKey(key));
   var M = { net:'sy.eNet', auth:'sy.eAuth', notfound:'sy.eNotFound',
             'public':'sy.ePublic', newer:'sy.eNewer', busy:'sy.eBusy',
+            selfnewer:'sync.eSelfNewer',                   /* ++++++ LOAD FAIL SYNC ++++++ */
             nofetch:'sy.eNoBridge', off:'sy.eNoBridge', fill:'sy.eFill' };
   return tr(M[key] || 'sy.eServer');
 }
@@ -30071,13 +30232,21 @@ function syncEnv(){
     tombs: function(){ return state.syncTombs || {}; },
     meta: function(){
       var o = syncRead() || {};
-      return { updatedBy: o.dev || '', settingsAt: o.settingsAt || '', map: state.syncMeta || {} };
+      /* ++++++ LOAD FAIL SYNC ++++++ пока настройки этого устройства неизвестны
+         (документ не прочитался, записи ещё не пришли), обмен слышит
+         пустую метку — «не знаю» — и берёт настройки с Диска. */
+      return { updatedBy: o.dev || '', settingsAt: o.settingsUnknown ? '' : (o.settingsAt || ''),
+               map: state.syncMeta || {} };
     },
     /* Резервная копия ПЕРЕД применением. На диск она не пишется: файл
        спросил бы владельца, куда его класть, посреди обмена. Копия
        ложится в своё место хранилища и переживает применение. */
     backup: function(text, done){
-      try{ window.localStorage.setItem('goods-tracker/pre-sync-v1', text); }catch(e){}
+      /* ++++++ LOAD FAIL SYNC ++++++ документ без единой записи копию «перед
+         обменом» не затирает: сохранять в нём нечего, а прежняя копия
+         могла быть последней с записями (после отказа чтения
+         затиралась ровно она). Вызов и его порядок прежние. */
+      if (docHasRecords(state)){ try{ window.localStorage.setItem('goods-tracker/pre-sync-v1', text); }catch(e){} }
       done();
     },
     apply: function(doc, done){
@@ -30103,12 +30272,35 @@ function syncEnv(){
          Молчал ровно этот вход: загрузка о потерях говорит, импорт
          говорит, обмен — нет; а на втором устройстве он единственный. */
       syncNotePaint(res);
+      /* ++++++ LOAD FAIL SYNC ++++++ документ этого устройства не прочитался, а
+         записи пришли обменом — красная полоса больше не правда, и
+         молча менять пустоту на записи нельзя. После render() — по
+         той же причине, что syncNotePaint() выше. Записи пришли и
+         ЗАПИСАНЫ — настройки снова известны: пометка снимается. Запас
+         занят (R6) — запись остановлена, и полоса об этом остаётся. */
+      if (docHasRecords(state) && loadSavedOk()) loadSettingsUnknown(false);
+      if (loadBroken && docHasRecords(state) && loadSavedOk()){
+        loadBroken = false;
+        removeBanner('load-fail');
+        banner('load-back', 'ok', esc(tr('load.back')));
+      }
       done(null);
     },
     /* ++++++ TRANSPORT ++++++ куда возить — решает РЕЖИМ СБОРКИ, и
        решает один раз. Смешивать две дороги в одном сеансе нельзя: это
        две копии документа, расходящиеся молча. */
-    tGet: function(cb){ syncTport.get(cb); },
+    /* ++++++ LOAD FAIL SYNC ++++++ документ этого устройства НОВЕЕ программы — в
+       сеть не идём вовсе: взятое с Диска отрезало бы поля нового
+       формата. Диск записан форматом новее программы — то же самое:
+       слитый документ получил бы номер ЭТОЙ версии (mergeDocs) и
+       уехал бы на Диск без полей, которых она не знает. Стоп и чтение
+       — одной строкой: чтение идёт через уже созданный транспорт, и
+       это видно сразу за tGet (правило TRANSPORT, test-gdrive). */
+    tGet: function(cb){ if (loadNewer){ cb('selfnewer'); return; } syncTport.get(function(err, res){
+        if (!err && res && !res.empty && syncDiskSchema(res.text) > SCHEMA_VERSION){ cb('newer'); return; }
+        cb(err, res);
+      });
+    },
     tPut: function(text, version, counts, cb){
       syncTport.put(text, version, counts, cb);
     },
