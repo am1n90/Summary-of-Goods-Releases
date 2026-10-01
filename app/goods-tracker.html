@@ -6836,8 +6836,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.28.3';
-var APP_BUILD = '2026-09-29T13:10:43.644Z';
+var APP_VERSION = '1.28.4';
+var APP_BUILD = '2026-10-01T13:31:20.394Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -30265,7 +30265,7 @@ function syncEnv(){
       state.syncTombs = mergeTombs(keepT, state.syncTombs || {});
       syncApplied = { tombs: syncMapCopy(state.syncTombs), meta: syncMapCopy(state.syncMeta) };
       save();
-      render();
+      syncPaint();   /* ++++++ RESUME SYNC ++++++ не под полем, в котором печатают (Г16) */
       /* ++++++ SILENT DROP ++++++ ПОСЛЕ render(): banner() пишет в
          #alerts, и до первой отрисовки этого узла нет — то же правило,
          по которому loadNotePaint() стоит в boot() после render().
@@ -30328,6 +30328,84 @@ function syncEnv(){
 }
 
 /* Один обмен. Зовётся кнопкой, стартом приложения и отложенной отправкой. */
+/* ================================ ++++++ RESUME SYNC ++++++ ==
+ * Программа, вернувшаяся из фона, сама забирает с Диска то, что изменили
+ * на другом устройстве (находка Г15 аудита, пункт владельца №4).
+ *
+ * Прежде обмен шёл только при запуске, через 8 с после своей правки, по
+ * кнопке и при входе. Устройство, открытое и ушедшее в фон (окно на весь
+ * день, телефон в памяти), после возврата показывало данные своего
+ * последнего обмена — и владелец действовал по ним: записывал оплату уже
+ * оплаченного долга, отправлял напоминание расплатившемуся.
+ *
+ * Возврат — это показ страницы (visibilitychange: Android, свёрнутое
+ * окно) ИЛИ фокус окна (Windows: окно, закрытое другими, не прячется, но
+ * щелчок в него — тоже возврат). Обмен СРАЗУ, без паузы: свежие цифры
+ * нужны в тот миг, когда на них смотрят, а пауза лишь растянула бы время,
+ * когда видно старое. Дёргать Диск на каждом переключении окна не
+ * даёт порог: обмен, начатый меньше двух минут назад, возврат не
+ * повторяет. Считается НАЧАЛО обмена, а не удача: без сети попытка
+ * одна на две минуты, а не на каждый щелчок.
+ *
+ * Обмен тот же, что при запуске, — тихий syncRun(false). Отложенный
+ * обмен после правки снимается: его правку везёт этот. */
+var SYNC_RESUME_MS = 120000;
+var syncLastTry = 0;
+/** Пора ли: начала обмена не было, или она не ближе порога. */
+function syncResumeDue(now, last){ return !last || now - last >= SYNC_RESUME_MS; }
+function syncResume(){
+  if (document.visibilityState === 'hidden') return;
+  if (!syncCfgFull() || syncStatus.busy) return;
+  if (!syncResumeDue(Date.now(), syncLastTry)) return;
+  syncCancelPending();
+  syncRun(false);
+}
+
+/* НЕ ПОД ПОЛЕМ, В КОТОРОМ ПЕЧАТАЮТ (находка Г16, решение владельца
+ * 30.09.2026). Тихий обмен перерисовывал экран целиком: поле, в котором
+ * печатали, пересоздавалось — курсор слетал, на телефоне пряталась
+ * клавиатура, следующая буква уходила в никуда. Так было через 8 с после
+ * любой правки, а обмен при возврате пришёл бы ровно тогда, когда человек
+ * начинает что-то делать. Теперь, пока фокус в поле ввода экрана, обмен
+ * экран не перерисовывает; новое показывается, когда из поля выйдут — и
+ * не в соседнее поле (переход Tab-ом — не выход). Данные уже новые:
+ * отложен только ПОКАЗ. Поля окон (#modalRoot) render() не трогает, их
+ * это не касается. */
+var syncPaintWait = false;
+/** Печатают ли сейчас: фокус в поле ввода экрана (#app). */
+function syncTyping(){
+  /* наборы гоняют настоящий обмен в песочнице без документа — там не
+     печатает никто (найдено прогоном по кандидату: tombs-keep) */
+  if (typeof document === 'undefined') return false;
+  var a = document.activeElement, app;
+  if (!a) return false;
+  app = $('app');
+  if (!app || !app.contains(a)) return false;
+  if (a.tagName === 'TEXTAREA' || a.tagName === 'SELECT') return true;
+  return a.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|file|range|color|image|hidden)$/i.test(a.type || '');
+}
+/** Перерисовка после обмена: сейчас — или когда выйдут из поля. */
+function syncPaint(){
+  if (syncTyping()){ syncPaintWait = true; return; }
+  syncPaintWait = false;
+  render();
+}
+/** Вышли из поля: фокус устанавливается ПОСЛЕ focusout — поэтому проверка
+ *  ходом позже, чтобы переход в соседнее поле не считался выходом. */
+function syncPaintLater(){
+  if (!syncPaintWait) return;
+  setTimeout(function(){
+    if (syncPaintWait && !syncTyping()){ syncPaintWait = false; render(); }
+  }, 0);
+}
+/** Подписка — ОДИН раз, из boot(), после первого обмена при запуске. */
+function syncResumeWatch(){
+  document.addEventListener('visibilitychange', syncResume, false);
+  window.addEventListener('focus', syncResume, false);
+  document.addEventListener('focusout', syncPaintLater, false);
+}
+/* ++++++ RESUME SYNC END ++++++ */
+
 function syncRun(loud){
   if (!syncCfgFull()){ if (loud){ syncStatus.err = 'off'; render(); } return; }
   /* ++++++ TOMBS KEEP ++++++ оборот уже идёт — запросить следующий: правка
@@ -30335,6 +30413,7 @@ function syncRun(loud){
   if (syncStatus.busy){ syncAgain = (loud || syncAgain === 2) ? 2 : 1; return; }
   syncStatus.busy = true;
   var carriesWipe = wipeSent;   /* ++++++ TOMBS KEEP ++++++ нёс ли ЭТОТ оборот удаление */
+  syncLastTry = Date.now();   /* ++++++ RESUME SYNC ++++++ когда начался последний обмен */
   syncStatus.err = '';
   /* ++++++ SYNC ROW ++++++ вид кнопки — отдельно от самого отказа:
      кнопка гаснет через две секунды, а пояснение живёт до удачного
@@ -30377,7 +30456,7 @@ function syncRun(loud){
          файла нет, и объяснить это было нечем. */
       attSyncRun(function(ae){
         if (ae && ae !== 'off' && ae !== 'busy') toast(tr(attErrKey(ae)), 'warn');
-        render();
+        syncPaint();   /* ++++++ RESUME SYNC ++++++ не под полем, в котором печатают (Г16) */
       });
     } else {
       syncStatus.err = (r && r.err) || 'server';
@@ -30403,7 +30482,7 @@ function syncRun(loud){
        Сам отказ этим НЕ снимается: он живёт в syncStatus.err до
        удачного оборота, иначе на «Записать мои данные поверх» не
        успеть нажать. */
-    render();
+    syncPaint();   /* ++++++ RESUME SYNC ++++++ не под полем, в котором печатают (Г16) */
     syncBtnDone(syncStatus.err);
     if (syncAgain){ var again = syncAgain === 2; syncAgain = 0; syncRun(again); }   /* ++++++ TOMBS KEEP ++++++ */
   });
@@ -31464,6 +31543,7 @@ function boot(){
   /* ++++++ SYNC ++++++ по той же причине, что и две строки выше: сначала
      показать документ, потом идти в сеть. */
   syncBoot();
+  syncResumeWatch();   /* ++++++ RESUME SYNC ++++++ возврат из фона — обмен, если пора */
   /* ++++++ WHAT'S NEW ++++++ ДО updBoot(), и это не стиль, а порядок.
      newsBoot() ставит признак «отметки не было», а решение по нему
      принимает newsAfterInfo() внутри ответа оболочки. Стой newsBoot()
