@@ -455,6 +455,10 @@
   .f .pair{display:flex;gap:8px}
   .f .pair input{flex:1 1 auto;min-width:0}
   .f .pair select{flex:0 0 96px;width:96px}
+  /* ++++++ FORM CURRENCY ++++++ в форме валюта без отметки: поле валюты встаёт под суммой
+     во всю ширину — пометка «(не отмечена)» в 96 px не помещалась */
+  .f .pair:has(select.curoff){flex-wrap:wrap}
+  .f .pair select.curoff{flex:1 1 100%;width:100%}
   .f .two{display:flex;gap:10px}
   .f .two > *{flex:1 1 0;min-width:0}
   /* ++++++ DISCOUNT ++++++ ряд «цена + скидка %» переносится на узком
@@ -947,6 +951,7 @@
   .syncrow .st .when{font-size:12.5px;color:var(--muted);margin-top:2px}
   .syncrow .st .pend{font-size:12px;color:var(--warn);font-weight:600;margin-top:2px}
   .syncrow .st .pend.bad{color:var(--bad)}
+  .syncrow .st .pend.calm{color:var(--ink-2)}   /* ++++++ BG CUT ++++++ прерван фоном: спокойно, не красным */
   /* Пояснение об отказе и выход из него — ВНУТРИ того же узла, что и
      строка: они относятся к обмену и обязаны появляться и исчезать
      вместе с ним. Держатся до удачного обмена, а не две секунды: внутри
@@ -1003,6 +1008,15 @@
   .modal .stack{display:flex;flex-direction:column;gap:9px;margin-top:16px}
   .modal .stack .btn{width:100%}
   .modal .rows{margin:14px -16px 0}
+  /* ++++++ CONFLICT KEEP ++++++ строки окна спора: подпись поля и два значения на выбор.
+     Высота строки выбора — не меньше 44 px: это цель для пальца. */
+  .cfrow{margin:12px 0 4px}
+  .cfrow>b{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+  .cfopt{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:10px 12px;margin:6px 0;
+    border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+  .cfopt input{flex:none;margin:3px 0 0;accent-color:var(--accent)}
+  .cfopt span{display:block;min-width:0;color:var(--ink-2)}
+  .cfopt small{display:block;margin-top:2px;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
   @media(min-width:700px){
     .modal-back{align-items:center;padding:20px}
     .modal{border-radius:20px;padding-bottom:20px}
@@ -2376,8 +2390,6 @@ var STR = {
 'wipe.delHere':      { en:'Delete here too', ru:'Удалить и здесь' },
 'wipe.cDelTitle':    { en:'This record was deleted on another device',
                        ru:'Эту запись удалили на другом устройстве' },
-'wipe.cDelBody':     { en:'It was edited here <b>after</b> the deletion, so it stayed. Your call.',
-                       ru:'Здесь её изменили <b>после</b> удаления, поэтому она осталась. Решать вам.' },
 
 'wipe.impAsk':       { en:'The backup holds <b>{n}</b> deleted earlier. Restore them on every device?',
                        ru:'В копии <b>{n}</b>, удалённых ранее. Вернуть их на всех устройствах?' },
@@ -2893,14 +2905,23 @@ var STR = {
                        ru:'Фотографии и накладные <b>не ездят</b>: они остаются на том устройстве, ' +
                           'где их добавили, а на другом запись покажет пометку вместо картинки. ' +
                           'Переносит их выгруженная копия.' },
+/* ++++++ CONFLICT KEEP ++++++ ответ — о том, что программа делает теперь */
 'faq.a.syncWhat4':   { en:'Arguments are settled by the records, not by the clock. If a record was ' +
                           'changed only here, the other device’s clock decides nothing. If both ' +
-                          'sides changed the same record differently, the app asks which version to ' +
-                          'keep instead of quietly picking one.',
+                          'devices changed different fields of the same record — say, a new price on ' +
+                          'one and a new purchase on the other — the app joins both changes itself. If ' +
+                          'the same field was changed differently, it shows both values and asks what to ' +
+                          'keep; until you answer nothing is lost: this device keeps its version and the ' +
+                          'other keeps its own. A record deleted on one device and changed on the other ' +
+                          'after that stays where it was changed until you decide.',
                        ru:'Спор решается по записям, а не по часам. Если запись правили только ' +
-                          'здесь, часы другого устройства не решают ничего. Если обе стороны ' +
-                          'правили одну запись по-разному, программа спросит, какую версию ' +
-                          'оставить, а не выберет молча.' },
+                          'здесь, часы другого устройства не решают ничего. Если на двух устройствах ' +
+                          'поменяли разные поля одной записи — скажем, на одном цену, а на другом ' +
+                          'оформили приход, — программа соединит обе правки сама. Если одно и то же ' +
+                          'поле поменяли по-разному, она покажет оба значения и спросит, что оставить; ' +
+                          'до ответа ничего не теряется: здесь остаётся версия этого устройства, на ' +
+                          'другом — его. Запись, которую на одном устройстве удалили, а на другом после ' +
+                          'этого изменили, остаётся там, где её изменили, пока вы не решите.' },
 /* ++++++ BASE SYNC ++++++ основная валюта и обмен. Приставка `bsync.` свободна. */
 'bsync.chooseT':  { en:'The main currency differs between devices.', ru:'Основная валюта на устройствах разная.' },
 'bsync.chooseB':  { en:'Here it is {local}, on the other device {remote}. The records are the same, but their amounts are stored in one currency, so on one of the devices they are read wrongly right now. Syncing is paused until you choose which currency is right.',
@@ -3054,6 +3075,17 @@ var STR = {
                        ru:'На телефоне иначе: там обновление — это новый файл приложения, и его ' +
                           'надо поставить поверх прежнего. Записи обновление не трогает ни на одном ' +
                           'из устройств — меняется программа, а не данные.' },
+/* ++++++ OLD CORE ++++++ два устройства с разными версиями (А13, слово владельца 02.10.2026) */
+'faq.a.update4':     { en:'If your records travel between two devices, update the app on both. A device ' +
+                          'with an older version, on seeing data written by a newer one, stops syncing and ' +
+                          'asks to be updated; its changes wait on it and go on their own after the update. ' +
+                          'The newer version says so with a bar that goes away by itself once the other ' +
+                          'device is updated.',
+                       ru:'Если записи ездят между двумя устройствами, обновляйте программу на обоих. ' +
+                          'Устройство со старой версией, увидев данные, записанные новой, останавливает ' +
+                          'обмен и просит обновиться; его правки ждут на нём и уйдут сами после ' +
+                          'обновления. Новая версия скажет об этом полосой — она уйдёт сама, когда второе ' +
+                          'устройство обновят.' },
 /* ++++++ FAQ MONTH ++++++ «Как получить отчёт за месяц» (слово владельца
    13.09). Названия кнопок — те же, что печатает программа, и набор
    сверяет их со словарём. Второй абзац — пара по платформе (правило 121):
@@ -3291,6 +3323,8 @@ var STR = {
 'acct.gdrive':   { en:'Google Drive',                       ru:'Google Диск' },
 'acct.syncLast': { en:'Last sync',                          ru:'Последняя синхронизация' },
 'acct.syncFail': { en:'sync did not go through',            ru:'обмен не прошёл' },
+/* ++++++ BG CUT ++++++ */
+'acct.syncCut':  { en:'Sync interrupted',                   ru:'Обмен прерван' },
 'acct.syncOk':   { en:'Sync went through',                  ru:'Обмен прошёл' },
 'acct.syncRetry':{ en:'Try again',                          ru:'Повторить обмен' },
 /* «есть неотправленные» печатают существующие gd.pending / sy.pending —
@@ -3429,12 +3463,70 @@ var STR = {
                    ru:'Обмен работает только в установленных приложениях.' },
 'sy.eFill':      { en:'Fill in the account, the repository and the token.',
                    ru:'Заполните учётную запись, репозиторий и токен.' },
-'sy.cTitle':     { en:'The same record was changed on two devices',
-                   ru:'Одну запись изменили на двух устройствах' },
-'sy.cBody':      { en:'Records that differ: {n}. A backup of this device was made BEFORE anything was applied, so both versions survive whatever you choose.',
-                   ru:'Записей разошлось: {n}. Резервная копия этого устройства снята ДО применения, поэтому обе версии сохранятся, что бы вы ни выбрали.' },
-'sy.cMine':      { en:'Keep mine',                           ru:'Оставить мою' },
-'sy.cTheirs':    { en:'Take the other one',                  ru:'Взять с другого устройства' },
+/* ++++++ CONFLICT KEEP ++++++ спор «правка против правки» — полоса и окно говорят ровно то,
+   что программа делает: до выбора обе версии целы. Приставка `cf.` свободна. */
+'cf.bar':        { en:'The same record was changed differently on two devices: {n}. Nothing is lost: this device keeps its version and the other device keeps its own until you choose.',
+                   ru:'Одну и ту же запись изменили на двух устройствах по-разному: {n}. Ничего не потеряно: здесь — версия этого устройства, на другом — его, пока вы не выберете.' },
+'cf.show':       { en:'Choose',                     ru:'Выбрать' },
+'cf.title':      { en:'The same record was changed on two devices', ru:'Одну запись изменили на двух устройствах' },
+'cf.body':       { en:'For each line choose what to keep. Your choice goes to every device and replaces the other value. Until you choose, nothing changes.',
+                   ru:'Для каждой строки выберите, что оставить. Выбранное уйдёт на все устройства и заменит другое значение. Пока вы не выберете, ничего не меняется.' },
+'cf.here':       { en:'On this device',             ru:'Здесь' },
+'cf.there':      { en:'On the other device',        ru:'На другом устройстве' },
+'cf.save':       { en:'Save the choice',            ru:'Сохранить выбор' },
+'cf.later':      { en:'Later',                      ru:'Позже' },
+'cf.left':       { en:'disputes in all: {n}',       ru:'споров всего: {n}' },
+'cf.pickAll':    { en:'Choose an option in every line.', ru:'Выберите вариант в каждой строке.' },
+'cf.okHeld':     { en:'Synced, except disputed records: {n}. This device keeps its version of them until you choose.',
+                   ru:'Обмен прошёл, кроме спорных записей: {n}. Их версия с этого устройства остаётся здесь, пока вы не выберете.' },
+/* ++++++ OLD CORE ++++++ строка споров на «Аккаунте» (Г18), полосы о старой версии и «обновите и на других» (А13) */
+'cf.acct':       { en:'Disputed records: {n}',      ru:'Спорных записей: {n}' },
+'old.bar':       { en:'Another device has an older version of the app — update it there. Until then it does not sync with this device, and its changes wait on it.',
+                   ru:'На другом устройстве стоит старая версия программы — обновите её там. До обновления она с этим устройством не обменивается, её правки ждут на ней.' },
+'old.up':        { en:'The app on this device is updated. If your records also travel to another device, update the app there too: until then it does not sync with this one.',
+                   ru:'Программа на этом устройстве обновлена. Если записи ездят и на другое устройство — обновите программу и там: до обновления оно с этим не обменивается.' },
+'cf.delBody':    { en:'It was deleted on another device {when} and changed here after that. It stays here and is gone on the other devices. You can delete it here too, or decide later, and then it stays only on this device. Bringing it back to the other devices is not possible yet.',
+                   ru:'Её удалили на другом устройстве {when}, а здесь после этого изменили. Здесь она осталась, на других устройствах её нет. Можно удалить её и здесь — или решить позже, и тогда она останется только на этом устройстве. Вернуть её на другие устройства пока нельзя.' },
+'cf.f.name':     { en:'Name',                       ru:'Имя или название' },
+'cf.f.what':     { en:'What',                       ru:'Что' },
+'cf.f.price':    { en:'Selling price',              ru:'Цена продажи' },
+'cf.f.qty':      { en:'Quantity',                   ru:'Количество' },
+'cf.f.qtyBatches':{ en:'Quantity and batches',      ru:'Количество и партии' },
+'cf.f.amount':   { en:'Amount',                     ru:'Сумма' },
+'cf.f.cost':     { en:'Cost',                       ru:'Себестоимость' },
+'cf.f.sale':     { en:'Sale price',                 ru:'Цена продажи' },
+'cf.f.date':     { en:'Date',                       ru:'Дата' },
+'cf.f.note':     { en:'Note',                       ru:'Заметка' },
+'cf.f.phone':    { en:'Phone',                      ru:'Телефон' },
+'cf.f.city':     { en:'City',                       ru:'Город' },
+'cf.f.shop':     { en:'Shop',                       ru:'Магазин' },
+'cf.f.desc':     { en:'Description',                ru:'Описание' },
+'cf.f.photo':    { en:'Photo',                      ru:'Фото' },
+'cf.f.invoices': { en:'Invoices',                   ru:'Накладные' },
+'cf.f.trash':    { en:'Trash',                      ru:'Корзина' },
+'cf.f.person':   { en:'Person',                     ru:'Человек' },
+'cf.f.product':  { en:'Product',                    ru:'Товар' },
+'cf.f.cat':      { en:'Category',                   ru:'Категория' },
+'cf.f.items':    { en:'Goods of the expense',       ru:'Товары расхода' },
+'cf.f.kind':     { en:'Who owes whom',              ru:'Кто кому должен' },
+'cf.f.status':   { en:'Status',                     ru:'Состояние' },
+'cf.f.other':    { en:'Field «{k}»',                ru:'Поле «{k}»' },
+'cf.v.none':     { en:'no record',                  ru:'записи нет' },
+'cf.v.empty':    { en:'empty',                      ru:'пусто' },
+'cf.v.stock':    { en:'{qty} pcs · batches: {n} · cost {sum}', ru:'{qty} шт · партий: {n} · закупка {sum}' },
+'cf.v.entered':  { en:'entered {v}',                ru:'введено {v}' },
+'cf.v.inTrash':  { en:'in the trash',               ru:'в корзине' },
+'cf.v.notTrash': { en:'in the list',                ru:'в списке' },
+'cf.v.photo':    { en:'has a photo',                ru:'фото есть' },
+'cf.v.noPhoto':  { en:'no photo',                   ru:'фото нет' },
+'cf.v.files':    { en:'invoices: {n}',              ru:'накладных: {n}' },
+'cf.v.items':    { en:'goods: {n}',                 ru:'товаров: {n}' },
+'cf.t.product':  { en:'Product «{name}»',           ru:'Товар «{name}»' },
+'cf.t.person':   { en:'Person: {name}',             ru:'Человек: {name}' },
+'cf.t.tx':       { en:'Handout: {who} · {what} · {date}', ru:'Выдача: {who} · {what} · {date}' },
+'cf.t.pay':      { en:'Payment: {who} · {date}',    ru:'Оплата: {who} · {date}' },
+'cf.t.named':    { en:'«{name}»',                   ru:'«{name}»' },
+'cf.t.other':    { en:'Record of {date}',           ru:'Запись от {date}' },
 /* ++++++ STOCK OVER ++++++ «Взять с другого» и отказ применения — своими словами */
 'sy.cTheirsNo':  { en:'The version from the other device cannot be taken: {why}. Yours stays.',
                    ru:'Версию с другого устройства взять нельзя: {why}. Осталась ваша.' },
@@ -3448,7 +3540,6 @@ var STR = {
                      ru:'Обмен остановлен: записи с другого устройства не удалось принять ({why}). Документ этого устройства не прочитан, поэтому записей здесь сейчас нет; на другом устройстве ничего не удалено.' },
 'sync.eApplyNone': { en:'Sync stopped: the records from the other device do not fit with the ones here ({why}). Nothing was changed on this device.',
                      ru:'Обмен остановлен: записи с другого устройства не сошлись с записями этого ({why}). На этом устройстве ничего не изменено.' },
-'sy.cShow':      { en:'Show both',                           ru:'Показать обе' },
 'w.pcs':         { en:'pcs',                                ru:'шт' },
 'w.andMore':     { en:'and {n} more',                       ru:'и ещё {n}' },
 
@@ -3890,6 +3981,8 @@ var STR = {
                       'хранятся суммы и печатаются итоги. Всё это меняется потом в любой момент.' },
 'cp.start':     { en:'Start',                       ru:'Начать работу' },
 'cp.base':      { en:'main',                        ru:'основная' },
+/* ++++++ FORM CURRENCY ++++++ валюта стоит в открытой форме, но отметку с неё сняли */
+'cp.unticked':  { en:'{cur} (unticked)',            ru:'{cur} (не отмечена)' },
 /* ++++++ ACTIVE CURRENCIES ++++++ базу назначают В СТРОКЕ списка, одним
    нажатием, поэтому селекта «Основная валюта» в окне больше нет, а вместе
    с ним ушли cp.baseIs и cp.baseHint. Кнопка стоит у каждой отмеченной,
@@ -4953,6 +5046,9 @@ var STR = {
                  ru:'место на Диске — узнаем при первом обмене' },
 'as.eNet':     { en:'No connection — the files will travel later.',
                  ru:'Нет связи — файлы уедут позже.' },
+/* ++++++ BG CUT ++++++ */
+'as.eBg':      { en:'The file transfer was interrupted: the app went to the background. Nothing is lost.',
+                 ru:'Передача файла прервана: программа ушла в фон. Ничего не потеряно.' },
 'as.eDriveDenied': { en:'Google Drive refused access — sign out and sign in again, ticking the Drive access.',
                  ru:'Google Диск отказал в доступе — выйдите и войдите заново, отметив доступ к Диску.' },
 'as.eBadSecret': { en:'Google did not accept the key of the app itself — a new build of the app is needed.',
@@ -5022,6 +5118,9 @@ var STR = {
                   ru:'Обмен работает в установленных приложениях.' },
 'gd.eNet':      { en:'No network. Nothing is lost — the app works offline and the changes will go on their own once the network is back.',
                   ru:'Нет сети. Ничего не потеряно — программа работает и без неё, а изменения уедут сами, когда сеть вернётся.' },
+/* ++++++ BG CUT ++++++ */
+'gd.eBg':       { en:'The app went to the background. Nothing is lost — sync will run again as soon as you open the app.',
+                  ru:'Программа ушла в фон. Ничего не потеряно — обмен повторится сам, как только вы её откроете.' },
 'gd.eAuth':     { en:'The sign-in has expired: Google no longer accepts the saved sign-in. This happens once a week while the app is not yet published in Google, after a Google password change, or if the access of the app was revoked in the Google settings. Sign in again — the records are where they were.',
                   ru:'Вход истёк: Google больше не принимает сохранённый вход. Так бывает раз в неделю, пока программа не опубликована в Google, после смены пароля Google или если доступ программы отозвали в настройках Google. Войдите заново — записи на месте.' },
 'gd.eAuthRefused': { en:'Google refused the sign-in: no access was granted, so you are not signed in. Try again; if it repeats, check that the right account is chosen.',
@@ -6836,8 +6935,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.28.4';
-var APP_BUILD = '2026-10-01T13:31:20.394Z';
+var APP_VERSION = '1.29.0';
+var APP_BUILD = '2026-10-03T06:19:40.655Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -8576,6 +8675,96 @@ function modOf(id, meta){
   return (typeof v === 'string') ? v : '';
 }
 
+/* ================================ ++++++ CONFLICT KEEP ++++++ ==
+ * СПОР НЕ РЕШАЕТСЯ МОЛЧА (находка А6 аудита, направление владельца
+ * 02.10.2026).
+ *
+ * Прежде при «правке против правки» в итог шла версия ЭТОГО устройства,
+ * и она же в том же обороте уходила на Диск — чужая версия затиралась
+ * раньше, чем владелец видел полосу, а следующий оборот спора уже не
+ * видел. Побеждало устройство, позже вышедшее на связь; проигравшее не
+ * видело ничего. Замерено на копии данных владельца: приход 48 шт на
+ * 4 492.80 TJS пропадал молча, когда другое устройство меняло у того же
+ * товара только цену.
+ *
+ * Теперь два шага:
+ *
+ *   · разные ПОЛЯ одной записи сливаются сами. Какое поле какая сторона
+ *     меняла, узнаётся без нового хранения: в базе лежит отпечаток записи
+ *     на момент прошлого обмена, и перебором «это поле прежнее здесь или
+ *     там» находится единственная запись с этим отпечатком (mergeFields);
+ *   · одно и то же поле поменяли по-разному — это СПОР, и он держится:
+ *     здесь остаётся своя версия (out), на Диск уходит чужая (send), а
+ *     база этой записи не сдвигается (syncBaseKeep) — следующий оборот
+ *     видит тот же спор, пока владелец не выберет.
+ *
+ * Поля, которые меняются только вместе (MERGE_GROUPS), берутся с одной
+ * стороны: количество без партий или сумма без валюты ввода дали бы
+ * запись, которой не делала ни одна сторона.
+ */
+var MERGE_GROUPS = [['qty', 'batches'], ['unitPriceCents', 'entryCur', 'entryMinor'],
+  ['amountCents', 'entryCur', 'entryMinor'], ['amountMinor', 'cur'], ['costMinor', 'costCur'],
+  ['saleMinor', 'saleCur'], ['status', 'closedAt'], ['trashedAt', 'trashGroup']];
+/* Перебор — 2^n отпечатков; больше десяти разошедшихся полей у одной
+   записи не бывает в жизни, и тогда это спор, а не догадка. */
+var MERGE_MAX = 10;
+
+/** Имена полей, которыми две версии записи различаются (без id). Поле,
+ *  которого нет, и поле со значением undefined — одно и то же. */
+function mergeFieldsDiff(L, R){
+  var keys = [], seen = {}, out = [], k, i, a, b;
+  for (k in L) if (ownKey(L, k) && !ownKey(seen, k)){ seen[k] = 1; keys.push(k); }
+  for (k in R) if (ownKey(R, k) && !ownKey(seen, k)){ seen[k] = 1; keys.push(k); }
+  for (i = 0; i < keys.length; i++){
+    k = keys[i];
+    if (k === 'id') continue;
+    a = (ownKey(L, k) && L[k] !== undefined) ? canonJSON(L[k]) : null;
+    b = (ownKey(R, k) && R[k] !== undefined) ? canonJSON(R[k]) : null;
+    if (a !== b) out.push(k);
+  }
+  return out;
+}
+
+/** Запись L, у которой поля diff с поднятым битом mask взяты из R. */
+function mergeFieldsPick(L, R, diff, mask){
+  var o = {}, k, i, src;
+  for (k in L) if (ownKey(L, k)) o[k] = L[k];
+  for (i = 0; i < diff.length; i++){
+    k = diff[i];
+    src = ((mask >> i) & 1) ? R : L;
+    if (ownKey(src, k) && src[k] !== undefined) o[k] = src[k];
+    else delete o[k];
+  }
+  return o;
+}
+
+/** Слияние по полям. B — отпечаток записи на момент прошлого обмена.
+ *  Ищется маска m, при которой «поля с битом — как у R, без бита — как у
+ *  L» даёт ровно эту запись: значит поля с битом менял L, без бита — R.
+ *  Нашлась — запись склеивается из изменённых сторон: { rec }. Нет
+ *  (одно поле поменяли обе стороны) или группа разорвана — { rec: null }
+ *  и спор. diff — разошедшиеся поля в обоих случаях. */
+function mergeFields(L, R, B){
+  var diff = mergeFieldsDiff(L, R), n = diff.length, all, m, g, j, i, side, s;
+  if (!n || n > MERGE_MAX) return { rec: null, diff: diff };
+  all = (1 << n) - 1;
+  for (m = 1; m < all; m++){
+    if (recHash(mergeFieldsPick(L, R, diff, m)) !== B) continue;
+    for (g = 0; g < MERGE_GROUPS.length; g++){
+      side = -1;
+      for (j = 0; j < MERGE_GROUPS[g].length; j++){
+        i = diff.indexOf(MERGE_GROUPS[g][j]);
+        if (i < 0) continue;
+        s = (m >> i) & 1;
+        if (side === -1) side = s;
+        else if (side !== s) return { rec: null, diff: diff };
+      }
+    }
+    return { rec: mergeFieldsPick(L, R, diff, all ^ m), diff: diff };
+  }
+  return { rec: null, diff: diff };
+}
+
 /* ------------------------------------------------------------------ */
 /* Слияние одной коллекции                                            */
 /* ------------------------------------------------------------------ */
@@ -8616,8 +8805,10 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
     if (!ownKey(seen, r.id)){ seen[r.id] = 1; ids.push(r.id); }
   }
 
-  var out = [], conflicts = [];
-  var stats = { kept: 0, fromRemote: 0, fromLocal: 0, deleted: 0, conflicts: 0 };
+  /* ++++++ CONFLICT KEEP ++++++ out — что остаётся ЗДЕСЬ, send — что уходит
+     на Диск. Они различаются ровно у удержанного спора. */
+  var out = [], send = [], conflicts = [], merged = [];
+  var stats = { kept: 0, fromRemote: 0, fromLocal: 0, deleted: 0, conflicts: 0, fields: 0 };
 
   for (i = 0; i < ids.length; i++){
     var id = ids[i];
@@ -8644,12 +8835,25 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
         if (changedAfterDelete && B && recHash(survivor) === B) changedAfterDelete = false;
       }
       if (changedAfterDelete){
+        /* ++++++ CONFLICT KEEP ++++++ правку сделали ЗДЕСЬ, удалили ТАМ:
+           правка остаётся здесь, а на Диск не уходит — удаление на Диске
+           и на других устройствах не затирается, пока владелец не решит.
+           Прежде запись уходила на Диск, а через оборот удаление
+           побеждало при любом ответе (замерено 02.10.2026). Запись,
+           пришедшую С ДИСКА поверх нашего удаления (так шлёт ядро
+           прежней сборки), держим как прежде. */
+        var hold = (survivor === L);
         conflicts.push({ id: id, kind: 'edit-vs-delete',
-                         local: L, remote: R, deletedAt: T });
+                         local: L, remote: R, deletedAt: T,
+                         localAt: modOf(id, metaL), hold: hold });
         stats.conflicts++;
         /* до решения владельца запись ОСТАЁТСЯ: удалить её сейчас
            значило бы решить спор молча, в пользу удаления */
         out.push(survivor);
+        /* удержание: Диск остаётся каким был — с чужой записью, если она там
+           есть, и без неё, если её там удалили */
+        if (!hold) send.push(survivor);
+        else if (R) send.push(R);
         continue;
       }
       stats.deleted++;
@@ -8661,18 +8865,26 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
       /* Если база ЗНАЛА эту запись, а справа её нет и надгробия нет —
          значит другое устройство просто ещё не видело удаления... но
          удаления и не было. Это наша запись, которую там не знают. */
-      out.push(L); stats.fromLocal++; continue;
+      out.push(L); send.push(L); stats.fromLocal++; continue;
     }
-    if (R && !L){ out.push(R); stats.fromRemote++; continue; }
+    if (R && !L){ out.push(R); send.push(R); stats.fromRemote++; continue; }
 
     /* --- есть с обеих ---------------------------------------------- */
-    if (hL === hR){ out.push(L); stats.kept++; continue; }
+    if (hL === hR){ out.push(L); send.push(L); stats.kept++; continue; }
 
     var movedL = B === null ? true : hL !== B;
     var movedR = B === null ? true : hR !== B;
 
-    if (movedL && !movedR){ out.push(L); stats.fromLocal++;  continue; }
-    if (movedR && !movedL){ out.push(R); stats.fromRemote++; continue; }
+    if (movedL && !movedR){ out.push(L); send.push(L); stats.fromLocal++;  continue; }
+    if (movedR && !movedL){ out.push(R); send.push(R); stats.fromRemote++; continue; }
+
+    /* ++++++ CONFLICT KEEP ++++++ обе стороны правили. Разные поля
+       сливаются сами — это не спор, а две правки, которым нечего делить. */
+    var fm = { rec: null, diff: null };
+    if (B !== null){
+      fm = mergeFields(L, R, B);
+      if (fm.rec){ out.push(fm.rec); send.push(fm.rec); merged.push(id); stats.fields++; continue; }
+    }
 
     /* Обе изменились. База неизвестна (B === null) — единственный
        случай, где приходится звать время: это первая встреча двух
@@ -8687,20 +8899,24 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
          спрашивать нечего. Обе метки пусты — сравнивать нечем, и это
          честный конфликт. */
       if (mL !== mR){
-        if (mL > mR){ out.push(L); stats.fromLocal++; }
-        else        { out.push(R); stats.fromRemote++; }
+        if (mL > mR){ out.push(L); send.push(L); stats.fromLocal++; }
+        else        { out.push(R); send.push(R); stats.fromRemote++; }
         continue;
       }
     }
 
+    /* ++++++ CONFLICT KEEP ++++++ одно поле поменяли обе стороны. До
+       решения: здесь — своя версия (она на экране у владельца, и
+       подменять её молча нельзя), на Диск — чужая (затереть её молча
+       тоже нельзя). Поля спора названы: их и показывает окно. */
     conflicts.push({ id: id, kind: 'edit-vs-edit', local: L, remote: R,
-                     localAt: modOf(id, metaL), remoteAt: modOf(id, metaR) });
+                     localAt: modOf(id, metaL), remoteAt: modOf(id, metaR),
+                     fields: fm.diff || mergeFieldsDiff(L, R), remoteHash: hR, hold: true });
     stats.conflicts++;
-    /* до решения — держим СВОЮ версию: она уже на экране у владельца,
-       и подменять её молча нельзя */
     out.push(L);
+    send.push(R);
   }
-  return { out: out, conflicts: conflicts, stats: stats };
+  return { out: out, send: send, merged: merged, conflicts: conflicts, stats: stats };
 }
 
 /* ------------------------------------------------------------------ */
@@ -8718,6 +8934,10 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
   var tombs = mergeTombs(localTombs || {}, remoteTombs || {});
   var meta = {};
   var doc = { schemaVersion: local.schemaVersion, settings: null };
+  /* ++++++ CONFLICT KEEP ++++++ send — то, что уходит на Диск. Совпадает с
+     doc везде, кроме удержанного спора: там у doc своя версия, у send —
+     чужая (или ничего, если на Диске запись удалена). */
+  var send = { schemaVersion: local.schemaVersion, settings: null };
   var conflicts = [], stats = {}, i;
 
   /* Настройки — не записи: у них нет id, и спорить построчно не о чем.
@@ -8726,6 +8946,7 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
      запомненные валюты ввода не уезжают на чужое устройство. */
   doc.settings = mergeSettings(local.settings || {}, (remote && remote.settings) || {},
                                local.settingsAt || '', (remote && remote.settingsAt) || '');
+  send.settings = doc.settings;
 
   for (i = 0; i < SYNC_COLS.length; i++){
     var col = SYNC_COLS[i];
@@ -8736,6 +8957,7 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
       tombs, metaL, metaR
     );
     doc[col] = res.out;
+    send[col] = res.send;
     /* Метка едет за той версией записи, которая победила: иначе следующее
        слияние сравнивало бы содержимое одной стороны со временем другой. */
     var w;
@@ -8747,6 +8969,12 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
       if (!mm) mm = modOf(rid, metaR) || modOf(rid, metaL);
       if (mm) meta[rid] = mm;
     }
+    /* ++++++ CONFLICT KEEP ++++++ запись, слитая по полям, — правка обеих
+       сторон: её метка — позднейшая из двух. */
+    for (w = 0; w < res.merged.length; w++){
+      var ma = modOf(res.merged[w], metaL), mb = modOf(res.merged[w], metaR);
+      if (ma || mb) meta[res.merged[w]] = ma > mb ? ma : mb;
+    }
     stats[col] = res.stats;
     var j;
     for (j = 0; j < res.conflicts.length; j++){
@@ -8755,7 +8983,19 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
     }
   }
   doc.syncMeta = meta;
-  return { doc: doc, tombstones: tombs, meta: meta, conflicts: conflicts, stats: stats };
+  /* ++++++ CONFLICT KEEP ++++++ метки уходящего: те же, кроме удержанных
+     записей — у них метка той версии, что уходит (чужой), или никакой. */
+  var sendMeta = {}, k, c, rm;
+  for (k in meta) if (ownKey(meta, k)) sendMeta[k] = meta[k];
+  for (i = 0; i < conflicts.length; i++){
+    c = conflicts[i];
+    if (!c.hold) continue;
+    rm = modOf(c.id, metaR);
+    if (c.remote && rm) sendMeta[c.id] = rm;
+    else delete sendMeta[c.id];
+  }
+  send.syncMeta = sendMeta;
+  return { doc: doc, send: send, tombstones: tombs, meta: meta, conflicts: conflicts, stats: stats };
 }
 
 /* Пришла ли эта версия записи с той стороны. Сравнение по ссылке, а не по
@@ -8826,7 +9066,11 @@ function baseOf(doc){
    оборотом отправило бы выдачу рассыпанной на отдельные строки. Номер
    конверта 2 такое ядро честно отвергает («обновите программу»), и
    рассыпать ему нечего. Конверт 1 это ядро читает как прежде. */
-var SYNC_ENVELOPE = 2;
+/* ++++++ OLD CORE ++++++ конверт 3 (решение владельца 02.10.2026). Ядро конверта 2 —
+   все до 1.29.0, — увидев его, само останавливает обмен и просит
+   обновиться: затирать чужие правки ему больше нечем (находка А13).
+   Конверты 1 и 2 это ядро читает как прежде. */
+var SYNC_ENVELOPE = 3;
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -8840,7 +9084,11 @@ function envelopeOf(doc, tombs, meta){
        довод у modOf(): поле в записи сдвинуло бы подпись документа. */
     meta: (meta && meta.map) || doc.syncMeta || {},
     updatedAt: (meta && meta.updatedAt) || '',
-    updatedBy: (meta && meta.updatedBy) || ''
+    updatedBy: (meta && meta.updatedBy) || '',
+    /* ++++++ OLD CORE ++++++ номера устройств, писавших форматом 3, и записи, которые
+       поменяла запись старой версии: { коллекция: { id: отпечаток } } */
+    writers: (meta && meta.writers) || [],
+    oldRecs: (meta && meta.oldRecs) || {}
   };
   var i;
   for (i = 0; i < SYNC_SETTINGS.length; i++){
@@ -8871,7 +9119,12 @@ function openEnvelope(text){
                   Object.prototype.toString.call(e.meta) !== '[object Array]') ? e.meta : {};
   return { doc: doc, tombstones: e.tombstones || {}, meta: doc.syncMeta,
            settingsAt: e.settingsAt || '',
-           updatedAt: e.updatedAt || '', updatedBy: e.updatedBy || '' };
+           updatedAt: e.updatedAt || '', updatedBy: e.updatedBy || '',
+           /* ++++++ OLD CORE ++++++ формат, писавшие и следы старой версии */
+           format: e.syncSchema,
+           writers: Object.prototype.toString.call(e.writers) === '[object Array]' ? e.writers : [],
+           oldRecs: (e.oldRecs && typeof e.oldRecs === 'object' &&
+                     Object.prototype.toString.call(e.oldRecs) !== '[object Array]') ? e.oldRecs : {} };
 }
 
 /* Детерминированная запись: одинаковый документ — одинаковый текст,
@@ -9368,6 +9621,8 @@ function gdReq(o, cb){
   if (o.range) opt.headers['Range'] = o.range;
   if (o.contentRange) opt.headers['Content-Range'] = o.contentRange;
   if (o.body !== undefined && o.body !== null) opt.body = o.body;
+  var bgr = bgReq();   /* ++++++ BG CUT ++++++ телефон: обрывается, если программа ушла в фон */
+  if (bgr) opt.signal = bgr.c.signal;
 
   var status = 0, head = { location: '', range: '' };
   window.fetch(o.url, opt).then(function(r){
@@ -9383,6 +9638,7 @@ function gdReq(o, cb){
     if (o.resumable && status === 308) return null;
     return o.binary ? r.arrayBuffer() : r.text();
   }).then(function(t){
+    bgDone(bgr);   /* ++++++ BG CUT ++++++ */
     if (o.resumable && status === 308){ cb(null, null, status, head); return; }
     if (status >= 200 && status < 300){
       if (o.binary){ cb(null, t, status, head); return; }
@@ -9395,7 +9651,7 @@ function gdReq(o, cb){
     /* Ошибку двоичного ответа читать как текст нельзя — но и разбирать
        её нечем: причина берётся из кода состояния, как и раньше. */
     cb(gdErrAt(o.url, status, gdErrOf(status, o.binary ? '' : t), o.binary ? '' : t), null, status, head);
-  })['catch'](function(){ cb('net', null, status, head); });
+  })['catch'](function(){ cb(bgDone(bgr) ? 'bg' : 'net', null, status, head); });   /* ++++++ BG CUT ++++++ */
 }
 
 /* Какая именно беда. Google отвечает 403 на четыре разных случая, и
@@ -9836,6 +10092,7 @@ function gdErrKey(err){
     nobridge: 'gd.eBrowser',
     nofetch:  'gd.eBrowser',
     net:      'gd.eNet',
+    bg:       'gd.eBg',                                   /* ++++++ BG CUT ++++++ */
     auth:     'gd.eAuth',
     authrefused: 'gd.eAuthRefused',                       /* ++++++ AUTH WORDS ++++++ */
     drivedenied: 'gd.eDriveDenied',                       /* ++++++ AUTH WORDS ++++++ */
@@ -9861,6 +10118,7 @@ function gdErrKey(err){
 /* Беда, которая пройдёт сама, — не повод дёргать владельца. Отсюда
    решается, повторять ли обмен позже молча. */
 function gdRetryable(err){
+  if (err === 'bg') return true;   /* ++++++ BG CUT ++++++ повторится сам при возврате */
   return err === 'net' || err === 'rate' || err === 'server' || err === 'busy' ||
          err === 'daily';   /* ++++++ AUTH WORDS ++++++ тон «пройдёт сам», повтора молча нет */
 }
@@ -11087,6 +11345,7 @@ function adNum(v){
 function attErrKey(err){
   var M = {
     off: 'as.eOff', nofetch: 'as.eBrowser', net: 'as.eNet',
+    bg: 'as.eBg',   /* ++++++ BG CUT ++++++ */
     auth: 'as.eAuth', expired: 'as.eAuth', badclient: 'as.eAuth',
     drivedenied: 'as.eDriveDenied', badsecret: 'as.eBadSecret', daily: 'as.eDaily',   /* ++++++ AUTH WORDS ++++++ */
     notfound: 'as.eGone', quota: 'as.eQuota', rate: 'as.eRate',
@@ -11692,6 +11951,7 @@ function syncCycle(env, cb, attempt){
 
     var localDoc = env.localDoc();
     var remoteDoc = null, remoteTombs = {}, remoteVer = '', settingsAt = '';
+    var oldW = false, writersIn = [], oldIn = {}, oldOut = {};   /* ++++++ OLD CORE ++++++ запись старого ядра; кто писал форматом 3; её следы */
 
     if (res.empty){
       /* На сервере ещё ничего нет: это первый обмен. Сливать не с чем —
@@ -11711,6 +11971,9 @@ function syncCycle(env, cb, attempt){
       remoteTombs = open.tombstones;
       settingsAt = open.settingsAt;
       remoteVer = res.version;
+      oldW = syncOldSeen(open, remoteVer);   /* ++++++ OLD CORE ++++++ другое устройство, прежний формат */
+      writersIn = open.writers || [];
+      oldIn = open.oldRecs || {};
     }
 
     /* ++++++ SETTINGS STAMP ++++++ МЕТКА ЕСТЬ У ОБЕИХ СТОРОН, И ЭТО ВСЯ
@@ -11723,9 +11986,13 @@ function syncCycle(env, cb, attempt){
        вернулась. Так же тихо откатывались базовая валюта, курсы, НДС и
        история правок; их просто меняют реже. */
     var localAt = (env.meta && env.meta() && env.meta().settingsAt) || '';
+    /* ++++++ OLD CORE ++++++ записи, которые поменяла запись старого ядра, — спор, а не
+       молчаливое «изменилась только та сторона»: она могла затереть правку.
+       Свою запись старого видят сами, чужую — по следам в конверте 3 */
+    var baseIn = syncOldBase(localDoc, remoteDoc, env.baseHashes(), oldW ? null : oldIn, oldOut);
     var merged = mergeDocs(mergeInSettingsAt(localDoc, localAt),
                            remoteDoc ? mergeInSettingsAt(remoteDoc, settingsAt) : null,
-                           env.baseHashes(), env.tombs(), remoteTombs,
+                           baseIn, env.tombs(), remoteTombs,
                            env.meta ? env.meta() && env.meta().map : null,
                            remoteDoc ? remoteDoc.syncMeta : null);
     /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
@@ -11752,17 +12019,21 @@ function syncCycle(env, cb, attempt){
 
         /* --- отправить ------------------------------------------------ */
         var meta = env.meta() || {};
-        var env2 = envelopeOf(merged.doc, merged.tombstones, {
+        /* ++++++ CONFLICT KEEP ++++++ на Диск уходит send: у удержанного спора там
+           остаётся чужая версия */
+        var env2 = envelopeOf(merged.send || merged.doc, merged.tombstones, {
           updatedAt: nowISO(), updatedBy: meta.updatedBy || '',
+          writers: syncWriters(writersIn),   /* ++++++ OLD CORE ++++++ номер этого устройства и прежние */
+          oldRecs: syncOldCarry([oldIn, oldOut], merged.send || merged.doc),
           /* ++++++ SETTINGS STAMP ++++++ конверт несёт метку ТЕХ настроек,
              что в нём лежат. Прежнее `meta.settingsAt || settingsAt` брало
              метку этого устройства, даже когда победили чужие настройки. */
           settingsAt: settingsWon,
-          map: merged.meta
+          map: merged.send ? merged.send.syncMeta : merged.meta
         });
         var text = envelopeText(env2);
 
-        env.tPut(text, remoteVer, countsOf(merged.doc), function(pErr, pRes){
+        env.tPut(text, remoteVer, countsOf(merged.send || merged.doc), function(pErr, pRes){
           if (pErr === 'conflict'){
             /* Между нашим чтением и записью успело вклиниться другое
                устройство. Ничего не потеряно: повторяем оборот целиком —
@@ -11775,7 +12046,8 @@ function syncCycle(env, cb, attempt){
 
           env.remember({
             version: pRes.version,
-            base: baseOf(merged.doc),
+            /* ++++++ CONFLICT KEEP ++++++ база — того, что ушло; у удержанного спора — прежняя */
+            base: syncBaseKeep(baseOf(merged.send || merged.doc), baseIn, merged.conflicts),
             tombs: merged.tombstones,
             meta: merged.meta,
             /* ++++++ SETTINGS STAMP ++++++ метка настроек едет вместе с
@@ -14899,7 +15171,7 @@ function expDefaultCur(){
   var list = expHits(), i, c;
   for (i = 0; i < list.length; i++){
     c = list[i].entryCur;
-    if (c && rateOf(c) !== null) return c;
+    if (curOffered(c)) return c;                           /* ++++++ FORM CURRENCY ++++++ */
   }
   return state.settings.baseCurrency;
 }
@@ -16602,7 +16874,8 @@ var FAQ = [
   q: function(){ return tr('faq.q.update'); },
   html: function(){ return infoP(tr('faq.a.update1')) + infoP(tr('faq.a.update2')) +
                            infoP(tr('faq.a.update2b')) +          /* ++++++ LOAD FAIL SYNC ++++++ */
-                           infoP(tr('faq.a.update3')); },
+                           infoP(tr('faq.a.update3')) +
+                           infoP(tr('faq.a.update4')); },          /* ++++++ OLD CORE ++++++ */
   see: ['backup.why', 'look']
 }
 
@@ -18222,8 +18495,11 @@ function newLine(sellCur){
      не спросив. Пустое поле безопасно по построению: readLine() отвечает
      err.invPerBox и приход не сохраняется, пока число не набрано
      (решение владельца 2026-09-08). */
+  /* ++++++ FORM CURRENCY ++++++ запомненная валюта цены продажи — только отмеченная:
+     документу без настройки validate() ставит 'USD', есть он или нет */
+  var sc = sellCur || state.settings.lastSellCur;
   return { name:'', boxes:'', perBox:'', boxPrice:'', qty:'', cost:'', sell:'',
-           sellCur: sellCur || state.settings.lastSellCur,
+           sellCur: curOffered(sc) ? sc : state.settings.baseCurrency,
            desc:'', photo:null };
 }
 
@@ -18288,12 +18564,12 @@ function resetForms(){
 function lastTxCurFor(personId){
   var best = null;
   actTx().forEach(function(t){
-    if (t.personId !== personId || !t.entryCur || rateOf(t.entryCur) === null) return;
+    if (t.personId !== personId || !curOffered(t.entryCur)) return;   /* ++++++ FORM CURRENCY ++++++ */
     if (!best || (t.createdAt || '') > (best.createdAt || '')) best = t;
   });
   if (best) return best.entryCur;
   var last = state.settings.lastTxCur;
-  if (last && rateOf(last) !== null) return last;
+  if (curOffered(last)) return last;                       /* ++++++ FORM CURRENCY ++++++ */
   return state.settings.baseCurrency;
 }
 
@@ -19094,14 +19370,27 @@ function select(o){
 }
 function curSelect(fPath, value, codes){
   var items = [];
-  (codes || currencyCodes()).forEach(function(c){ items.push([c, c]); });
+  /* ++++++ FORM CURRENCY ++++++ значение формы печатается ВСЕГДА: если его нет в
+     списке, оно добавляется — иначе браузер показал бы первую опцию, а
+     сохранение записало бы другую. Не отмеченная валюта — с пометкой. */
+  var list = (codes || currencyCodes()).slice(), on = currencyCodes();
+  if (value && list.indexOf(value) < 0) list.push(value);
+  list.forEach(function(c){
+    items.push([c, on.indexOf(c) > -1 ? c : tr('cp.unticked', {cur: c})]);
+  });
   /* ++++++ ACTIVE CURRENCIES ++++++ активна одна валюта — выбирать не из
      чего, и селект с единственным вариантом обещает выбор, которого нет
-     (область 44). Печатается код словом; в ui.form нужное значение уже
-     лежит, потому что окно выбора сбрасывает формы (curPickApply). */
+     (область 44). Печатается код словом — тот самый, что лежит в
+     ui.form: чужое значение выше уже добавлено в список, и тогда
+     вариантов два. Сброс форм окном выбора валют от этого не
+     защищал — обмен меняет набор, не сбрасывая форм (находка А2). */
   if (items.length === 1)
-    return '<span class="onecur">' + esc(items[0][0]) + '</span>';
-  return select({ f:fPath, value:value, items:items });
+    return '<span class="onecur">' + esc(items[0][1]) + '</span>';
+  /* ++++++ FORM CURRENCY ++++++ поле валюты в паре с суммой узкое (96 px), и пометка
+     обрезалась до «USD (н» — найдено снимком живой проверки. Выбрана не
+     отмеченная валюта — поле получает класс и встаёт своей строкой. */
+  var h = select({ f:fPath, value:value, items:items });
+  return value && on.indexOf(value) < 0 ? h.replace('<select ', '<select class="curoff" ') : h;
 }
 /** ++++++ ACTIVE CURRENCIES ++++++ ГОРЛЫШКО: отсюда активный набор
  *  получают все селекты валюты — форма товара, цена продажи, выдача,
@@ -19121,6 +19410,29 @@ function currencyCodes(){
   var out = act.indexOf(base) > -1 ? [base] : [];
   act.filter(function(c){ return c !== base; }).sort().forEach(function(c){ out.push(c); });
   return out;
+}
+/* ========================================= ++++++ FORM CURRENCY ++++++ ==
+ * ВАЛЮТА РЯДОМ С ПОЛЕМ — ТА, В КОТОРОЙ ЗАПИШЕТСЯ СУММА (находка А2 аудита).
+ *
+ * ЧТО БЫЛО. Селект строится из отмеченных валют, а значение формы четыре
+ * функции выбирали, спрашивая только «есть ли курс». Сняли отметку с USD —
+ * выдача постоянному клиенту, новая выдача, цена продажи нового товара,
+ * новый расход и правка расхода открывались с USD, а селект показывал
+ * первую опцию — основную. Набрали 372.00 «в TJS» — записалось 372.00 USD
+ * = 3 459.60 TJS. Правду говорила только подсказка под полем.
+ *
+ * СЛОЙ 1: валюту новой формы выбирает только curOffered() — та же мерка,
+ * что у оплаты (payAllows), долгов и заказов (codes.indexOf).
+ * СЛОЙ 2: curSelect() печатает значение формы ВСЕГДА. Валюта, которая в
+ * форме, но не отмечена (сняли отметку на другом устройстве, пока форма
+ * была открыта), стоит в списке выбранной и с пометкой «(не отмечена)»:
+ * число в поле набрано в ней, и переключить её молча значило бы записать
+ * то же число в другой валюте (решение владельца 01.10.2026).
+ * ================================================================== */
+/** Предлагает ли форма эту валюту для НОВОЙ записи: она отмечена и у неё
+ *  есть курс. Основная отмечена всегда (curActiveOf) и курс у неё 1. */
+function curOffered(code){
+  return !!code && currencyCodes().indexOf(code) > -1 && rateOf(code) !== null;
 }
 function money2(fPath, value, curPath, curValue, codes){
   return '<span class="pair">' + input({ f:fPath, value:value, mode:'decimal' }) +
@@ -24138,7 +24450,10 @@ function startExpEdit(id){
   var x = expById(id);
   if (!x) return;
   var b = state.settings.baseCurrency;
-  var cur = (x.entryCur && rateOf(x.entryCur) !== null) ? x.entryCur : b;
+  /* ++++++ FORM CURRENCY ++++++ как у правки оплаты и выдачи: валюта записи не
+     отмечена — основная валюта и хранимое число (recEditKeeps не даст
+     сохранению без правки сдвинуть ни сумму, ни «введено») */
+  var cur = curOffered(x.entryCur) ? x.entryCur : b;
   var minor = (cur === x.entryCur && x.entryMinor !== null && x.entryMinor !== undefined)
     ? x.entryMinor : x.amountCents;
   /* ++++++ EXPENSE LOT ++++++ окно открывается с сохранённым выбором —
@@ -25824,15 +26139,18 @@ function syncRowHTML(){
   var st = syncBtnState;
   var when = syncStatus.busy ? tr(syncKey('gd.busy', 'sy.busy'))
            : (o.at ? bakStamp(o.at) : tr(syncKey('gd.never', 'sy.never')));
-  var sub = '', pend = syncPending();
+  var sub = '', pend = syncPendingPlain();            /* ++++++ OLD CORE ++++++ споры считает строка ниже */
   if (err) sub = '<small class="pend bad">' + esc(tr('acct.syncFail')) + '</small>';
   else if (pend) sub = '<small class="pend">' +
     esc(tr(syncKey('gd.pending', 'sy.pending'), { n: pend })) + '</small>';
+  if (err === 'bg') sub = '<small class="pend calm">' + esc(tr('acct.syncCut')) + '</small>';   /* ++++++ BG CUT ++++++ прерван фоном — спокойно; красный — для настоящих ошибок */
   return '<div class="syncwrap"><div class="syncrow">' +
     '<div class="st"><b>' + esc(tr('acct.syncLast')) + '</b>' +
       '<span class="when">' + esc(when) + '</span>' + sub + '</div>' +
     syncBtnHTML(st, err) +
-    '</div>' + (err ? syncErrHTML(err) : '') + '</div>';
+    '</div>' + (err ? syncErrHTML(err) : '') +
+    cfAcctHTML() +                                      /* ++++++ OLD CORE ++++++ Г18 */
+    '</div>';
 }
 function syncBtnHTML(st, err){
   var lab = st === 'busy' ? tr('gd.busy')
@@ -25956,6 +26274,7 @@ function syncBtnPaint(){
 function syncBtnDone(err){
   if (syncBtnTimer){ clearTimeout(syncBtnTimer); syncBtnTimer = null; }
   syncBtnState = err ? 'err' : 'ok';
+  if (err === 'bg') syncBtnState = '';   /* ++++++ BG CUT ++++++ прерван фоном — не красный крестик: обмен повторится сам */
   syncBtnPaint();
   syncBtnTimer = setTimeout(function(){
     syncBtnState = ''; syncBtnTimer = null; syncBtnPaint();
@@ -29077,6 +29396,8 @@ function handleAct(act, arg, e, srcEl){
   if (ui.dcOpen && act !== 'dc' && act !== 'dc-open'){ ui.dcOpen = false; dcPaint(); }
   if (act === 'dismiss'){
     var a = srcEl.closest('[data-banner]');
+    if (a && a.getAttribute('data-banner') === 'sync-conf') cfFoldNow();   /* ++++++ OLD CORE ++++++ Г18 */
+    if (a && a.getAttribute('data-banner') === 'sync-up') syncUpClose();   /* ++++++ OLD CORE ++++++ насовсем */
     if (a) a.remove();
     return;
   }
@@ -30014,6 +30335,7 @@ function newsOpenScreen(){
  * ====================================================================== */
 
 var syncStatus = syncStatusNew();
+syncStatus.conflicts = syncDisputesRead();   /* ++++++ CONFLICT KEEP ++++++ спор переживает перезапуск */
 var syncTokenCache = '';       /* только в памяти сеанса; в документ не идёт */
 
 /* Мост есть — приложение установлено, и токену есть где лежать. Обычный
@@ -30100,64 +30422,508 @@ function syncCardHTML(){
   return h;
 }
 
-/* Полоса расхождения: один узел в #alerts, никакого render() — то же
-   правило, что у xtabPaint(). */
-function syncBarPaint(){
-  if (!syncStatus.conflicts.length){ removeBanner('sync-conf'); return; }
-  banner('sync-conf', 'warn',
-    esc(tr('sy.cTitle')) + ' — ' + esc(tr('sy.cBody', {n: syncStatus.conflicts.length})) +
-    '<span class="rb"><button type="button" class="go" data-act="sync-conf">' +
-    esc(tr('sy.cShow')) + '</button></span>');
+/* ================================ ++++++ CONFLICT KEEP ++++++ ==
+ * СПОР ПЕРЕЖИВАЕТ ОБМЕН И ПЕРЕЗАПУСК.
+ *
+ * База удержанной записи НЕ сдвигается: на Диск ушла чужая версия, здесь
+ * осталась своя, и если записать базой то, что ушло, следующий оборот
+ * решит, что правка была только здесь, и отправит её молча — ровно то,
+ * что происходило прежде (находка А6). Со старой базой следующий оборот
+ * видит тот же спор, пока владелец не выберет.
+ *
+ * Список споров кладётся в запись обмена ЭТОГО устройства (sync-v1), а
+ * не в документ: он описывает расхождение с Диском, а не записи, и в
+ * чужой копии значил бы неправду. Новый ключ хранилища не нужен.
+ */
+function syncBaseKeep(base, prev, conflicts){
+  var i, c, p;
+  prev = prev || {};
+  for (i = 0; i < (conflicts || []).length; i++){
+    c = conflicts[i];
+    if (!c || !c.hold || !base[c.collection]) continue;
+    p = prev[c.collection] || {};
+    if (ownKey(p, c.id)) base[c.collection][c.id] = p[c.id];
+    else delete base[c.collection][c.id];
+  }
+  return base;
+}
+function syncDisputesRead(){
+  var o = syncRead(), d = o && o.disputes;
+  return Object.prototype.toString.call(d) === '[object Array]' ? d : [];
+}
+function syncDisputesSave(list){
+  var o = syncRead();
+  if (!o) return;
+  if (list && list.length) o.disputes = list;
+  else delete o.disputes;
+  syncWrite(o);
 }
 
-/* Окно разрешения: обе версии на виду, решение — владельца. */
+/* ================================ ++++++ OLD CORE ++++++ ==
+ * УСТРОЙСТВО СО СТАРОЙ ВЕРСИЕЙ ПРОГРАММЫ (находка А13, решение владельца
+ * 02.10.2026).
+ *
+ * Ядро до А6 при «правке против правки» оставляет свою версию записи и
+ * отправляет её; правку нового ядра оно затирает молча — и при одном поле,
+ * и при разных (отправляет запись целиком). Замер — deep-audit/evidence/a13.mjs.
+ *
+ * Отсюда три меры:
+ *   1. конверт обмена — формат 3 (SYNC_ENVELOPE): ядро прежнего формата,
+ *      увидев его, само останавливает обмен и просит обновиться — на Диск
+ *      оно больше не пишет, его правки ждут на нём;
+ *   2. новое ядро замечает файл ПРЕЖНЕГО формата, записанный ДРУГИМ
+ *      устройством после того, что это устройство видело последним, —
+ *      значит, там старая версия: полоса «обновите её там»;
+ *   3. записи, которые поменяла эта запись старого ядра, молча не
+ *      принимаются: их «база» становится не отпечатком, и слияние А6 видит
+ *      «обе стороны правили» — спор с обоими значениями. По данным нельзя
+ *      отличить затирание от обычной правки, поэтому спор — и о записях,
+ *      которые меняло только старое устройство. Это цена, она названа.
+ * Полоса уходит сама, когда в списке писавших форматом 3 появляется
+ * устройство, которого на момент полосы среди них не было, — обновлённое.
+ * Устройство, ПЕРВЫМ перешедшее на новую версию (прочитало файл прежнего
+ * формата), говорит «обновите и на других устройствах» (upHint, слово
+ * владельца 02.10.2026) — иначе при одном порядке событий не предупреждал
+ * никто. Уходит тем же, крестик закрывает её на этом устройстве насовсем.
+ * Номер устройства и метки — в записи обмена ЭТОГО устройства (sync-v1), не
+ * в документе: в копии и на другом устройстве они значили бы неправду.
+ */
+var SYNC_OLD_BASE = 'old-core';     /* «база» записи после записи старого ядра — не отпечаток */
+var SYNC_WRITERS_MAX = 20;          /* сколько номеров устройств помнит конверт */
+
+/** Номер этого устройства — случайный, заводится один раз. */
+function syncDevId(){
+  var o = syncRead() || {};
+  if (typeof o.devId === 'string' && o.devId) return o.devId;
+  o.devId = 'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  syncWrite(o);
+  return o.devId;
+}
+/** Кто писал на Диск форматом 3: пришедшие плюс это устройство, без повторов. */
+function syncWriters(list){
+  var me = syncDevId(), out = [], i;
+  for (i = 0; i < (list || []).length && out.length < SYNC_WRITERS_MAX - 1; i++){
+    if (typeof list[i] === 'string' && list[i] && list[i] !== me && out.indexOf(list[i]) < 0) out.push(list[i]);
+  }
+  out.push(me);
+  return out;
+}
+/* ++++++ OLD CORE DRIFT ++++++ поменял ли файл на Диске ЗАПИСИ относительно того, что это
+   устройство видело последним (база обмена). Номер версии для этого не годится:
+   Google Диск двигает его и сам — после записи файл читается уже со следующим
+   номером (замер 02.10.2026: записано 965, прочитано 966, чужих записей не было).
+   Спорные записи не считаются: их база удержана нарочно (А6). Нет базы — «да». */
+function syncRemoteMoved(doc, base){
+  var skip = {}, dl = syncDisputesRead(), i, j, col, list, b, seen, r, id;
+  if (!doc || !base || typeof base !== 'object') return true;
+  for (i = 0; i < dl.length; i++) if (dl[i]) skip[dl[i].collection + ':' + dl[i].id] = 1;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i]; list = doc[col] || []; b = base[col] || {}; seen = {};
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (!r || typeof r.id !== 'string') continue;
+      seen[r.id] = 1;
+      if (ownKey(skip, col + ':' + r.id)) continue;
+      if (!ownKey(b, r.id) || b[r.id] !== recHash(r)) return true;
+    }
+    for (id in b) if (ownKey(b, id) && !ownKey(seen, id) && !ownKey(skip, col + ':' + id)) return true;
+  }
+  return false;
+}
+/** Чем и кем записан файл на Диске. true — его записало ДРУГОЕ устройство
+ *  форматом прежней версии после того, что это устройство видело последним.
+ *  И снимает отметку «старое устройство», когда файл записан форматом 3
+ *  другим устройством. Это обновлённое: ядро прежней версии, увидев формат 3,
+ *  останавливается ДО записи, поэтому после записи старого первым форматом 3
+ *  пишет устройство, которое тогда ещё не писало им ни разу.
+ *
+ *  Заодно — отметка «это устройство первым перешло на новую версию»
+ *  (upHint, слово владельца 02.10.2026): файл прежнего формата, КТО БЫ его
+ *  ни записал. Без неё при одном порядке событий не предупреждал никто:
+ *  устройство обменялось последним, обновилось — и старому больше нечего
+ *  писать, а новому нечего замечать. Был ли другой аппарат вообще, по файлу
+ *  прежнего формата узнать нельзя: номеров устройств в нём нет. Снимается
+ *  тем же, что и «старое устройство», — форматом 3 от другого. */
+function syncOldSeen(open, ver){
+  var me = syncDevId();
+  var o = syncRead() || {}, ws = open.writers || [], i;
+  if ((open.format || 0) < SYNC_ENVELOPE){
+    if (!o.upHint && o.upClosed !== SYNC_ENVELOPE){ o.upHint = { at: nowISO() }; syncWrite(o); }
+  } else if (o.upHint){
+    for (i = 0; i < ws.length; i++){
+      if (typeof ws[i] === 'string' && ws[i] && ws[i] !== me){ delete o.upHint; syncWrite(o); break; }
+    }
+  }
+  if (!o.version || !ver || String(ver) === String(o.version)) return false;
+  if ((open.format || 0) < SYNC_ENVELOPE){
+    if (!syncRemoteMoved(open.doc, o.base)) return false;   /* ++++++ OLD CORE DRIFT ++++++ номер версии двигает и сам Диск */
+    if (!o.oldDev){ o.oldDev = { at: nowISO() }; syncWrite(o); }
+    return true;
+  }
+  if (!o.oldDev) return false;
+  for (i = 0; i < ws.length; i++){
+    if (typeof ws[i] === 'string' && ws[i] && ws[i] !== me){ delete o.oldDev; syncWrite(o); break; }
+  }
+  return false;
+}
+/** «База» для слияния: запись, которую поменяла запись старого ядра и которая
+ *  здесь не такая же, получает не отпечаток — слияние видит «обе стороны
+ *  правили» и держит спор с обоими значениями. Прежняя «база» не трогается:
+ *  возвращается копия.
+ *    only = null — файл записало старое ядро: смотрятся все записи;
+ *    only = следы из конверта 3 — только записи, чьё значение на Диске всё
+ *      ещё то, что оставило старое ядро. Без следов запись старого,
+ *      пересланная третьим, новым устройством, читалась бы здесь как обычная
+ *      правка — и затёртое терялось бы молча.
+ *  В out ложатся записи, которые запись старого поменяла относительно
+ *  этого устройства, — следы, которые едут дальше (syncOldCarry). */
+function syncOldBase(local, remote, base, only, out){
+  var nb = {}, k, j, i, col, b, byId, mark;
+  for (k in base) if (ownKey(base, k)){ nb[k] = {}; for (j in base[k]) if (ownKey(base[k], j)) nb[k][j] = base[k][j]; }
+  if (!remote) return nb;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    b = nb[col];
+    if (!b) continue;
+    mark = only ? (ownKey(only, col) && only[col] && typeof only[col] === 'object' ? only[col] : null) : null;
+    if (only && !mark) continue;
+    byId = {};
+    (local[col] || []).forEach(function(r){ if (r && typeof r.id === 'string') byId[r.id] = r; });
+    (remote[col] || []).forEach(function(R){
+      if (!R || typeof R.id !== 'string' || !ownKey(b, R.id)) return;
+      var hR = recHash(R);
+      if (mark && !(ownKey(mark, R.id) && mark[R.id] === hR)) return;
+      if (hR === b[R.id]) return;                      /* это значение здесь уже знали */
+      if (out){ if (!out[col]) out[col] = {}; out[col][R.id] = hR; }
+      if (!ownKey(byId, R.id) || recHash(byId[R.id]) === hR) return;
+      b[R.id] = SYNC_OLD_BASE;
+    });
+  }
+  return nb;
+}
+/** Следы старой версии, которые едут дальше в конверте 3: только те, чьё
+ *  значение в отправляемом документе всё ещё оставлено старым ядром. Выбрали
+ *  другое значение или запись поменяли — след снимается сам. */
+function syncOldCarry(maps, doc){
+  var res = {}, m, col, id, idx, i, j;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    idx = null;
+    for (m = 0; m < maps.length; m++){
+      if (!maps[m] || !ownKey(maps[m], col) || !maps[m][col] || typeof maps[m][col] !== 'object') continue;
+      if (!idx){ idx = {}; for (j = 0; j < (doc[col] || []).length; j++) if (doc[col][j] && typeof doc[col][j].id === 'string') idx[doc[col][j].id] = doc[col][j]; }
+      for (id in maps[m][col]) if (ownKey(maps[m][col], id) && ownKey(idx, id) &&
+                                   typeof maps[m][col][id] === 'string' && recHash(idx[id]) === maps[m][col][id]){
+        if (!res[col]) res[col] = {};
+        res[col][id] = maps[m][col][id];
+      }
+    }
+  }
+  return res;
+}
+/** Полоса «на другом устройстве старая версия» — один узел, никогда render().
+ *  Пока её нет, — полоса «обновите и на других устройствах»: старое
+ *  устройство замечено наверняка, и вторая была бы повтором. */
+function syncOldPaint(){
+  var o = syncRead() || {};
+  if (o.oldDev){ removeBanner('sync-up'); banner('sync-old', 'warn', esc(tr('old.bar'))); return; }
+  removeBanner('sync-old');
+  if (o.upHint && o.upClosed !== SYNC_ENVELOPE) banner('sync-up', 'info', esc(tr('old.up')));
+  else removeBanner('sync-up');
+}
+/** Крестик полосы «обновите и на других» закрывает её на этом устройстве
+ *  насовсем — до следующего формата конверта (слово владельца 02.10.2026). */
+function syncUpClose(){
+  var o = syncRead();
+  if (!o) return;
+  o.upClosed = SYNC_ENVELOPE;
+  delete o.upHint;
+  syncWrite(o);
+}
+
+/* ++++++ OLD CORE ++++++ Г18: крестик полосы спора сворачивает её, но спор
+   не пропадает. Свёрнута — до перезапуска или до НОВОГО спора; пока спор не
+   решён, на «Аккаунте» в строке обмена — «Спорных записей: N» и кнопка,
+   открывающая то же окно. Решил последний — строки нет сама. */
+var cfFold = null;     /* споры на миг крестика: { "коллекция:id": 1 } */
+function cfFoldNow(){
+  var i, c, l = syncStatus.conflicts;
+  cfFold = {};
+  for (i = 0; i < l.length; i++){ c = l[i]; cfFold[c.collection + ':' + c.id] = 1; }
+}
+/** Свёрнута ли полоса: да, пока в списке нет спора, которого не было на миг крестика. */
+function cfFolded(){
+  var i, c, l = syncStatus.conflicts;
+  if (!cfFold) return false;
+  for (i = 0; i < l.length; i++){
+    c = l[i];
+    if (!ownKey(cfFold, c.collection + ':' + c.id)){ cfFold = null; return false; }
+  }
+  return true;
+}
+/** «Не отправлено» на «Аккаунте» — без спорных записей (слово владельца
+ *  02.10.2026): их счёт стоит строкой ниже, «Спорных записей: N», и один спор
+ *  двумя словами читался как сбой. Считает ТОТ ЖЕ pendingCount(), что и
+ *  syncPending(), — по документу и отпечаткам без спорных записей; сам
+ *  syncPending() не меняется: его читают загрузка (А12) и очистка
+ *  устройства, а для них версия спорной записи — настоящая неотправленная
+ *  правка. */
+function syncPendingPlain(){
+  var o = syncRead(), l = syncStatus.conflicts, skip = {}, doc = {}, base = {}, i, j, col, b, k;
+  if (!o || !o.base) return 0;
+  if (!l.length) return syncPending();
+  for (i = 0; i < l.length; i++) skip[l[i].collection + ':' + l[i].id] = 1;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    doc[col] = [];
+    for (j = 0; j < (state[col] || []).length; j++){
+      if (!(state[col][j] && ownKey(skip, col + ':' + state[col][j].id))) doc[col].push(state[col][j]);
+    }
+    b = o.base[col];
+    if (!b || typeof b !== 'object') continue;
+    base[col] = {};
+    for (k in b) if (ownKey(b, k) && !ownKey(skip, col + ':' + k)) base[col][k] = b[k];
+  }
+  return pendingCount(doc, base, state.syncTombs || {});
+}
+/** Строка споров на «Аккаунте» — пока список не пуст. */
+function cfAcctHTML(){
+  var n = syncStatus.conflicts.length;
+  if (!n) return '';
+  return '<div class="syncerr" data-cf="acct"><div class="note warn">' + esc(tr('cf.acct', { n: n })) + '</div>' +
+    '<div class="rb"><button type="button" class="go" data-act="sync-conf">' + esc(tr('cf.show')) + '</button></div></div>';
+}
+/* ++++++ OLD CORE END ++++++ */
+
+/* Полоса расхождения: один узел в #alerts, никакого render() — то же
+   правило, что у xtabPaint(). ++++++ CONFLICT KEEP ++++++ и говорит ровно
+   то, что программа делает: до выбора обе версии целы. Список споров
+   запоминается ЗДЕСЬ: полосу зовут после каждого его изменения — удачный
+   обмен, неудачный, решение, запуск, — и что видно на экране, то и
+   запомнено. Отдельная строка в syncRun() разорвала бы правки соседних
+   задач, стоящие там вплотную (base-sync, stock-over). */
+function syncBarPaint(){
+  syncDisputesSave(syncStatus.conflicts);
+  syncOldPaint();                                     /* ++++++ OLD CORE ++++++ А13 */
+  if (!syncStatus.conflicts.length){ cfFold = null; removeBanner('sync-conf'); return; }
+  if (cfFolded()){ removeBanner('sync-conf'); return; }   /* ++++++ OLD CORE ++++++ Г18: свёрнута крестиком */
+  banner('sync-conf', 'warn',
+    esc(tr('cf.bar', {n: syncStatus.conflicts.length})) +
+    '<span class="rb"><button type="button" class="go" data-act="sync-conf">' +
+    esc(tr('cf.show')) + '</button></span>');
+}
+
+/* ================================ ++++++ CONFLICT KEEP ++++++ ==
+ * ОКНО СПОРА: ЗНАЧЕНИЯ, А НЕ ИМЕНА.
+ *
+ * Прежнее окно печатало у каждой версии имя записи и время — у товара это
+ * два одинаковых названия, и сравнить было нечего; полоса при этом
+ * обещала «обе версии сохранятся», а следующий оборот решал спор сам.
+ * Теперь окно показывает разошедшиеся поля со значениями «здесь» и «на
+ * другом устройстве», выбор делается по каждой строке, и до выбора спор
+ * держится (mergeCollection, syncBaseKeep) — в том числе после обмена и
+ * перезапуска (syncDisputesSave).
+ */
+
+/* Подпись поля в окне. Ключи — литералами: test-dead считает ключ живым,
+   когда видит его строкой в коде. */
+var CF_LABEL = {
+  name: 'cf.f.name', product: 'cf.f.what', unitPriceCents: 'cf.f.price', qty: 'cf.f.qty',
+  batches: 'cf.f.qtyBatches', amountCents: 'cf.f.amount', amountMinor: 'cf.f.amount',
+  entryCur: 'cf.f.amount', entryMinor: 'cf.f.amount', cur: 'cf.f.amount',
+  costMinor: 'cf.f.cost', costCur: 'cf.f.cost', saleMinor: 'cf.f.sale', saleCur: 'cf.f.sale',
+  date: 'cf.f.date', note: 'cf.f.note', phone: 'cf.f.phone', city: 'cf.f.city', shop: 'cf.f.shop',
+  description: 'cf.f.desc', photoId: 'cf.f.photo', invoiceIds: 'cf.f.invoices',
+  trashedAt: 'cf.f.trash', trashGroup: 'cf.f.trash', personId: 'cf.f.person', productId: 'cf.f.product',
+  cat: 'cf.f.cat', items: 'cf.f.items', kind: 'cf.f.kind', status: 'cf.f.status', closedAt: 'cf.f.status'
+};
+
+/** Строки окна: разошедшиеся поля, сведённые в группы MERGE_GROUPS —
+ *  количество выбирается вместе с партиями, сумма — с валютой ввода. */
+function cfRows(fields){
+  var rows = [], used = {}, i, g, j, f, x, row;
+  fields = fields || [];
+  for (i = 0; i < fields.length; i++){
+    f = fields[i];
+    if (ownKey(used, f)) continue;
+    row = [f]; used[f] = 1;
+    for (g = 0; g < MERGE_GROUPS.length; g++){
+      if (MERGE_GROUPS[g].indexOf(f) < 0) continue;
+      for (j = 0; j < MERGE_GROUPS[g].length; j++){
+        x = MERGE_GROUPS[g][j];
+        if (x !== f && fields.indexOf(x) > -1 && !ownKey(used, x)){ row.push(x); used[x] = 1; }
+      }
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function cfLabel(row){
+  if (row.indexOf('batches') > -1 || row.indexOf('qty') > -1 && row.length > 1) return tr('cf.f.qtyBatches');
+  return ownKey(CF_LABEL, row[0]) ? tr(CF_LABEL[row[0]]) : tr('cf.f.other', { k: esc(row[0]) });
+}
+
+/** Имя человека или товара по id — из ВСЕГО документа, корзина тоже:
+ *  спорить могут и о записи, которую уже убрали. */
+function cfName(id){
+  var x = trashFind(state, id);
+  return x && x.rec && x.rec.name ? String(x.rec.name) : '—';
+}
+
+/** Значение строки окна у записи r, готовое для innerHTML. */
+function cfValue(row, r){
+  if (!r) return esc(tr('cf.v.none'));
+  var f = row[0], v, has = function(k){ return ownKey(r, k) && r[k] !== undefined && r[k] !== null && r[k] !== ''; };
+  if (row.indexOf('batches') > -1){
+    var bs = r.batches || [], spent = 0, i;
+    for (i = 0; i < bs.length; i++) spent += bs[i].totalCostCents || 0;
+    return tr('cf.v.stock', { qty: esc(String(r.qty)), n: esc(String(bs.length)), sum: baseOne(spent) });
+  }
+  if (f === 'unitPriceCents' || f === 'amountCents' || f === 'entryCur' || f === 'entryMinor'){
+    var cents = has('unitPriceCents') ? r.unitPriceCents : r.amountCents;
+    v = typeof cents === 'number' ? baseOne(cents) : esc(tr('cf.v.empty'));
+    if (has('entryCur') && has('entryMinor') && r.entryCur !== state.settings.baseCurrency)
+      v += ' · ' + tr('cf.v.entered', { v: fmtMinor(r.entryMinor) + ' ' + esc(r.entryCur) });
+    return v;
+  }
+  if (f === 'amountMinor' || f === 'cur') return has('amountMinor') ? fmtMinor(r.amountMinor) + ' ' + esc(r.cur || '') : esc(tr('cf.v.empty'));
+  if (f === 'costMinor' || f === 'costCur') return has('costMinor') ? fmtMinor(r.costMinor) + ' ' + esc(r.costCur || '') : esc(tr('cf.v.empty'));
+  if (f === 'saleMinor' || f === 'saleCur') return has('saleMinor') ? fmtMinor(r.saleMinor) + ' ' + esc(r.saleCur || '') : esc(tr('cf.v.empty'));
+  if (f === 'trashedAt' || f === 'trashGroup') return esc(tr(has('trashedAt') ? 'cf.v.inTrash' : 'cf.v.notTrash'));
+  if (f === 'status' || f === 'closedAt') return has('status') ? esc(tr('ord.st.' + r.status)) : esc(tr('cf.v.empty'));
+  if (f === 'personId' || f === 'productId') return has(f) ? esc(cfName(r[f])) : esc(tr('cf.v.empty'));
+  if (f === 'date') return has('date') ? esc(fmtDateLong(String(r.date)) + ' ' + String(r.date).slice(0, 4)) : esc(tr('cf.v.empty'));
+  if (f === 'qty') return esc(String(r.qty));
+  if (f === 'photoId') return esc(tr(has('photoId') ? 'cf.v.photo' : 'cf.v.noPhoto'));
+  if (f === 'invoiceIds') return esc(tr('cf.v.files', { n: (r.invoiceIds || []).length }));
+  if (f === 'items') return esc(tr('cf.v.items', { n: (r.items || []).length }));
+  if (f === 'cat') return has('cat') ? esc(tr('exp.cat.' + r.cat)) : esc(tr('cf.v.empty'));
+  if (f === 'kind') return esc(tr(r.kind === 'borrowed' ? 'loan.kindBorrowed' : 'loan.kindLent'));
+  if (!has(f)) return esc(tr('cf.v.empty'));
+  if (typeof r[f] === 'string' || typeof r[f] === 'number') return esc(String(r[f]));
+  return esc(JSON.stringify(r[f]).slice(0, 80));
+}
+
+/** Заголовок окна: какая запись. */
+function cfTitle(c){
+  var r = c.local || c.remote || {}, col = c.collection;
+  if (col === 'products') return tr('cf.t.product', { name: r.name || '' });
+  if (col === 'people') return tr('cf.t.person', { name: r.name || '' });
+  if (col === 'transactions') return tr('cf.t.tx', { who: cfName(r.personId), what: cfName(r.productId), date: fmtDateLong(r.date) });
+  if (col === 'payments') return tr('cf.t.pay', { who: cfName(r.personId), date: fmtDateLong(r.date) });
+  if (col === 'lots' || col === 'loans' || col === 'orders') return tr('cf.t.named', { name: r.name || '' });
+  return tr('cf.t.other', { date: fmtDateLong(r.date) });
+}
+
+/** Версия «здесь» — та, что СЕЙЧАС в документе: после спора владелец мог
+ *  поправить запись ещё раз, и показывать надо её, а не снимок спора. */
+function cfFind(c){
+  var list = state[c.collection] || [], i;
+  for (i = 0; i < list.length; i++) if (list[i].id === c.id) return list[i];
+  return null;
+}
+function cfHere(c){ return cfFind(c) || c.local; }
+
+/** Применить выбор: строки с «на другом» берутся из версии с Диска.
+ *  Проверка — та же, что у «Взять с другого» (syncTheirsTake): запись,
+ *  которой validate() не примет, в документ не кладётся. База этой записи
+ *  становится отпечатком той версии с Диска, которую владелец видел, —
+ *  следующий оборот увидит правку только здесь и отправит её.
+ *  Пустая строка — удалось; иначе — почему нет. */
+function cfApply(c, rows, picks){
+  var cur = cfFind(c), rec, i, j, f, why, o;
+  if (!cur) return tr('sy.cTheirsGone');
+  rec = JSON.parse(JSON.stringify(cur));
+  for (i = 0; i < rows.length; i++){
+    if (picks[i] !== 'theirs') continue;
+    for (j = 0; j < rows[i].length; j++){
+      f = rows[i][j];
+      if (c.remote && ownKey(c.remote, f) && c.remote[f] !== undefined) rec[f] = JSON.parse(JSON.stringify(c.remote[f]));
+      else delete rec[f];
+    }
+  }
+  why = syncTheirsTake({ collection: c.collection, id: c.id, remote: rec });
+  if (why) return why;
+  touch(c.id);
+  o = syncRead();
+  if (o && o.base && c.remoteHash){
+    if (!o.base[c.collection]) o.base[c.collection] = {};
+    o.base[c.collection][c.id] = c.remoteHash;
+    syncWrite(o);
+  }
+  return '';
+}
+
+/** Спор решён: убрать из списка, запомнить список, сохранить и — если
+ *  споры остались — показать следующий. */
+function cfDone(c){
+  var i, l = syncStatus.conflicts;
+  for (i = l.length - 1; i >= 0; i--) if (l[i].id === c.id && l[i].collection === c.collection) l.splice(i, 1);
+  syncDisputesSave(l);
+  syncBarPaint();
+  commit();
+  if (l.length) syncConflictSheet();
+}
+
+/** Решение без окна — его же зовёт окно. picks: 'mine' | 'theirs' по
+ *  строкам cfRows(c.fields). Пустая строка — удалось. */
+function cfDecide(c, picks){
+  var why = cfApply(c, cfRows(c.fields), picks);
+  if (why) return why;
+  cfDone(c);
+  return '';
+}
+
+/** Правку сделали здесь, удалили на другом устройстве. Вернуть запись на
+ *  другие устройства этой правкой нельзя (это отдельная задача), поэтому
+ *  ответов два: удалить и здесь — или решить позже, и тогда запись
+ *  остаётся только здесь. */
+function cfDeleteSheet(c){
+  dialog({
+    title: tr('wipe.cDelTitle'),
+    sub: esc(cfTitle(c)),
+    html: '<div class="note">' + tr('cf.delBody', { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))) }) + '</div>',
+    cancelLabel: tr('cf.later'),
+    buttons: [{ key: 'del', label: tr('wipe.delHere'), variant: 'danger' }]
+  }).then(function(k){
+    if (k !== 'del') return;
+    dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
+    cfDone(c);
+  });
+}
+
+/* Окно разрешения: значения на виду, решение — владельца, по каждой строке. */
 function syncConflictSheet(){
   var c = syncStatus.conflicts[0];
   if (!c) return;
-  var name = function(r){
-    if (!r) return '—';
-    return esc(String(r.name || r.note || r.id || '—'));
-  };
-  /* ++++++ ERASE SPLIT ++++++ ТРЕТИЙ ОТВЕТ, И БЕЗ НЕГО СПОР НЕРАЗРЕШИМ.
-     У конфликта «правка против удаления» remote === null, поэтому
-     «взять с другого устройства» защищено условием ниже и не делает
-     НИЧЕГО: конфликт снимается, запись остаётся. Пока «удалить везде»
-     не существовало, случай был почти недостижим; с ним он обычный. */
-  var isDel = wipeCanDeleteHere(c);
-  var btns = isDel
-    ? [{ key:'mine', label: tr('sy.cMine') },
-       { key:'del', label: tr('wipe.delHere'), variant:'danger' }]
-    : [{ key:'mine', label: tr('sy.cMine') },
-       { key:'theirs', label: tr('sy.cTheirs'), variant:'primary' }];
+  if (wipeCanDeleteHere(c)){ cfDeleteSheet(c); return; }
+  var rows = cfRows(c.fields || mergeFieldsDiff(c.local || {}, c.remote || {}));
+  var here = cfHere(c), h = '<div class="note">' + tr('cf.body') + '</div>', i;
+  for (i = 0; i < rows.length; i++){
+    h += '<div class="cfrow"><b>' + esc(cfLabel(rows[i])) + '</b>' +
+      '<label class="cfopt"><input type="radio" name="cf' + i + '" value="mine"><span>' + esc(tr('cf.here')) +
+        '<small>' + cfValue(rows[i], here) + '</small></span></label>' +
+      '<label class="cfopt"><input type="radio" name="cf' + i + '" value="theirs"><span>' + esc(tr('cf.there')) +
+        '<small>' + cfValue(rows[i], c.remote) + '</small></span></label></div>';
+  }
   dialog({
-    title: isDel ? tr('wipe.cDelTitle') : tr('sy.cTitle'),
-    html: '<div class="note">' +
-            (isDel ? tr('wipe.cDelBody')
-                   : esc(tr('sy.cBody', {n: syncStatus.conflicts.length}))) + '</div>' +
-          '<div class="row"><div class="k"><b>' + name(c.local) + '</b>' +
-          '<small>' + esc(c.localAt || '') + '</small></div></div>' +
-          '<div class="row"><div class="k"><b>' + name(c.remote) + '</b>' +
-          '<small>' + esc(isDel ? (c.deletedAt || '') : (c.remoteAt || '')) + '</small></div></div>',
-    buttons: btns
+    title: tr('cf.title'),
+    sub: esc(cfTitle(c)) + (syncStatus.conflicts.length > 1 ? ' · ' + esc(tr('cf.left', { n: syncStatus.conflicts.length })) : ''),
+    html: h,
+    cancelLabel: tr('cf.later'),
+    buttons: [{ key: 'ok', label: tr('cf.save'), variant: 'primary' }]
   }).then(function(k){
-    if (!k) return;
-    if (k === 'theirs' && c.remote){
-      /* ++++++ STOCK OVER ++++++ чужая версия шла в state как есть, и документ,
-         которого validate() не принимает, уходил на диск: при следующем
-         запуске программа открывалась ПУСТОЙ (находка А5). Не годится —
-         остаётся своя версия, спор остаётся в списке, и сказано почему. */
-      var why = syncTheirsTake(c);
-      if (why){ banner('sync-theirs', 'err', tr('sy.cTheirsNo', { why: esc(why) })); return; }
-      touch(c.id);
+    if (k !== 'ok') return;
+    var picks = [], x;
+    for (i = 0; i < rows.length; i++){
+      x = document.querySelector('#modalRoot > .modal-back:last-child input[name="cf' + i + '"]:checked');
+      if (!x){ toast(tr('cf.pickAll'), 'warn'); return; }
+      picks.push(x.value);
     }
-    /* ++++++ ERASE SPLIT ++++++ принять удаление — это существующий
-       dropFrom(): только он ставит надгробие, и только надгробие делает
-       удаление окончательным. Каскада здесь нет и не нужно: соседние
-       записи приехали со своими надгробиями, когда удаляли там. */
-    if (k === 'del') dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
-    syncStatus.conflicts.shift();
-    syncBarPaint();
-    commit();
+    var why = cfApply(c, rows, picks);
+    if (why){ banner('sync-theirs', 'err', tr('sy.cTheirsNo', { why: esc(why) })); return; }
+    cfDone(c);
   });
 }
 
@@ -30328,6 +31094,122 @@ function syncEnv(){
 }
 
 /* Один обмен. Зовётся кнопкой, стартом приложения и отложенной отправкой. */
+/* ================================== ++++++ BG CUT ++++++ ==
+ * Телефон: программа ушла в фон — обмен честно прерывается и повторяется
+ * сам, как только программу откроют (находка Г17 аудита).
+ *
+ * Через несколько секунд после «Домой» или погасшего экрана Android
+ * закрывает фоновой программе сеть (замер 02.10.2026, dumpsys netpolicy:
+ * effective=APP_BACKGROUND). Запрос, не получивший ответа к этому мигу,
+ * ВИСИТ; когда он наконец отказывал, программа писала «Нет сети… уедут
+ * сами, когда сеть вернётся» — при живой сети. И по возвращении обмен сам
+ * не повторялся: правило Г15 считает и неудачный обмен.
+ *
+ * Решение владельца (02.10): фоновой службы нет; в фоне обмен не
+ * продолжается — честно прерывается, а при возврате повторяется сразу.
+ *
+ *   · через BG_GRACE_MS после ухода запросы к Диску, ещё не получившие
+ *     ответа, обрываются (AbortController) — отказ 'bg', а не 'net'.
+ *     Первые секунды не трогаются: обмен, начатый сразу при уходе, успевает
+ *     целиком (замер: чтение и запись за 3 с);
+ *   · пока программа в фоне дольше BG_GRACE_MS, новый обмен не начинается;
+ *   · при возврате прерванный или отложенный обмен идёт СРАЗУ, без порога
+ *     Г15 в две минуты. Если JavaScript в фоне приостановили раньше
+ *     таймера, висящие запросы обрываются при возврате.
+ *
+ * Только на телефоне (uiPlat() === 'and'): свёрнутое окно компьютера сеть
+ * не теряет, и там всё как было. Без AbortController — тоже как было.
+ *
+ * Половины файла на Диске не бывает: документ уходит одним PATCH
+ * uploadType=media с полным телом, и оборванный запрос Диск не применяет.
+ * ====================================================================== */
+var BG_GRACE_MS = 3000;
+/* когда программа ушла в фон (0 — на экране) и когда вернулась */
+var bgHideAt = 0;
+var bgShowAt = 0;
+var bgTimer = null;
+/* запросы к Диску в пути: { c: обрыватель, at: начало, cut: оборван ли } */
+var bgLive = [];
+/* обмен прерван или отложен фоном — повторить при возврате */
+var bgCutFlag = false;
+
+/** Действует ли: телефон, и обрывать запрос есть чем. */
+function bgOn(){ return uiPlat() === 'and' && typeof AbortController === 'function'; }
+
+/** Запрос к Диску начинается: его запись, или null — обрывать не нужно. */
+function bgReq(){
+  if (!bgOn()) return null;
+  var r = { c: new AbortController(), at: Date.now(), cut: false };
+  bgLive.push(r);
+  return r;
+}
+
+/** Запрос кончился, ответом или отказом: был ли он оборван. */
+function bgDone(r){
+  if (!r) return false;
+  var i = bgLive.indexOf(r);
+  if (i > -1) bgLive.splice(i, 1);
+  return r.cut;
+}
+
+/** Оборвать запросы, начатые раньше `before`; при возврате — и те, что висят
+ *  дольше BG_GRACE_MS (`now`). Совсем свежий запрос, начатый перед самым
+ *  возвратом (обмен кода после входа в Google), не трогается. */
+function bgCutAll(before, now){
+  var i, r;
+  for (i = 0; i < bgLive.length; i++){
+    r = bgLive[i];
+    if (r.cut) continue;
+    if (r.at < before || (now && now - r.at >= BG_GRACE_MS)){
+      r.cut = true; bgCutFlag = true;
+      try { r.c.abort(); } catch (e) {}
+    }
+  }
+}
+
+/** В фоне дольше BG_GRACE_MS обмен не начинается — он нужен при возврате. */
+function bgDefer(){
+  if (!bgOn() || !bgHideAt || Date.now() - bgHideAt < BG_GRACE_MS) return false;
+  bgCutFlag = true;
+  return true;
+}
+
+/** Возврат после прерванного или отложенного обмена: сразу, без порога Г15 —
+ *  прямо syncRun(), а не обменом возврата Г15 с его двумя минутами: прерванный
+ *  обмен не повод ждать. Обмен, начатый уже после возврата (тем же Г15),
+ *  второй раз не идёт; прерванный оборот сперва должен отчитаться. */
+function bgRetry(n){
+  if (!bgCutFlag || document.visibilityState === 'hidden') return;
+  if (syncLastTry >= bgShowAt){ bgCutFlag = false; return; }
+  if (syncStatus.busy){ if (n < 40) setTimeout(function(){ bgRetry(n + 1); }, 250); return; }
+  bgCutFlag = false;
+  syncCancelPending();
+  syncRun(false);
+}
+
+/** Ушла в фон — через BG_GRACE_MS оборвать запросы; вернулась — повторить. */
+function bgVis(){
+  if (!bgOn()) return;
+  var now = Date.now(), h;
+  if (document.visibilityState === 'hidden'){
+    if (bgHideAt) return;
+    bgHideAt = h = now;
+    bgTimer = setTimeout(function(){
+      bgTimer = null;
+      if (bgHideAt === h) bgCutAll(h + BG_GRACE_MS, 0);
+    }, BG_GRACE_MS);
+    return;
+  }
+  if (!bgHideAt) return;
+  h = bgHideAt; bgHideAt = 0; bgShowAt = now;
+  if (bgTimer){ clearTimeout(bgTimer); bgTimer = null; }
+  if (now - h >= BG_GRACE_MS) bgCutAll(h + BG_GRACE_MS, now);
+  if (bgCutFlag) setTimeout(function(){ bgRetry(0); }, 0);
+}
+if (typeof document !== 'undefined' && document.addEventListener)
+  document.addEventListener('visibilitychange', bgVis, false);
+/* ++++++ BG CUT END ++++++ */
+
 /* ================================ ++++++ RESUME SYNC ++++++ ==
  * Программа, вернувшаяся из фона, сама забирает с Диска то, что изменили
  * на другом устройстве (находка Г15 аудита, пункт владельца №4).
@@ -30407,6 +31289,7 @@ function syncResumeWatch(){
 /* ++++++ RESUME SYNC END ++++++ */
 
 function syncRun(loud){
+  if (bgDefer()) return;   /* ++++++ BG CUT ++++++ в фоне обмен не начинается — повторится при возврате */
   if (!syncCfgFull()){ if (loud){ syncStatus.err = 'off'; render(); } return; }
   /* ++++++ TOMBS KEEP ++++++ оборот уже идёт — запросить следующий: правка
      или удаление, сделанные сейчас, в идущем обороте не едут. */
@@ -30446,7 +31329,10 @@ function syncRun(loud){
          успехе обязано её называть: в продуктовой сборке нет ни
          репозитория, ни учётной записи GitHub, и слово «GitHub» на
          экране владельца — про чужой механизм. */
-      if (loud) toast(tr(modeIsProduct() ? 'gd.okNow' : 'sy.okNow'), 'ok');
+      /* ++++++ CONFLICT KEEP ++++++ у удержанного спора версия этого устройства на Диск НЕ
+         ушла — «всё на Диске» рядом с полосой спора было бы неправдой */
+      if (loud) toast(syncStatus.conflicts.length ? tr('cf.okHeld', {n: syncStatus.conflicts.length}) :
+        tr(modeIsProduct() ? 'gd.okNow' : 'sy.okNow'), syncStatus.conflicts.length ? 'warn' : 'ok');
       /* ++++++ ATT SYNC ++++++ файлы едут ПОСЛЕ документа и отдельным
          заходом. Документ маленький и от него зависят все цифры; файлы
          большие, и прерванная закачка не должна задерживать записи. */
@@ -30799,7 +31685,7 @@ function gdErrAt(url, status, err, text){
 }
 /** На ВХОДЕ `auth` значит одно: Google не выдал доступ. Истёкшего ключа
  *  здесь не бывает — ключа ещё нет. */
-function gdAtSignIn(err){ return err === 'auth' ? 'authrefused' : err; }
+function gdAtSignIn(err){ return err === 'auth' ? 'authrefused' : err === 'bg' ? 'expired' : err; }   /* ++++++ BG CUT ++++++ вход сам не повторяется */
 
 /* ---- потерянный вход не забывается при перезапуске ----------------
    Истёкший вход — самая частая беда (пока программа в Google на проверке,
@@ -31540,6 +32426,9 @@ function boot(){
   /* ++++++ TWO WINDOWS ++++++ подписка ПОСЛЕ первой отрисовки, по той же
      причине, что и загрузочная полоса выше: banner() кладёт узел в #alerts. */
   xtabWatch();
+  /* ++++++ CONFLICT KEEP ++++++ спор, оставшийся с прошлого раза, виден сразу, и без сети
+     тоже — по той же причине, что и строки выше: banner() кладёт узел в #alerts. */
+  syncBarPaint();
   /* ++++++ SYNC ++++++ по той же причине, что и две строки выше: сначала
      показать документ, потом идти в сеть. */
   syncBoot();
@@ -31757,6 +32646,11 @@ window.GoodsTracker = {
     get busy(){ return attSyncBusy; },
     REC: ATT_SYNC_REC
   },
+  /* ++++++ BG CUT ++++++ наборы и живая проверка спрашивают состояние обмена и фона */
+  bg: { get err(){ return syncStatus.err; }, get busy(){ return syncStatus.busy; },
+        get live(){ return bgLive.length; }, get hidden(){ return bgHideAt; },
+        get pending(){ return bgCutFlag; }, get lastTry(){ return syncLastTry; },
+        on: bgOn, GRACE: BG_GRACE_MS },
   att: {
     get meta(){ return attMeta; },
     get state(){ return attState; },
