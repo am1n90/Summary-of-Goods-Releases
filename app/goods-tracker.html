@@ -5206,6 +5206,10 @@ var STR = {
                   ru:'Файл на Google Диске не читается. Ваши записи не тронуты.' },
 'gd.eBusy':     { en:'The other device kept writing while we were. Nothing is lost — try again in a minute.',
                   ru:'Второе устройство писало одновременно с нами. Ничего не потеряно — попробуйте через минуту.' },
+'gd.raceGone':  { en:'An edit from another device may not have been saved — it arrived in the same second. Check the latest records on the other device.',
+                  ru:'Правка с другого устройства могла не сохраниться — она пришла в ту же секунду. Проверьте последние записи на другом устройстве.' },   /* ++++++ DRIVE RACE ++++++ */
+'gd.raceGoneNames': { en:'An edit from another device may not have been saved — it arrived in the same second. Check on the other device: {names}.',
+                  ru:'Правка с другого устройства могла не сохраниться — она пришла в ту же секунду. Проверьте на другом устройстве: {names}.' },   /* ++++++ DRIVE RACE ++++++ */
 'gd.eServer':   { en:'Google answered with an error. The records are untouched.',
                   ru:'Google ответил ошибкой. Записи не тронуты.' },
 
@@ -6984,8 +6988,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.30.0';
-var APP_BUILD = '2026-10-05T05:44:18.982Z';
+var APP_VERSION = '1.30.1';
+var APP_BUILD = '2026-10-05T13:22:41.266Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -10154,6 +10158,442 @@ function gdUpdate(access, id, text, cb){
 /* ==================================================================
  * ЧАСТЬ 5. ТРАНСПОРТ
  * ================================================================== */
+/* ================================ ++++++ DRIVE RACE ++++++ ==
+ * ЗАПИСЬ СОСЕДА, ПОПАВШАЯ В ОКНО МЕЖДУ ПРОВЕРКОЙ И ЗАПИСЬЮ, НЕ ТЕРЯЕТСЯ
+ * (находка А15 аудита, слово владельца 05.10.2026).
+ *
+ * У Диска нет условной записи: files.update не принимает ни If-Match, ни
+ * ETag, ни условия по версии — список параметров метода:
+ * https://developers.google.com/workspace/drive/api/reference/rest/v3/files/update
+ * Поэтому «спросить метку» и «записать» — два запроса, и запись другого
+ * устройства, пришедшую между ними, наша затирает. Дальше хуже: на том
+ * устройстве следующий обмен читал наш файл, считал свою правку уже
+ * отправленной — и заменял её нашим значением. Молча, на обоих.
+ *
+ * Закрыть окно нельзя. Но Диск ХРАНИТ затёртое: каждая запись — своя
+ * ревизия, список ревизий идёт в порядке, в котором Диск записи применил, и
+ * содержимое свежей ревизии скачивается (замер на настоящем Диске с двух
+ * устройств, 05.10.2026: 117 проверок; две записи подряд — всегда две
+ * ревизии). Отсюда правило: ЗАМЕТИТЬ ПОСЛЕ ЗАПИСИ И ДОПИСАТЬ.
+ *
+ *   1. До записи устройство запоминает окно: «читал ревизию такую-то, пишу
+ *      столько-то байт с таким отпечатком». После ответа записи — её
+ *      ревизию. Ответ не дошёл (запись при этом могла лечь) — своя ревизия
+ *      узнаётся потом: по размеру и отпечатку содержимого.
+ *   2. Сразу после записи спрашивается список ревизий. Между прочитанной и
+ *      своей пусто — сосед не писал, обмен кончен как прежде. Не пусто —
+ *      это ревизии, которые наша запись затёрла.
+ *   3. Затёртая ревизия чинится НА ДИСКЕ: голова файла сливается с ней тем
+ *      же движком слияния (mergeDocs), общий предок — ревизия, которую
+ *      читали перед записью. Разные записи и разные поля сливаются сами;
+ *      одно поле — на Диск уходит значение соседа, а база этой записи на
+ *      устройстве возвращается к предку, и следующий оборот видит обычный
+ *      спор с обоими значениями (правила А6). Документ устройства починка
+ *      не трогает вовсе: он меняется только оборотом, через validate().
+ *   4. Что-то не получено (сеть, фон) — это ДОЛГ: он лежит в записи обмена
+ *      устройства (sync-v1.race) и переживает перезапуск; обмен кончается
+ *      ошибкой, а следующий начинается с долга.
+ *   5. Каждый отвечает за то, что затёр сам: запись починки проверяется
+ *      тем же способом. Защита полная, когда правка стоит на обоих
+ *      устройствах.
+ *
+ * Цена: один запрос списка ревизий на каждую запись файла (замер: 0,3 с на
+ * компьютере, 0,6 с на телефоне). Диск, не отдающий список ревизий или
+ * ревизию в метке, — всё как до правки.
+ *
+ * Движок слияния, syncCycle() и syncEnv() не тронуты: всё живёт в
+ * транспорте Диска, запросы идут через gdReq().
+ * ============================================================== */
+var RACE_MAX = 4;        /* сколько починок делает один обмен; дальше — «занято» */
+var RACE_KICKS = 5;      /* сколько обменов подряд починка может запросить сама */
+var raceKicks = 0;
+
+/** Номер ревизии из метки файла; метка без ревизии — пустая строка. */
+function raceId(mark){
+  return (typeof mark === 'string' && mark.indexOf('r:') === 0) ? mark.slice(2) : '';
+}
+/** Сколько БАЙТ уйдёт на Диск: размер ревизии Диск называет в байтах. */
+function raceBytes(s){
+  var n = 0, i, c;
+  for (i = 0; i < s.length; i++){
+    c = s.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length &&
+             (s.charCodeAt(i + 1) & 0xFC00) === 0xDC00){ n += 4; i++; }
+    else n += 3;
+  }
+  return n;
+}
+/** Долг этого устройства: окно последней своей записи и очередь затёртых
+ *  ревизий. Кривое значение читается как «долга нет». */
+function raceRead(){
+  var o = syncRead(), r = o && o.race, out = { win: null, revs: [] }, i, x;
+  if (!r || typeof r !== 'object') return out;
+  if (r.win && typeof r.win === 'object' && typeof r.win.from === 'string' && r.win.from)
+    out.win = { from: r.win.from, to: typeof r.win.to === 'string' ? r.win.to : '',
+                size: typeof r.win.size === 'number' ? r.win.size : -1,
+                sum: typeof r.win.sum === 'string' ? r.win.sum : '' };
+  if (Object.prototype.toString.call(r.revs) === '[object Array]'){
+    for (i = 0; i < r.revs.length; i++){
+      x = r.revs[i];
+      if (x && typeof x.id === 'string' && x.id && typeof x.anc === 'string' && x.anc)
+        out.revs.push({ id: x.id, anc: x.anc });
+    }
+  }
+  return out;
+}
+function raceSave(r){
+  var o = syncRead();
+  if (!o) return;
+  if (r && (r.win || (r.revs && r.revs.length))) o.race = { win: r.win || null, revs: r.revs || [] };
+  else delete o.race;
+  syncWrite(o);
+}
+/** Список ревизий файла в порядке, в котором Диск их применил. */
+function gdRevList(access, id, cb, page, acc, n){
+  gdReq({ url: GD_API + '/files/' + encodeURIComponent(id) + '/revisions?pageSize=1000&fields=' +
+               encodeURIComponent('nextPageToken,revisions(id,size)') +
+               (page ? '&pageToken=' + encodeURIComponent(page) : ''),
+          token: access }, function(err, j, status){
+    var list, i;
+    if (err){ cb(err, null, status); return; }
+    list = (j && Object.prototype.toString.call(j.revisions) === '[object Array]') ? j.revisions : null;
+    if (!list){ cb(null, null, status); return; }   /* списка в ответе нет — Диск его не отдаёт */
+    acc = acc || [];
+    for (i = 0; i < list.length; i++){
+      if (list[i] && typeof list[i].id === 'string')
+        acc.push({ id: list[i].id, size: Number(list[i].size) });
+    }
+    if (j.nextPageToken && (n || 0) < 4){ gdRevList(access, id, cb, String(j.nextPageToken), acc, (n || 0) + 1); return; }
+    cb(null, acc, status);
+  });
+}
+/** Содержимое одной ревизии — текстом, как gdDownload(). */
+function gdRevText(access, id, rev, cb){
+  gdReq({ url: GD_API + '/files/' + encodeURIComponent(id) + '/revisions/' + encodeURIComponent(rev) + '?alt=media',
+          token: access, raw: true }, cb);
+}
+/** Диск ответил, что списка ревизий у него нет вовсе (не «сейчас не вышло»):
+ *  тогда проверять нечем, и обмен идёт как до правки. */
+function raceNoList(err, status){
+  return status >= 400 && status < 500 && status !== 401 && status !== 403 &&
+         status !== 408 && status !== 429;
+}
+/** Ревизии на Диске больше нет (не «сейчас не вышло»). */
+function raceGoneStatus(status){ return status === 403 || status === 404 || status === 410; }
+/** Что лежит между прочитанной ревизией и своей записью.
+ *    lost — прочитанной ревизии в списке уже нет: сказать нечего;
+ *    wait — своей записи в списке ещё нет: спросить позже;
+ *    ids  — затёртые ревизии, по порядку. */
+function raceBetween(list, from, to){
+  var a = -1, b = -1, i, ids = [];
+  for (i = 0; i < list.length; i++) if (list[i].id === from) a = i;
+  if (a < 0) return { lost: true, ids: ids };
+  for (i = a + 1; i < list.length; i++) if (list[i].id === to) b = i;
+  if (b < 0) return { wait: true, ids: ids };
+  for (i = a + 1; i < b; i++) ids.push(list[i].id);
+  return { ids: ids };
+}
+/** Своя ревизия неизвестна (ответ записи не дошёл): кандидаты — ревизии
+ *  после прочитанной с тем же числом байт. Какая из них своя, решает
+ *  отпечаток содержимого; ни одна — запись не легла. */
+function raceCands(list, w){
+  var a = -1, i, out = [];
+  for (i = 0; i < list.length; i++) if (list[i].id === w.from) a = i;
+  if (a < 0) return null;
+  for (i = a + 1; i < list.length; i++) if (list[i].size === w.size) out.push(list[i].id);
+  return out;
+}
+/** Починка: голова файла (S) сливается с затёртой ревизией (N), общий
+ *  предок — ревизия, прочитанная перед записью (A). «Здесь» для слияния —
+ *  голова: при споре одного поля на Диск уходит значение затёртой ревизии. */
+function raceMerge(S, N, A){
+  var base = baseOf(A.doc);
+  var merged = mergeDocs(mergeInSettingsAt(S.doc, S.settingsAt), mergeInSettingsAt(N.doc, N.settingsAt),
+                         base, S.tombstones, N.tombstones, S.doc.syncMeta, N.doc.syncMeta, S.undel, N.undel);
+  syncDelMine(merged, N.doc, N.tombstones);
+  var send = merged.send || merged.doc;
+  var won = (N.settingsAt && (!S.settingsAt || N.settingsAt > S.settingsAt)) ? N.settingsAt : S.settingsAt;
+  var env = envelopeOf(send, merged.sendTombs || merged.tombstones, {
+    updatedAt: nowISO(), updatedBy: S.updatedBy || '',
+    writers: syncWriters((S.writers || []).concat(N.writers || [])),
+    oldRecs: syncOldCarry([S.oldRecs, N.oldRecs], send),
+    undel: merged.undel, settingsAt: won, map: send.syncMeta
+  });
+  return { text: envelopeText(env), send: send, base: base, conflicts: merged.conflicts || [] };
+}
+/** Сколько записей назвать в полосе: подсказка «где смотреть», а не отчёт. */
+var RACE_NAMES_SHOWN = 3;
+/** Какие записи назвать, когда затёртую ревизию (N) прочитать удалось, а
+ *  слить нечем — её предка Диск уже не отдаёт. Называются записи, которые в
+ *  затёртой ревизии НЕ ТАКИЕ, как в голове файла (S): изменённые, удалённые
+ *  там и отсутствующие в голове. Без предка не видно, чья правка новее,
+ *  поэтому список — с запасом: в него попадает и то, что правило это
+ *  устройство. Лишнее имя — лишняя проверка; пропущенное — тихая потеря. */
+function raceNames(S, N){
+  var out = [], i, j, col, list, inS, r, t;
+  if (!S || !N || S.err || N.err || !S.doc || !N.doc) return out;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    inS = {};
+    list = S.doc[col] || [];
+    for (j = 0; j < list.length; j++) if (list[j] && typeof list[j].id === 'string') inS[list[j].id] = list[j];
+    list = N.doc[col] || [];
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (!r || typeof r.id !== 'string') continue;
+      if (ownKey(inS, r.id) && recHash(inS[r.id]) === recHash(r)){ delete inS[r.id]; continue; }
+      t = cfTitle({ collection: col, local: r });
+      if (out.indexOf(t) < 0) out.push(t);
+      delete inS[r.id];
+    }
+    /* в голове запись есть, а в затёртой ревизии её удалили */
+    for (j in inS) if (ownKey(inS, j) && N.tombstones && ownKey(N.tombstones, j)){
+      t = cfTitle({ collection: col, local: inS[j] });
+      if (out.indexOf(t) < 0) out.push(t);
+    }
+  }
+  return out;
+}
+/** Имена через запятую, с хвостом «и ещё N записей». */
+function raceNamesText(names){
+  var shown = names.slice(0, RACE_NAMES_SHOWN).join(', ');
+  if (names.length <= RACE_NAMES_SHOWN) return shown;
+  return tr('cost.more', { names: shown, n: nq(names.length - RACE_NAMES_SHOWN, 'record') });
+}
+/** Затёртую ревизию вернуть нечем — об этом говорится, а не молчится.
+ *  names — записи, которые в ней были другими; пусто — назвать нечего. */
+function raceGoneSay(names){
+  banner('sync-race', 'warn', esc(names && names.length
+    ? tr('gd.raceGoneNames', { names: raceNamesText(names) }) : tr('gd.raceGone')));
+}
+/** Попросить ещё один обмен следом: починка ждёт в очереди. */
+function raceKick(){
+  if (raceKicks >= RACE_KICKS) return;
+  raceKicks++;
+  syncRun(false);
+}
+
+/** Транспорт Диска с проверкой окна. Лицо то же — get и put; для оборота
+ *  ничего не изменилось, кроме того, что перед чтением гасится долг, а
+ *  после записи проверяется окно. */
+function raceTransport(raw, cfg, st, withFile){
+  var mem = {};     /* метка → текст: прочитанное и записанное этим обменом */
+  var fixes = 0;
+  var goneNames = [], goneBlind = false;   /* что этот обмен вернуть не смог */
+
+  /* Полоса «могла не сохраниться». Записи называются, только когда они
+     известны по КАЖДОЙ потере этого обмена: названная часть читалась бы
+     как «остальное цело». */
+  function gone(names){
+    var i;
+    if (!names || !names.length) goneBlind = true;
+    else for (i = 0; i < names.length; i++) if (goneNames.indexOf(names[i]) < 0) goneNames.push(names[i]);
+    raceGoneSay(goneBlind ? [] : goneNames);
+  }
+
+  function keep(mark, text){ if (raceId(mark) && typeof text === 'string') mem[mark] = text; }
+
+  function revText(access, rev, cb){
+    var m = 'r:' + rev;
+    if (ownKey(mem, m)){ cb(null, mem[m], 200); return; }
+    gdRevText(access, st.id, rev, function(err, text, status){
+      if (!err && typeof text === 'string') mem[m] = text;
+      cb(err, text, status);
+    });
+  }
+
+  /* Окно последней своей записи: что между прочитанным и записанным. */
+  function settle(access, cb){
+    var r = raceRead(), w = r.win;
+    if (!w){ cb(null); return; }
+    gdRevList(access, st.id, function(err, list, status){
+      var cands;
+      if (err && !raceNoList(err, status)){ cb(err); return; }
+      r = raceRead();
+      if (err || !list || !list.length){ r.win = null; raceSave(r); cb(null); return; }   /* Диск списка не отдаёт */
+      if (w.to){ settled(list, w.to, cb); return; }
+      /* Ответ своей записи не дошёл. Легла ли она и которая из ревизий её —
+         по размеру и отпечатку содержимого, с последней к первой. */
+      cands = raceCands(list, w);
+      if (!cands){ r.win = null; raceSave(r); gone(); cb(null); return; }
+      mine(access, cands, cands.length - 1, w.sum, function(mErr, to){
+        var q;
+        if (mErr){ cb(mErr); return; }
+        if (!to){ q = raceRead(); q.win = null; raceSave(q); cb(null); return; }   /* запись не легла — окна не было */
+        settled(list, to, cb);
+      });
+    });
+  }
+  function mine(access, cands, k, sum, cb){
+    if (k < 0){ cb(null, ''); return; }
+    revText(access, cands[k], function(err, text, status){
+      if (err && !raceGoneStatus(status)){ cb(err); return; }
+      if (!err && typeof text === 'string' && recHash(text) === sum){ cb(null, cands[k]); return; }
+      mine(access, cands, k - 1, sum, cb);
+    });
+  }
+  function settled(list, to, cb){
+    var r = raceRead(), w = r.win, b, i, j, seen;
+    if (!w){ cb(null); return; }
+    b = raceBetween(list, w.from, to);
+    if (b.wait){ cb('server'); return; }
+    r.win = null;
+    if (b.lost){ raceSave(r); gone(); cb(null); return; }
+    for (i = 0; i < b.ids.length; i++){
+      seen = false;
+      for (j = 0; j < r.revs.length; j++) if (r.revs[j].id === b.ids[i]) seen = true;
+      if (!seen) r.revs.push({ id: b.ids[i], anc: w.from });
+    }
+    raceSave(r);
+    cb(null);
+  }
+
+  function dropFirst(say, names){
+    var r = raceRead();
+    r.revs.shift();
+    raceSave(r);
+    if (say) gone(names);
+  }
+
+  /* Первая затёртая ревизия из очереди — слить с головой и дописать. */
+  function repair(access, cb){
+    var r = raceRead(), rev = r.revs[0];
+    if (!rev){ cb(null); return; }
+    if (fixes >= RACE_MAX){ cb('busy'); return; }
+    fixes++;
+    raw.get(function(gErr, head){
+      if (gErr){ cb(gErr); return; }
+      if (!head || head.empty || !raceId(head.version)){ dropFirst(false); repair(access, cb); return; }
+      keep(head.version, head.text);
+      if (raceId(head.version) === rev.id){ dropFirst(false); repair(access, cb); return; }
+      revText(access, rev.id, function(nErr, nText, nStatus){
+        if (nErr){
+          if (raceGoneStatus(nStatus)){ dropFirst(true); repair(access, cb); return; }
+          cb(nErr); return;
+        }
+        revText(access, rev.anc, function(aErr, aText, aStatus){
+          var S, N, A, fix, o, w;
+          if (aErr){
+            /* предка нет, а затёртая ревизия прочитана: слить нечем, но
+               назвать, что в ней было другим, можно */
+            if (raceGoneStatus(aStatus)){
+              dropFirst(true, raceNames(openEnvelope(head.text), openEnvelope(nText)));
+              repair(access, cb); return;
+            }
+            cb(aErr); return;
+          }
+          S = openEnvelope(head.text); N = openEnvelope(nText); A = openEnvelope(aText);
+          if (S.err === 'newer' || N.err === 'newer'){ cb('newer'); return; }
+          if (S.err){ cb('badremote'); return; }
+          if (N.err || A.err){ dropFirst(true, raceNames(S, N)); repair(access, cb); return; }
+          fix = raceMerge(S, N, A);
+          o = syncRead();
+          if (fix.conflicts.length){
+            /* Спор одного поля. Голова — не то, что это устройство знает
+               (после него писал кто-то ещё): сначала обычный оборот, он
+               приведёт устройство к голове, а его запись попросит починку
+               следом (очередь не тронута). */
+            if (!o || o.version !== head.version){ cb(null); return; }
+            /* База спорной записи — к предку, и ДО записи на Диск: иначе
+               следующий оборот прочёл бы значение соседа как «изменилась
+               только та сторона» и взял его молча. */
+            if (o.base){ o.base = syncBaseKeep(o.base, fix.base, fix.conflicts); syncWrite(o); }
+          }
+          w = raceRead();
+          w.win = { from: raceId(head.version), to: '', size: raceBytes(fix.text), sum: recHash(fix.text) };
+          raceSave(w);
+          raw.put(fix.text, head.version, countsOf(fix.send), function(pErr, res){
+            var q;
+            if (pErr === 'conflict'){
+              q = raceRead(); q.win = null; raceSave(q);
+              repair(access, cb);        /* голова сдвинулась — заново, с новой головы */
+              return;
+            }
+            if (pErr){ cb(pErr); return; }
+            keep(res.version, fix.text);
+            q = raceRead();
+            q.revs.shift();
+            if (q.win) q.win.to = raceId(res.version);
+            raceSave(q);
+            settle(access, function(sErr){
+              if (sErr){ cb(sErr); return; }
+              repair(access, cb);
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /* Долг — до чтения: сначала окно прошлой записи, потом очередь. */
+  function pay(cb){
+    var r = raceRead();
+    if (!r.win && !r.revs.length){ raceKicks = 0; cb(null); return; }
+    cfg.auth(function(aErr, access){
+      if (aErr){ cb(aErr); return; }
+      withFile(access, function(fErr, id){
+        if (fErr){ cb(fErr); return; }
+        if (!id){ raceSave(null); cb(null); return; }   /* файла на Диске нет — и долга нет */
+        settle(access, function(sErr){
+          if (sErr){ cb(sErr); return; }
+          repair(access, cb);
+        });
+      });
+    });
+  }
+
+  return {
+    kind: raw.kind,
+    fileId: raw.fileId,
+
+    get: function(cb){
+      pay(function(pErr){
+        if (pErr){ cb(pErr); return; }
+        raw.get(function(err, res){
+          if (!err && res && !res.empty) keep(res.version, res.text);
+          cb(err, res);
+        });
+      });
+    },
+
+    put: function(text, version, counts, cb){
+      var from = raceId(version), r;
+      if (from){
+        r = raceRead();
+        r.win = { from: from, to: '', size: raceBytes(text), sum: recHash(text) };
+        raceSave(r);
+      }
+      raw.put(text, version, counts, function(err, res){
+        var q;
+        if (err){
+          /* «конфликт» — до записи не дошло: окна нет. Любой другой отказ
+             окно оставляет: запись могла лечь, а ответ не дойти. */
+          if (err === 'conflict' && from){ q = raceRead(); q.win = null; raceSave(q); }
+          cb(err, res);
+          return;
+        }
+        if (!from || !res || !raceId(res.version)){ cb(null, res); return; }
+        keep(res.version, text);
+        q = raceRead();
+        if (q.win){ q.win.to = raceId(res.version); raceSave(q); }
+        cfg.auth(function(aErr, access){
+          if (aErr){ cb(aErr); return; }
+          settle(access, function(sErr){
+            if (sErr){ cb(sErr); return; }
+            /* Затёртое найдено: этот оборот кончается как обычно (на Диске —
+               то, что он записал), а починка идёт следующим обменом, сразу. */
+            if (raceRead().revs.length) raceKick();
+            cb(null, res);
+          });
+        });
+      });
+    }
+  };
+}
+/* ++++++ DRIVE RACE END ++++++ */
+
 /* Лицо в лицо с ghTransport(): те же две функции, те же коды ошибок,
  * та же метка версии. Цикл обмена не различает их вовсе.
  *
@@ -10178,7 +10618,7 @@ function gdTransport(cfg){
     });
   }
 
-  return {
+  var raw = {   /* ++++++ DRIVE RACE ++++++ сырой транспорт; наружу — с проверкой окна */
     kind: 'drive',
     fileId: function(){ return st.id; },
 
@@ -10223,9 +10663,12 @@ function gdTransport(cfg){
      * показала это модель двух устройств на этом же коде (03.10.2026):
      * запись соседа, попавшую в окно, наша затирает, а на его
      * устройстве следующий обмен заменяет его правку нашим значением —
-     * его сторона «не менялась», пришедшая «менялась». Записано
-     * находкой аудита и не исправлено: заметить такое можно только
-     * ПОСЛЕ записи. Проверка ниже сужает окно, но не закрывает его.
+     * его сторона «не менялась», пришедшая «менялась». Заметить такое
+     * можно только ПОСЛЕ записи — и теперь это делается. ++++++ DRIVE RACE ++++++
+     * Список параметров files.update (условия по версии среди них нет):
+     * https://developers.google.com/workspace/drive/api/reference/rest/v3/files/update
+     * Проверка ниже сужает окно, но не закрывает его; что в него
+     * попало, находит и дописывает raceTransport() — по списку ревизий.
      * Хуже, чем у GitHub, — и сказано об этом прямо, а не спрятано за
      * словом «надёжно».
      */
@@ -10258,6 +10701,7 @@ function gdTransport(cfg){
       });
     }
   };
+  return raceTransport(raw, cfg, st, withFile);   /* ++++++ DRIVE RACE ++++++ */
 }
 
 /* ==================================================================
