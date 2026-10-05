@@ -34,6 +34,9 @@
     --neutral:#7c8598; --neutral-soft:#eceef2;
     --good:#0f766e; --bad:#c2410c;
     --warn:#b45309; --warn-soft:#fef3e2;
+    /* ++++++ UNDELETE ++++++ полоса «обновите программу и там»: плашка к фону страницы
+       1.27:1 в обеих темах (замер), текст 13.1:1 здесь и 7.3:1 в тёмной */
+    --hint-soft:#d5dbe6; --hint-ink:#0e1620;
     --r:16px; --pad:16px;
     --shadow:0 1px 2px rgba(16,24,40,.04), 0 2px 6px rgba(16,24,40,.04);
     --shadow-lg:0 12px 40px rgba(12,20,38,.18);
@@ -58,6 +61,7 @@
     --neutral:#8b95a6; --neutral-soft:#222b35;
     --good:#14b8a6; --bad:#f97316;
     --warn:#fbbf24; --warn-soft:#332610;
+    --hint-soft:#1e2731; --hint-ink:#a9b5c5;   /* ++++++ UNDELETE ++++++ те же цвета, что были у полосы */
     --shadow:none; --shadow-lg:0 12px 40px rgba(0,0,0,.5);
     /* ++++++ SCROLLBAR ++++++ 1,97:1 и 3,44:1 — то же приглушение, что
        в светлой теме. Прежняя плашка красилась --ink-2 и давала 9,24:1
@@ -253,6 +257,8 @@
     font-size:11.5px;white-space:nowrap}
   .dmark.disc{background:var(--got-soft);color:var(--got-ink)}
   .dmark.up{background:var(--warn-soft);color:var(--warn)}
+  /* ++++++ DISPUTE HOLD ++++++ пометка спорной записи — та же пара, что предупреждение; нового токена нет */
+  .dmark.cf{background:var(--warn-soft);color:var(--warn);margin-right:6px}
 
   /* ++++++ WHAT'S NEW ++++++ список изменений. Своё имя класса, а НЕ
      .pill.<key>: множество .pill.* — это множество статусов, и правило
@@ -737,6 +743,11 @@
      и они молча получали тот же серый. Значения те же, что в базовом
      .alert, — важно, что они здесь НАПИСАНЫ. */
   .alert.info{background:var(--surface-3);color:var(--ink-2)}
+  /* ++++++ UNDELETE ++++++ полоса «обновите программу и там» — единственный громкий
+     сигнал, пока второе устройство не обновлено (слово владельца 03.10.2026:
+     в светлой теме — такая же заметная, как в тёмной). Не вид полосы, а
+     одна полоса: адрес — её имя; стоит ПОСЛЕ .alert.info и потому сильнее. */
+  .alert[data-banner="sync-up"]{background:var(--hint-soft);color:var(--hint-ink)}
   /* ++++++ EXIT HINT ++++++ «Нажмите ещё раз, чтобы выйти» — та же полоса
      .alert, но ВНИЗУ экрана, где её ждут: она отвечает на нажатие
      системной кнопки, а не рассказывает о состоянии документа. Своего
@@ -2387,7 +2398,6 @@ var STR = {
 
 'wipe.peerBar':      { en:'Deletion arrived: <b>{n}</b>. Deleted on another device.',
                        ru:'Пришло удаление: <b>{n}</b>. Удалено на другом устройстве.' },
-'wipe.delHere':      { en:'Delete here too', ru:'Удалить и здесь' },
 'wipe.cDelTitle':    { en:'This record was deleted on another device',
                        ru:'Эту запись удалили на другом устройстве' },
 
@@ -2913,7 +2923,8 @@ var STR = {
                           'the same field was changed differently, it shows both values and asks what to ' +
                           'keep; until you answer nothing is lost: this device keeps its version and the ' +
                           'other keeps its own. A record deleted on one device and changed on the other ' +
-                          'after that stays where it was changed until you decide.',
+                          'after that stays in the lists until you decide; the deletion does not go to other ' +
+                          'devices before that. A disputed record is marked “disputed” in the lists.',
                        ru:'Спор решается по записям, а не по часам. Если запись правили только ' +
                           'здесь, часы другого устройства не решают ничего. Если на двух устройствах ' +
                           'поменяли разные поля одной записи — скажем, на одном цену, а на другом ' +
@@ -2921,7 +2932,8 @@ var STR = {
                           'поле поменяли по-разному, она покажет оба значения и спросит, что оставить; ' +
                           'до ответа ничего не теряется: здесь остаётся версия этого устройства, на ' +
                           'другом — его. Запись, которую на одном устройстве удалили, а на другом после ' +
-                          'этого изменили, остаётся там, где её изменили, пока вы не решите.' },
+                          'этого изменили, остаётся в списках, пока вы не решите; удаление до вашего решения ' +
+                          'на другие устройства не уходит. Спорная запись в списках помечена словом «спорная».' },
 /* ++++++ BASE SYNC ++++++ основная валюта и обмен. Приставка `bsync.` свободна. */
 'bsync.chooseT':  { en:'The main currency differs between devices.', ru:'Основная валюта на устройствах разная.' },
 'bsync.chooseB':  { en:'Here it is {local}, on the other device {remote}. The records are the same, but their amounts are stored in one currency, so on one of the devices they are read wrongly right now. Syncing is paused until you choose which currency is right.',
@@ -2990,9 +3002,13 @@ var STR = {
                           'это время склад разошёлся, программа откажется и скажет, чего не ' +
                           'хватает, вместо того чтобы вернуть половину.' },
 'faq.a.trashWhat3':  { en:'A record waits in the trash for {n} and can be brought back in one step ' +
-                          'all that time. After that it leaves for good on its own, at the next start.',
-                       ru:'Запись ждёт в корзине {n} и всё это время возвращается одним нажатием. ' +
-                          'Потом уходит навсегда сама, при следующем запуске.' },
+                          'all that time — it comes back on your other devices too. After that it leaves ' +
+                          'for good on its own: when the app starts, once it has exchanged records with ' +
+                          'your other devices (if records do not travel anywhere, simply at the next start).',
+                       ru:'Запись ждёт в корзине {n} и всё это время возвращается одним нажатием — ' +
+                          'и на других ваших устройствах тоже. Потом уходит навсегда сама: при запуске ' +
+                          'программы, после обмена с другими устройствами (если записи никуда не ездят — ' +
+                          'просто при следующем запуске).' },
 /* ++++++ SILENT DROP ++++++ Пятый абзац. Прежние четыре обещали, что
    запись «ждёт в корзине 30 дней», и это перестало быть полной правдой:
    выдача уходит вместе со своим товаром, когда тот удаляют навсегда или
@@ -3008,11 +3024,23 @@ var STR = {
                           'вместе с ним, потому что без товара это уже не запись. Сколько таких ' +
                           'записей уйдёт, окно говорит до нажатия.' },
 'faq.a.trashWhat4':  { en:'Photos and invoices are not touched while the record is in the trash — ' +
-                          'they are still there when it comes back. Only «Delete for good» destroys ' +
-                          'them, and that deletion travels to your other devices.',
+                          'they are still there when it comes back. Only a record leaving for good — ' +
+                          '«Delete for good» or the end of its time in the trash — destroys them, and ' +
+                          'that deletion travels to your other devices. If such a record is later ' +
+                          'brought back from another device or from a backup, its photos and invoices ' +
+                          'come back from wherever they still exist; if they exist nowhere, the app ' +
+                          'says so: «The record is back, its photo is not».',
                        ru:'Фотографии и накладные, пока запись в корзине, не трогаются — они на ' +
-                          'месте и вернутся вместе с ней. Уничтожает их только «Удалить навсегда», ' +
-                          'и это удаление уезжает на другие ваши устройства.' },
+                          'месте и вернутся вместе с ней. Уничтожает их только уход записи навсегда — ' +
+                          '«Удалить навсегда» или срок корзины, — и это удаление уезжает на другие ' +
+                          'ваши устройства. Если такую запись потом вернули с другого устройства или ' +
+                          'из копии, её фотографии и накладные возвращаются оттуда, где остались; ' +
+                          'если не остались нигде, программа так и скажет: «Запись вернулась, фото нет».' },
+'faq.a.trashWhat6':  { en:'On Google Drive the photos and invoices of a record deleted for good stay for ' +
+                          'another {n}. If the record is brought back in that time, they come back with it. ' +
+                          'After that they are erased there as well.',
+                       ru:'На Google Диске фотографии и накладные записи, удалённой навсегда, лежат ещё {n}. ' +
+                          'Если запись за это время вернут, они вернутся вместе с ней. Потом стираются и там.' },   /* ++++++ DISPUTE HOLD ++++++ шестой абзац — только там, где файлы ездят на Диск */
 'faq.a.wipe1gd':     { en:'«Clear this device» removes the records <b>from here only</b>. On Google ' +
                           'Drive and on your other devices they stay, and signing in with the same ' +
                           'account brings them back.',
@@ -3485,8 +3513,22 @@ var STR = {
                    ru:'На другом устройстве стоит старая версия программы — обновите её там. До обновления она с этим устройством не обменивается, её правки ждут на ней.' },
 'old.up':        { en:'The app on this device is updated. If your records also travel to another device, update the app there too: until then it does not sync with this one.',
                    ru:'Программа на этом устройстве обновлена. Если записи ездят и на другое устройство — обновите программу и там: до обновления оно с этим не обменивается.' },
-'cf.delBody':    { en:'It was deleted on another device {when} and changed here after that. It stays here and is gone on the other devices. You can delete it here too, or decide later, and then it stays only on this device. Bringing it back to the other devices is not possible yet.',
-                   ru:'Её удалили на другом устройстве {when}, а здесь после этого изменили. Здесь она осталась, на других устройствах её нет. Можно удалить её и здесь — или решить позже, и тогда она останется только на этом устройстве. Вернуть её на другие устройства пока нельзя.' },
+/* ++++++ UNDELETE ++++++ окно спора «удалили — а на другой стороне изменили» (А7): два варианта, у каждого названо последствие */
+'cf.delAsk':     { en:'It was deleted on another device {when}, and here it was changed or restored from the trash after that. Right now it exists only on this device. Choose what happens to it on every device. Until you choose, nothing changes.',
+                   ru:'Её удалили на другом устройстве {when}, а здесь после этого изменили или вернули из корзины. Сейчас она есть только здесь. Выберите, что с ней будет на всех устройствах. Пока не выберете, ничего не меняется.' },
+'cf.delAskHere': { en:'It was deleted here {when}, and on another device it was changed or restored from the trash after that. Until you choose, it stays in the lists marked “disputed”, and the deletion does not go to other devices. Choose what happens to it on every device.',
+                   ru:'Её удалили здесь {when}, а на другом устройстве после этого изменили или вернули из корзины. Пока вы не выберете, она остаётся в списках с пометкой «спорная», а удаление на другие устройства не уходит. Выберите, что с ней будет на всех устройствах.' },
+'cf.delTitleHere':{ en:'Deleted, but changed on another device', ru:'Запись удалили, а на другом устройстве изменили' },
+'cf.mark':       { en:'disputed',                    ru:'спорная' },   /* ++++++ DISPUTE HOLD ++++++ пометка записи в списке и на карточке */
+'cf.barDel':     { en:'A record was deleted on one device and brought back on another. Nothing is lost: it stays in the lists until you choose.',
+                   ru:'Запись удалили на одном устройстве и вернули на другом. Ничего не потеряно: она остаётся в списках, пока вы не выберете.' },
+'cf.barDelN':    { en:'Records deleted on one device and brought back on another: {n}. Nothing is lost: they stay in the lists until you choose.',
+                   ru:'Записи удалили на одном устройстве и вернули на другом: {n}. Ничего не потеряно: они остаются в списках, пока вы не выберете.' },
+'cf.optKeep':    { en:'Keep it',                     ru:'Оставить' },
+'cf.optKeepNote':{ en:'the record stays on every device', ru:'запись останется на всех устройствах' },
+'cf.optGone':    { en:'Delete',                      ru:'Удалить' },
+'cf.optGoneNote':{ en:'the record is deleted everywhere', ru:'запись будет удалена везде' },
+'cf.pickOne':    { en:'Pick one of the two options.', ru:'Отметьте один из двух вариантов.' },
 'cf.f.name':     { en:'Name',                       ru:'Имя или название' },
 'cf.f.what':     { en:'What',                       ru:'Что' },
 'cf.f.price':    { en:'Selling price',              ru:'Цена продажи' },
@@ -5036,6 +5078,13 @@ var STR = {
 'as.coming':   { en:'The file is on its way — it was added on another device.',
                  ru:'Файл ещё едет — его добавили на другом устройстве.' },
 'as.gone':     { en:'The file was deleted.', ru:'Файл удалён.' },
+/* ++++++ UNDELETE ++++++ файл возвращённой записи: вернуть нельзя — сказать (слово владельца 03.10.2026) */
+'as.lost':     { en:'The file is gone: it was deleted together with the record, and the record was brought back later. If another device still has it, it will arrive after that device syncs.',
+                 ru:'Файла нет: его удалили вместе с записью, а запись потом вернули. Если он остался на другом устройстве, приедет после обмена на нём.' },
+'al.photo':    { en:'The record is back, its photo is not: {names}.', ru:'Запись вернулась, фото нет: {names}.' },
+'al.inv':      { en:'The record is back, its invoice is not: {names}.', ru:'Запись вернулась, накладной нет: {names}.' },
+'al.tail':     { en:'The file was deleted together with the record. If another device still has it, it will arrive after that device syncs; otherwise attach it again.',
+                 ru:'Файл удалили вместе с записью. Если он остался на другом устройстве, приедет после обмена на нём; если нет — приложите его заново.' },
 'as.space':    { en:'{used} used · {free} free',
                  ru:'занято {used} · свободно {free}' },
 'as.spaceUnlimited': { en:'{used} used · storage is not limited',
@@ -6935,8 +6984,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.29.0';
-var APP_BUILD = '2026-10-03T06:19:40.655Z';
+var APP_VERSION = '1.30.0';
+var APP_BUILD = '2026-10-05T05:44:18.982Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -8927,11 +8976,16 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
  * base   — { collection: { id: отпечаток } } на момент прошлой синхронизации
  * Возвращает { doc, tombstones, conflicts, stats } и НЕ трогает входы. */
 
-function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
+function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR, undelL, undelR){
   base = base || {};
   metaL = metaL || (local && local.syncMeta) || {};
   metaR = metaR || (remote && remote.syncMeta) || {};
-  var tombs = mergeTombs(localTombs || {}, remoteTombs || {});
+  /* ++++++ UNDELETE ++++++ отмены обеих сторон объединяются; с КАЖДОЙ стороны
+     отбрасываются отменённые надгробия — и только потом надгробия
+     сливаются. Наоборот нельзя: из двух времён слияние оставляет раннее,
+     и отменённое раннее заслонило бы новое, действующее удаление. */
+  var undel = undelMerge(undelL || {}, undelR || {});
+  var tombs = mergeTombs(undelPrune(localTombs || {}, undel), undelPrune(remoteTombs || {}, undel));
   var meta = {};
   var doc = { schemaVersion: local.schemaVersion, settings: null };
   /* ++++++ CONFLICT KEEP ++++++ send — то, что уходит на Диск. Совпадает с
@@ -8995,7 +9049,10 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR){
     else delete sendMeta[c.id];
   }
   send.syncMeta = sendMeta;
-  return { doc: doc, send: send, tombstones: tombs, meta: meta, conflicts: conflicts, stats: stats };
+  /* ++++++ UNDELETE ++++++ в документ устройства — только когда отмены есть: документ
+     без них остаётся побайтово прежним */
+  if (undelAny(undel)) doc.syncUndel = undel;
+  return { doc: doc, send: send, tombstones: tombs, meta: meta, conflicts: conflicts, stats: stats, undel: undel };
 }
 
 /* Пришла ли эта версия записи с той стороны. Сравнение по ссылке, а не по
@@ -9017,6 +9074,92 @@ function mergeTombs(a, b){
   }
   return out;
 }
+
+/* ================================== ++++++ UNDELETE ++++++ ==
+ * ОТМЕНА УДАЛЕНИЯ ЕДЕТ ОБМЕНОМ — И НАЗЫВАЕТ ТО УДАЛЕНИЕ, КОТОРОЕ ОТМЕНЕНО.
+ *
+ * Надгробия только объединялись: способа сказать другому устройству «эта
+ * запись снова жива» в обмене не было вовсе. Вернул запись из корзины на
+ * компьютере — а телефон, где её убрал срок, приносил надгробие, и запись
+ * пропадала на обоих, без спора и без слова (находка А7).
+ *
+ * Отмена — карта «id записи → времена удалений, которые отменены» (в
+ * конверте — `undeleted`, в документе устройства — `syncUndel`). Надгробие
+ * снимается ТОГДА И ТОЛЬКО ТОГДА, когда его время стоит в этой карте.
+ * Сравнение — на равенство, а не «что позже»: часы двух устройств здесь
+ * не сравниваются вовсе, и новое удаление (другое время) отмена не
+ * трогает — «удалили после возврата» побеждает само.
+ *
+ * Времён у записи может быть несколько (удалили — вернули — снова удалили
+ * — снова вернули): устройство, не выходившее на связь, может хранить
+ * надгробие любого из них. Значение — времена через «|».
+ * Отмены только копятся: снять отмену нечем и незачем.
+ */
+
+/** Времена отменённых удалений одной записи: «t1|t2» → массив без повторов. */
+function undelList(v){
+  var out = [], p, i;
+  if (typeof v !== 'string' || !v) return out;
+  p = v.split('|');
+  for (i = 0; i < p.length; i++) if (p[i] && out.indexOf(p[i]) < 0) out.push(p[i]);
+  return out;
+}
+
+/** Отменено ли удаление записи `id`, помеченное временем `t`. */
+function undelHas(map, id, t){
+  if (!map || !t || !ownKey(map, id)) return false;
+  return undelList(map[id]).indexOf(String(t)) > -1;
+}
+
+/** Записать отмену в карту — на месте. Порядок времён устойчив: карта с
+ *  теми же отменами обязана давать тот же текст на любом устройстве. */
+function undelAdd(map, id, t){
+  var l;
+  if (!map || typeof id !== 'string' || !id) return;
+  if (typeof t !== 'string' || !t || t.indexOf('|') > -1) return;
+  l = ownKey(map, id) ? undelList(map[id]) : [];
+  if (l.indexOf(t) < 0) l.push(t);
+  l.sort();
+  map[id] = l.join('|');
+}
+
+/** Отмены обеих сторон — объединение. Входы не трогаются. */
+function undelMerge(a, b){
+  var out = {}, k, i, l;
+  a = a || {}; b = b || {};
+  for (k in a) if (ownKey(a, k)){ l = undelList(a[k]); for (i = 0; i < l.length; i++) undelAdd(out, k, l[i]); }
+  for (k in b) if (ownKey(b, k)){ l = undelList(b[k]); for (i = 0; i < l.length; i++) undelAdd(out, k, l[i]); }
+  return out;
+}
+
+/** Надгробия без отменённых — копией. Надгробие с ДРУГИМ временем остаётся. */
+function undelPrune(tombs, undel){
+  var out = {}, k;
+  tombs = tombs || {};
+  for (k in tombs) if (ownKey(tombs, k) && !undelHas(undel, k, tombs[k])) out[k] = tombs[k];
+  return out;
+}
+
+/** Есть ли в карте хоть одна отмена. */
+function undelAny(map){
+  var k;
+  if (!map) return false;
+  for (k in map) if (ownKey(map, k)) return true;
+  return false;
+}
+
+/** Карта отмен из входящего: только строки, кривое выбрасывает себя —
+ *  политика карт обмена (syncMapOf). */
+function undelMapOf(v){
+  var out = {}, k, l, i;
+  if (!v || typeof v !== 'object' || Object.prototype.toString.call(v) === '[object Array]') return out;
+  for (k in v) if (ownKey(v, k) && typeof v[k] === 'string'){
+    l = undelList(v[k]);
+    for (i = 0; i < l.length; i++) undelAdd(out, k, l[i]);
+  }
+  return out;
+}
+/* ++++++ UNDELETE END ++++++ */
 
 /* Настройки: набором, по метке времени. Равные метки или их отсутствие —
    остаются местные: своё привычнее чужого, и это не деньги. */
@@ -9070,7 +9213,11 @@ function baseOf(doc){
    все до 1.29.0, — увидев его, само останавливает обмен и просит
    обновиться: затирать чужие правки ему больше нечем (находка А13).
    Конверты 1 и 2 это ядро читает как прежде. */
-var SYNC_ENVELOPE = 3;
+/* ++++++ UNDELETE ++++++ конверт 4 (решение владельца 03.10.2026). В нём едут отмены
+   удалений. Ядро конверта 3 (1.29.0) отмен не знает и молча удалило бы
+   возвращённую запись своим надгробием; увидев 4, оно останавливает обмен
+   и просит обновиться. Конверты 1–3 это ядро читает как прежде. */
+var SYNC_ENVELOPE = 4;
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -9083,6 +9230,8 @@ function envelopeOf(doc, tombs, meta){
     /* Метки правок едут КАРТОЙ, потому что внутри записей их нет — см.
        довод у modOf(): поле в записи сдвинуло бы подпись документа. */
     meta: (meta && meta.map) || doc.syncMeta || {},
+    /* ++++++ UNDELETE ++++++ какие удаления отменены: { id: «время|время» } */
+    undeleted: (meta && meta.undel) || {},
     updatedAt: (meta && meta.updatedAt) || '',
     updatedBy: (meta && meta.updatedBy) || '',
     /* ++++++ OLD CORE ++++++ номера устройств, писавших форматом 3, и записи, которые
@@ -9118,6 +9267,7 @@ function openEnvelope(text){
   doc.syncMeta = (e.meta && typeof e.meta === 'object' &&
                   Object.prototype.toString.call(e.meta) !== '[object Array]') ? e.meta : {};
   return { doc: doc, tombstones: e.tombstones || {}, meta: doc.syncMeta,
+           undel: undelMapOf(e.undeleted),   /* ++++++ UNDELETE ++++++ */
            settingsAt: e.settingsAt || '',
            updatedAt: e.updatedAt || '', updatedBy: e.updatedBy || '',
            /* ++++++ OLD CORE ++++++ формат, писавшие и следы старой версии */
@@ -9911,15 +10061,43 @@ function gdFind(access, cb){
   });
 }
 
+/* ================================== ++++++ DRIVE REV ++++++ ==
+ * МЕТКА ФАЙЛА НА ДИСКЕ — РЕВИЗИЯ СОДЕРЖИМОГО, А НЕ НОМЕР ВЕРСИИ.
+ *
+ * Номер версии (version) Диск сдвигает и сам, один раз, через 0,7–1,5 с
+ * после записи. Проверка «Диск тот же» перед записью принимала этот сдвиг
+ * за запись другого устройства: ложный «конфликт» и лишний оборот, раз на
+ * полсотни обменов вплотную.
+ *
+ * Ревизия содержимого (headRevisionId) меняется ТОЛЬКО при записи — и при
+ * записи того же текста тоже. Чтение и самосдвиг номера её не двигают;
+ * ответ записи и список файлов её несут. Замер на настоящем Диске —
+ * 03.10.2026. Отпечаток md5 меткой не годится: запись того же текста его
+ * не меняет, и запись соседа осталась бы незамеченной.
+ *
+ * Метка ревизии носит приставку «r:», чтобы её нельзя было спутать с
+ * номером версии. Устройство, запомнившее номер до этой правки, при первом
+ * обмене видит «метка другая» — а что это значит, решает содержимое
+ * (syncRemoteMoved), как и прежде. Диск, не отдавший ревизию, — метка
+ * прежняя, номер версии: поведение как до правки.
+ *
+ * Для обмена метка — непрозрачная строка: её только сравнивают на равенство.
+ * ============================================================== */
+function gdMark(j){
+  if (j && typeof j.headRevisionId === 'string' && j.headRevisionId) return 'r:' + j.headRevisionId;
+  return (j && j.version !== undefined && j.version !== null) ? String(j.version) : '';
+}
+/* ++++++ DRIVE REV END ++++++ */
+
 /* Только версия, без содержимого. Нужен перед записью — см. решение 4
    в DECISIONS.md: у Drive нет условной записи, и это лучшее, что
    можно сделать вместо неё. */
 function gdVersion(access, id, cb){
-  gdReq({ url: GD_API + '/files/' + encodeURIComponent(id) + '?fields=version',
+  gdReq({ url: GD_API + '/files/' + encodeURIComponent(id) + '?fields=version' + encodeURIComponent(',headRevisionId'),   /* ++++++ DRIVE REV ++++++ */
           token: access }, function(err, j){
     if (err){ cb(err); return; }
-    if (!j || j.version === undefined){ cb('server'); return; }
-    cb(null, String(j.version));
+    if (!j || !gdMark(j)){ cb('server'); return; }   /* ++++++ DRIVE REV ++++++ ни ревизии, ни номера — отвечать нечем */
+    cb(null, gdMark(j));
   });
 }
 
@@ -9947,13 +10125,13 @@ function gdCreate(access, text, cb){
              text + '\r\n' +
              '--' + b + '--';
   gdReq({ method: 'POST',
-          url: GD_UPLOAD + '?uploadType=multipart&fields=' + encodeURIComponent('id,version'),
+          url: GD_UPLOAD + '?uploadType=multipart&fields=' + encodeURIComponent('id,version,headRevisionId'),   /* ++++++ DRIVE REV ++++++ */
           token: access,
           contentType: 'multipart/related; boundary=' + b,
           body: body }, function(err, j){
     if (err){ cb(err); return; }
     if (!j || !j.id){ cb('server'); return; }
-    cb(null, { id: String(j.id), version: String(j.version || '') });
+    cb(null, { id: String(j.id), version: gdMark(j) });   /* ++++++ DRIVE REV ++++++ */
   });
 }
 
@@ -9963,13 +10141,13 @@ function gdUpdate(access, id, text, cb){
   if (text.length > GD_MAX){ cb('big'); return; }
   gdReq({ method: 'PATCH',
           url: GD_UPLOAD + '/' + encodeURIComponent(id) +
-               '?uploadType=media&fields=' + encodeURIComponent('id,version'),
+               '?uploadType=media&fields=' + encodeURIComponent('id,version,headRevisionId'),   /* ++++++ DRIVE REV ++++++ */
           token: access,
           contentType: 'application/json; charset=UTF-8',
           body: text }, function(err, j){
     if (err){ cb(err); return; }
     if (!j || !j.id){ cb('server'); return; }
-    cb(null, { id: String(j.id), version: String(j.version || '') });
+    cb(null, { id: String(j.id), version: gdMark(j) });   /* ++++++ DRIVE REV ++++++ */
   });
 }
 
@@ -10010,10 +10188,16 @@ function gdTransport(cfg){
         withFile(access, function(fErr, id){
           if (fErr){ cb(fErr); return; }
           if (!id){ cb(null, { empty: true }); return; }
-          gdDownload(access, id, function(dErr, text){
-            if (dErr){ cb(dErr); return; }
-            gdVersion(access, id, function(vErr, version){
-              if (vErr){ cb(vErr); return; }
+          /* ++++++ DRIVE REV ++++++ метка — ДО скачивания. Было наоборот, и запись
+             соседа, попавшая между двумя запросами, давала СТАРЫЙ текст с
+             НОВОЙ меткой: проверка перед записью сходилась, его правку
+             затирало, и на его же устройстве её потом заменяло наше
+             значение — молча. Теперь в том же случае текст новый, а метка
+             старая: проверка не сходится, и оборот повторяется. */
+          gdVersion(access, id, function(vErr, version){
+            if (vErr){ cb(vErr); return; }
+            gdDownload(access, id, function(dErr, text){
+              if (dErr){ cb(dErr); return; }
               cb(null, { text: text, version: version });
             });
           });
@@ -10033,11 +10217,17 @@ function gdTransport(cfg){
      * 'conflict', и цикл повторит оборот целиком.
      *
      * Остаётся окно между проверкой и записью, порядка сетевой
-     * задержки. Закрыть его средствами Drive нельзя, и цена этого
-     * названа в DECISIONS.md: слияние союзное, проигравшая гонку
-     * правка остаётся неотправленной и уедет следующим оборотом, а
-     * копия перед применением снимается всегда. Хуже, чем у GitHub, —
-     * и сказано об этом прямо, а не спрятано за словом «надёжно».
+     * задержки. Закрыть его средствами Drive нельзя. ++++++ DRIVE REV ++++++
+     * Здесь стояло, что проигравшая гонку правка «остаётся
+     * неотправленной и уедет следующим оборотом». Это неверно, и
+     * показала это модель двух устройств на этом же коде (03.10.2026):
+     * запись соседа, попавшую в окно, наша затирает, а на его
+     * устройстве следующий обмен заменяет его правку нашим значением —
+     * его сторона «не менялась», пришедшая «менялась». Записано
+     * находкой аудита и не исправлено: заметить такое можно только
+     * ПОСЛЕ записи. Проверка ниже сужает окно, но не закрывает его.
+     * Хуже, чем у GitHub, — и сказано об этом прямо, а не спрятано за
+     * словом «надёжно».
      */
     put: function(text, version, counts, cb){
       cfg.auth(function(aErr, access){
@@ -10714,10 +10904,11 @@ function attSpaceKey(sp){
    всё — «файл отсутствует», — и оно одинаково описывало «удалили» и
    «ещё не скачалось»: владелец, увидев его на новом телефоне, приложил
    бы второе фото поверх первого. */
-function attViewState(id, have, tombs){
+function attViewState(id, have, tombs, lost){
   if (!attIdOk(id)) return 'none';
   if (own(have, id)) return 'here';
   if (tombs && own(tombs, id)) return 'gone';
+  if (lost && own(lost, id)) return 'lost';   /* ++++++ UNDELETE ++++++ был и уничтожен вместе с записью */
   return 'coming';
 }
 
@@ -11412,7 +11603,7 @@ var attSyncErr = '';
    документ и не в localStorage. */
 var attSpaceInfo = null;
 
-function attSyncEmpty(){ return { sent: {}, tombs: {}, sess: {}, part: {} }; }
+function attSyncEmpty(){ return { sent: {}, tombs: {}, sess: {}, part: {}, lost: {} }; }   /* ++++++ UNDELETE ++++++ */
 
 /* ------------------------------------------------------------------ */
 /* Состояние: чтение и запись                                         */
@@ -11432,7 +11623,8 @@ function attSyncLoad(cb){
       sent:  (r && r.sent  && typeof r.sent  === 'object') ? r.sent  : {},
       tombs: (r && r.tombs && typeof r.tombs === 'object') ? r.tombs : {},
       sess:  (r && r.sess  && typeof r.sess  === 'object') ? r.sess  : {},
-      part:  (r && r.part  && typeof r.part  === 'object') ? r.part  : {}
+      part:  (r && r.part  && typeof r.part  === 'object') ? r.part  : {},
+      lost:  (r && r.lost  && typeof r.lost  === 'object') ? r.lost  : {}   /* ++++++ UNDELETE ++++++ */
     };
     cb(null);
   };
@@ -11446,11 +11638,49 @@ function attSyncSave(cb){
   if (!tx) return;
   try {
     tx.objectStore('att').put({ id: ATT_SYNC_REC, sent: attSync.sent,
-      tombs: attSync.tombs, sess: attSync.sess, part: attSync.part });
+      tombs: attSync.tombs, sess: attSync.sess, part: attSync.part,
+      lost: attSync.lost || {} });   /* ++++++ UNDELETE ++++++ */
   } catch(e){ cb('write-error'); return; }
   tx.oncomplete = function(){ cb(null); };
   tx.onerror    = function(){ cb('write-error'); };
 }
+
+/* ============================= ++++++ ATT STATE ONCE ++++++ ==
+ * СОСТОЯНИЕ ОБМЕНА ФАЙЛАМИ ЧИТАЕТСЯ ОДИН РАЗ — И ОДНИМ ЧТЕНИЕМ НА ВСЕХ.
+ *
+ * Что было. Состояние (`attSync`: что уехало, что убрать с Диска, что
+ * потеряно) читал каждый, кому оно понадобилось: `attTombAdd()` — если оно ещё
+ * не в памяти, а оборот и докачка одной накладной — КАЖДЫЙ раз, заново. Два
+ * чтения, начатые вплотную, получают одну и ту же запись «до», и второе
+ * перезаписывает память: надгробие файла, только что поставленное первым,
+ * пропадает, а конец оборота сохраняет состояние уже без него.
+ *
+ * С задачи UNDELETE уборка корзины по сроку идёт внутри первого обмена после
+ * запуска, вплотную перед оборотом файлов, — и это окно стало срабатывать
+ * каждый раз: фото и накладные убранной записи оставались на Диске навсегда,
+ * а устройство не помнило, что убрало файл (находка живой проверки
+ * 04.10.2026, на телефоне и на компьютере).
+ *
+ * Что стало. Прочитанное состояние — правда, пока программа открыта: оборот
+ * его больше не перечитывает. Первое чтение — одно на всех, кто его ждёт.
+ * Чтение не удалось — в памяти пустое состояние, как и было, и следующий, кому
+ * оно нужно, читает снова.
+ */
+var attSyncWait = null;      /* кто ждёт идущего чтения */
+var attSyncBad = false;      /* последнее чтение не удалось */
+
+function attSyncNeed(cb){
+  if (attSync && !attSyncBad){ cb(null); return; }
+  if (attSyncWait){ attSyncWait.push(cb); return; }
+  attSyncWait = [cb];
+  attSyncLoad(function(e){
+    var w = attSyncWait || [], i;
+    attSyncWait = null;
+    attSyncBad = !!e;
+    for (i = 0; i < w.length; i++) w[i](e || null);
+  });
+}
+/* ++++++ ATT STATE ONCE END ++++++ */
 
 /* ------------------------------------------------------------------ */
 /* Надгробие: файл удалён владельцем                                  */
@@ -11468,10 +11698,13 @@ function attTombAdd(ids){
   var put = function(){
     var i;
     for (i = 0; i < ids.length; i++) attSync.tombs[ids[i]] = 1;
+    /* ++++++ UNDELETE ++++++ байты уничтожены здесь: вернётся запись — о файле будет что сказать */
+    if (!attSync.lost) attSync.lost = {};
+    for (i = 0; i < ids.length; i++) attSync.lost[ids[i]] = 1;
     attSyncSave();
   };
   if (attSync) put();
-  else attSyncLoad(function(){ put(); });
+  else attSyncNeed(function(){ put(); });   /* ++++++ ATT STATE ONCE ++++++ */
 }
 
 /* ------------------------------------------------------------------ */
@@ -11527,6 +11760,119 @@ function attStep(list, one, done){
   next();
 }
 
+/* ============================= ++++++ UNDELETE FILES ++++++ ==
+ * ФАЙЛ ВОЗВРАЩЁННОЙ ЗАПИСИ: ВЕРНУТЬ, ЕСЛИ ОН ГДЕ-ТО ОСТАЛСЯ; ИНАЧЕ — СКАЗАТЬ.
+ *
+ * Запись убрали навсегда на одном устройстве — её фото и накладные уничтожены
+ * там и убраны с Диска. Запись вернули (А7) — а файлы не возвращались: то
+ * устройство, где файл ещё лежит, считало его «уже уехавшим» и заново не
+ * отправляло. Карта «что уехало» только пополнялась из списка файлов Диска и
+ * никогда с ним не сверялась (замер — probe-photo.mjs задачи).
+ *
+ *   · «уехало» СВЕРЯЕТСЯ с Диском. Файл числится уехавшим и нужен документу,
+ *     а в списке Диска его не видно — Диск спрашивают по номеру файла. Ответ
+ *     «нет» — файл больше не числится уехавшим: если байты здесь есть, этот
+ *     же оборот отправит его заново, и другое устройство его докачает;
+ *   · байтов нет и здесь — файл ПОТЕРЯН: устройство это помнит (lost) и
+ *     говорит словами — «запись вернулась, фото нет», — а не «файл ещё едет»;
+ *   · устройство, само убравшее файл вместе с записью, помнит это так же;
+ *   · файл снова появился на Диске (его отправило другое устройство) —
+ *     пометка снимается, и он докачивается как обычно;
+ *   · запись вернули раньше, чем её файл успели убрать с Диска, — убирать
+ *     его уже нельзя: надгробие файла, который документ снова называет,
+ *     снимается.
+ *
+ * Пометка «потерян» живёт рядом с файлами, в служебной записи обмена
+ * файлами (attSync.lost), а не в документе: это состояние ЭТОГО устройства.
+ * Значение: 1 — об этом ещё не сказано, 2 — сказано.
+ */
+
+/** Лежит ли на Диске файл с этим номером: cb(err, есть). Список файлов
+ *  отвечает «не видно», а не «нет»; точный ответ даёт только сам номер. */
+function adHas(access, fileId, cb){
+  if (!fileId){ cb(null, false); return; }
+  gdReq({ url: GD_API + '/files/' + encodeURIComponent(fileId) +
+               '?fields=' + encodeURIComponent('id,trashed'),
+          token: access }, function(err, j){
+    if (err === 'notfound'){ cb(null, false); return; }
+    if (err){ cb(err); return; }
+    cb(null, !!(j && j.id) && !j.trashed);
+  });
+}
+
+/** Что числится уехавшим и нужно документу, а в списке Диска не видно. */
+function attGoneIds(doc, sent, tombs, map){
+  var want = attWanted(doc), out = [], i, id;
+  for (i = 0; i < want.length; i++){
+    id = want[i];
+    if (own(sent, id) && !own(map, id) && !(tombs && own(tombs, id))) out.push(id);
+  }
+  return out;
+}
+
+/** Список файлов Диска — и сверка с ним того, что помнит устройство.
+ *  cb — как у adList(): cb(err, map, bytes). */
+function attListSeen(access, cb){
+  adList(access, function(lerr, map, bytes){
+    var id, want, i;
+    if (lerr){ cb(lerr); return; }
+    /* запись вернули раньше, чем её файл убрали с Диска, — убирать уже нельзя */
+    want = attWanted(state);
+    for (i = 0; i < want.length; i++) if (own(attSync.tombs, want[i])) delete attSync.tombs[want[i]];
+    /* лежит на Диске и убирать его не собираются — больше не потерян. Файл
+       под надгробием этот же оборот сейчас уберёт: он в списке ещё виден */
+    for (id in map) if (own(map, id) && own(attSync.lost, id) && !own(attSync.tombs, id)) delete attSync.lost[id];
+    attStep(attGoneIds(state, attSync.sent, attSync.tombs, map), function(gid, next){
+      adHas(access, attSync.sent[gid], function(e, has){
+        if (e || has){ next(); return; }      /* не знаем или лежит — как было */
+        delete attSync.sent[gid];
+        if (!own(attMeta, gid)) attSync.lost[gid] = 1;
+        attSyncSave();
+        next();
+      });
+    }, function(){ cb(null, map, bytes); });
+  });
+}
+
+/** Потерянные файлы записей, которые сейчас в списках — не в корзине и не в
+ *  споре: [{ id, photo, name, said }]. */
+function attLostList(){
+  var out = [], ps = actProducts(), held = {}, c = syncStatus.conflicts || [], i, j, p, ids;
+  if (!attSync) return out;
+  for (i = 0; i < c.length; i++) held[c[i].id] = 1;   /* спорная запись ещё не вернулась */
+  for (i = 0; i < ps.length; i++){
+    p = ps[i];
+    if (own(held, p.id)) continue;
+    ids = attIdsOf(p);
+    for (j = 0; j < ids.length; j++){
+      if (own(attSync.lost, ids[j]) && !own(attMeta, ids[j]) && !own(attSync.tombs, ids[j]))
+        out.push({ id: ids[j], photo: ids[j] === p.photoId, name: p.name, said: attSync.lost[ids[j]] === 2 });
+    }
+  }
+  return out;
+}
+
+/** «Запись вернулась, фото нет» — полосой на любом экране, один раз на файл.
+ *  Полоса — производная: всё потерянное вернулось — она уходит сама. */
+function attLostPaint(){
+  var l = attLostList(), ph = [], iv = [], fresh = false, i, nm, h = '';
+  if (!l.length){ removeBanner('att-lost'); return; }
+  for (i = 0; i < l.length; i++){
+    if (!l[i].said){ fresh = true; attSync.lost[l[i].id] = 2; }
+    nm = esc(tr('cf.t.named', { name: l[i].name }));
+    if (l[i].photo){ if (ph.indexOf(nm) < 0) ph.push(nm); }
+    else if (iv.indexOf(nm) < 0) iv.push(nm);
+  }
+  /* обо всём уже сказано: полосу, закрытую крестиком, не возвращаем; а ту,
+     что ещё висит, переписываем — часть файлов могла вернуться */
+  if (!fresh && !document.querySelector('[data-banner="att-lost"]')) return;
+  if (ph.length) h += tr('al.photo', { names: ph.join(', ') });
+  if (iv.length) h += (h ? ' ' : '') + tr('al.inv', { names: iv.join(', ') });
+  banner('att-lost', 'warn', h + ' ' + esc(tr('al.tail')));
+  attSyncSave();
+}
+/* ++++++ UNDELETE FILES END ++++++ */
+
 /* ------------------------------------------------------------------ */
 /* Оборот                                                             */
 /* ------------------------------------------------------------------ */
@@ -11548,8 +11894,8 @@ function attSyncRun(cb){
 
   gdAuthLive(function(aerr, access){
     if (aerr){ finish(aerr); return; }
-    attSyncLoad(function(){
-      adList(access, function(lerr, map, listBytes){
+    attSyncNeed(function(){   /* ++++++ ATT STATE ONCE ++++++ оборот не затирает состояние в памяти */
+      attListSeen(access, function(lerr, map, listBytes){   /* ++++++ UNDELETE ++++++ */
         if (lerr){ finish(lerr); return; }
 
         var addedBytes = 0, removedBytes = 0, doc = state, id;
@@ -11563,7 +11909,7 @@ function attSyncRun(cb){
           if (!own(attSync.sent, id)) attSync.sent[id] = map[id].fileId;
         }
 
-        var toDel  = attToDelete(attSync.sent, attSync.tombs);
+        var toDel  = attToDelete(attSync.sent, attTombsDue(attSync.tombs));   /* ++++++ DISPUTE HOLD ++++++ файлы удалённой записи ждут на Диске */
         var toSend = attToSend(doc, attMeta, attSync.sent, attSync.tombs);
         var batch  = attNextBatch(doc, attMeta, attSync.tombs, {});
 
@@ -11665,8 +12011,9 @@ function attSyncRun(cb){
 
 function attMissKey(id){
   if (!modeIsProduct() || !gdTokens) return 'att.missing';
-  var st = attViewState(id, attMeta, (attSync && attSync.tombs) || {});
+  var st = attViewState(id, attMeta, (attSync && attSync.tombs) || {}, (attSync && attSync.lost) || {});
   if (st === 'gone') return 'as.gone';
+  if (st === 'lost') return 'as.lost';   /* ++++++ UNDELETE ++++++ не «ещё едет»: ехать нечему */
   return 'as.coming';
 }
 
@@ -11709,7 +12056,7 @@ function attPullOne(id, cb){
 
   gdAuthLive(function(aerr, access){
     if (aerr){ finish(aerr); return; }
-    attSyncLoad(function(){
+    attSyncNeed(function(){   /* ++++++ ATT STATE ONCE ++++++ */
       adList(access, function(lerr, map){
         if (lerr){ finish(lerr); return; }
         var meta = map[id];
@@ -11952,6 +12299,7 @@ function syncCycle(env, cb, attempt){
     var localDoc = env.localDoc();
     var remoteDoc = null, remoteTombs = {}, remoteVer = '', settingsAt = '';
     var oldW = false, writersIn = [], oldIn = {}, oldOut = {};   /* ++++++ OLD CORE ++++++ запись старого ядра; кто писал форматом 3; её следы */
+    var remoteUndel = {};   /* ++++++ UNDELETE ++++++ отмены удалений, пришедшие с Диска */
 
     if (res.empty){
       /* На сервере ещё ничего нет: это первый обмен. Сливать не с чем —
@@ -11974,6 +12322,11 @@ function syncCycle(env, cb, attempt){
       oldW = syncOldSeen(open, remoteVer);   /* ++++++ OLD CORE ++++++ другое устройство, прежний формат */
       writersIn = open.writers || [];
       oldIn = open.oldRecs || {};
+      /* ++++++ UNDELETE ++++++ список писавших — про НЫНЕШНИЙ формат: файл прежнего
+         формата его не начинает, иначе «обновите и на других» ушла бы,
+         не дождавшись обновления второго устройства */
+      if ((open.format || 0) < SYNC_ENVELOPE) writersIn = [];
+      remoteUndel = open.undel || {};
     }
 
     /* ++++++ SETTINGS STAMP ++++++ МЕТКА ЕСТЬ У ОБЕИХ СТОРОН, И ЭТО ВСЯ
@@ -11994,7 +12347,9 @@ function syncCycle(env, cb, attempt){
                            remoteDoc ? mergeInSettingsAt(remoteDoc, settingsAt) : null,
                            baseIn, env.tombs(), remoteTombs,
                            env.meta ? env.meta() && env.meta().map : null,
-                           remoteDoc ? remoteDoc.syncMeta : null);
+                           remoteDoc ? remoteDoc.syncMeta : null,
+                           env.undel ? env.undel() : null, remoteUndel);   /* ++++++ UNDELETE ++++++ */
+    syncDelMine(merged, remoteDoc, remoteTombs);   /* ++++++ DISPUTE HOLD ++++++ удаление с этого устройства не едет, пока спор не решён */
     /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
        проверка, что внутри mergeSettings(), и другой она быть не может —
        иначе конверт уедет с меткой от чужих настроек, а внутри будут
@@ -12025,12 +12380,14 @@ function syncCycle(env, cb, attempt){
           updatedAt: nowISO(), updatedBy: meta.updatedBy || '',
           writers: syncWriters(writersIn),   /* ++++++ OLD CORE ++++++ номер этого устройства и прежние */
           oldRecs: syncOldCarry([oldIn, oldOut], merged.send || merged.doc),
+          undel: merged.undel,   /* ++++++ UNDELETE ++++++ */
           /* ++++++ SETTINGS STAMP ++++++ конверт несёт метку ТЕХ настроек,
              что в нём лежат. Прежнее `meta.settingsAt || settingsAt` брало
              метку этого устройства, даже когда победили чужие настройки. */
           settingsAt: settingsWon,
           map: merged.send ? merged.send.syncMeta : merged.meta
         });
+        if (merged.sendTombs) env2.tombstones = merged.sendTombs;   /* ++++++ DISPUTE HOLD ++++++ */
         var text = envelopeText(env2);
 
         env.tPut(text, remoteVer, countsOf(merged.send || merged.doc), function(pErr, pRes){
@@ -13467,7 +13824,9 @@ function attClear(cb){
   if (!tx) return;
   tx.objectStore('att').clear();
   tx.objectStore('blobs').clear();
-  tx.oncomplete = function(){ attMeta = {}; cb(null); };
+  /* ++++++ ATT STATE ONCE ++++++ запись состояния стёрта вместе с хранилищем — и память о ней:
+     следующий, кому оно нужно, прочтёт пустое, как читал оборот до этой задачи */
+  tx.oncomplete = function(){ attMeta = {}; attSync = null; cb(null); };
   tx.onerror    = function(){ cb('clear-error'); };
   tx.onabort    = function(){ cb('clear-abort'); };
 }
@@ -13875,6 +14234,9 @@ function validate(obj){
        не перестаёт открываться. Внутрь записей не попадает ничего. */
     syncMeta: syncMapOf(obj.syncMeta), syncTombs: syncMapOf(obj.syncTombs)
   };
+  /* ++++++ UNDELETE ++++++ карта отмен удаления — третья карта обмена. Ключ пишется
+     УСЛОВНО: у документа без отмен его нет вовсе. */
+  if (undelAny(undelMapOf(obj.syncUndel))) out.syncUndel = undelMapOf(obj.syncUndel);
   /* v1–v3 stored rates the other way round (units of X per 1 base). Invert them once, here. */
   var invertRates = ver < 4;
   var rates = s.rates && typeof s.rates === 'object' ? s.rates : {};
@@ -16833,7 +17195,8 @@ var FAQ = [
               верно не для всякой записи. Между утверждением и его
               оговоркой не должно стоять чужого текста. */
            infoP(tr('faq.a.trashWhat5', { n: days })) +
-           infoP(tr('faq.a.trashWhat4'));
+           infoP(tr('faq.a.trashWhat4')) +
+           (modeIsProduct() ? infoP(tr('faq.a.trashWhat6', { n: nq(ATT_GONE_DAYS, 'day') })) : '');   /* ++++++ DISPUTE HOLD ++++++ */
   },
   see: ['trash', 'backup.wipe']
 },
@@ -18236,13 +18599,20 @@ function finishImport(d, atts, res, revive){
   }
   function apply(){
     d.settings.lang = getLang();          // keep the language you are looking at
+    var wasT = state.syncTombs || {};   /* ++++++ UNDELETE ++++++ времена удалений: после замены документа их в нём уже нет */
     state = d;
     /* ++++++ ERASE SPLIT ++++++ ВОСКРЕШЕНИЕ. Владелец ответил «вернуть»,
        и это делает существующий touch(): он снимает надгробие и ставит
        метку правки — то есть правка становится НОВЕЕ удаления, и
        следующий оборот записи уже не унесёт. Второго механизма не
        заводим: touch() и есть единственное место, где ставится метка. */
-    if (revive) for (var ri = 0; ri < revive.length; ri++) touch(revive[ri]);
+    /* ++++++ UNDELETE ++++++ одной метки правки мало: правка новее удаления — это спор на
+       каждую запись, а человек уже ответил «вернуть на всех устройствах».
+       Отмена называет то удаление, и запись возвращается везде без вопроса. */
+    if (revive) for (var ri = 0; ri < revive.length; ri++){
+      touch(revive[ri]);
+      if (own(wasT, revive[ri])) undelNote(revive[ri], String(wasT[revive[ri]]));
+    }
     ui.edit = { product:null, person:null, tx:null, pay:null };
     ui.txQuery = ui.payQuery = ui.peopleQuery = ui.sumPeopleQuery = ui.sumStockQuery = '';
     ui.peopleStatus = ui.sumStatus = '';
@@ -19271,7 +19641,171 @@ function chev(){
   return '<svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor"' +
     ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5L6.5 6.5L1.5 11.5"/></svg>';
 }
+/* ================================= ++++++ DISPUTE HOLD ++++++ ==
+ * СПОР «УДАЛИЛИ ЗДЕСЬ — ИЗМЕНИЛИ ТАМ» ДЕРЖИТСЯ, ПОКА ВЛАДЕЛЕЦ НЕ ВЫБЕРЕТ
+ * (находка А16 аудита, слово владельца 04.10.2026).
+ *
+ * Запись удалили навсегда на этом устройстве, а на другом после этого
+ * изменили или вернули из корзины. Обмен находил спор — и терял его: базой
+ * прошлого обмена становился отпечаток пришедшей записи, и следующий же
+ * обмен читал её как «ту же запись, ещё не знающую об удалении» и удалял
+ * молча; а надгробие уходило на Диск первым же обменом, и другое устройство
+ * убирало возвращённую запись без вопроса.
+ *
+ * Правило одно: ПОКА СПОР НЕ РЕШЁН, УДАЛЕНИЕ С ЭТОГО УСТРОЙСТВА НИКУДА НЕ ЕДЕТ.
+ *   · надгробие остаётся на устройстве, в файл обмена не кладётся;
+ *   · база прошлого обмена у записи не сдвигается (спор помечается
+ *     удержанным — syncBaseKeep() держит такие и так);
+ *   · в списках — свежая версия записи с Диска, с пометкой «спорная»;
+ *   · фото и накладные записи с Диска не стираются: документ запись
+ *     называет, и оборот файлов снимает с них надгробие сам (attListSeen).
+ * Движок слияния не тронут: всё делается после него, в окружении оборота.
+ */
+
+/** Сразу после слияния: спор «удалили — изменили», у которого надгробия на
+ *  Диске ещё НЕТ, — это удаление, сделанное здесь. Он помечается (mine),
+ *  удерживается (hold), на экране остаётся версия с Диска, а надгробие
+ *  этой записи в файл обмена не идёт (merged.sendTombs). merged.tombstones
+ *  не трогается: устройство своё надгробие помнит. */
+function syncDelMine(merged, remoteDoc, remoteTombs){
+  var cs = merged.conflicts || [], held = null, i, c, list, j, k, rm;
+  for (i = 0; i < cs.length; i++){
+    c = cs[i];
+    if (c.kind !== 'edit-vs-delete' || !c.remote) continue;
+    if (remoteTombs && ownKey(remoteTombs, c.id)) continue;   /* удаление уже на Диске — оно не только наше */
+    c.mine = true;
+    c.hold = true;
+    list = merged.doc[c.collection] || [];
+    for (j = 0; j < list.length; j++) if (list[j] && list[j].id === c.id) list[j] = c.remote;
+    rm = remoteDoc && remoteDoc.syncMeta ? modOf(c.id, remoteDoc.syncMeta) : '';
+    if (rm) merged.meta[c.id] = rm;
+    if (!held) held = {};
+    held[c.id] = 1;
+  }
+  if (!held) return;
+  merged.sendTombs = {};
+  for (k in merged.tombstones)
+    if (ownKey(merged.tombstones, k) && !ownKey(held, k)) merged.sendTombs[k] = merged.tombstones[k];
+}
+
+/** Удалили ли спорную запись ЗДЕСЬ. Спор, запомненный ядром до этой задачи,
+ *  пометки не несёт — там это читалось по hold. */
+function cfMine(c){
+  return !!c && c.kind === 'edit-vs-delete' && (c.mine === true || (c.mine === undefined && c.hold === false));
+}
+
+/** Решение «Удалить»: базой записи становится отпечаток той версии с Диска,
+ *  которую владелец видел. Следующий оборот читает её как запись, ещё не
+ *  знающую об удалении, и уносит — в том числе при спешащих часах другого
+ *  устройства. Изменили её там ещё раз — встанет новый спор. */
+function cfGoneBase(c){
+  var o;
+  if (!c || !c.remote) return;
+  o = syncRead();
+  if (!o || !o.base) return;
+  if (!o.base[c.collection]) o.base[c.collection] = {};
+  o.base[c.collection][c.id] = recHash(c.remote);
+  syncWrite(o);
+}
+
+/** Спорная ли запись с этим id. Выдача из нескольких товаров называется в
+ *  списке номером первой строки — спорной её делает любая её строка. */
+function cfHeldRec(id){
+  var l = syncStatus ? syncStatus.conflicts : null, i, c, r;   /* до первого присвоения — undefined: объявление поднято */
+  if (!l || !l.length || typeof id !== 'string' || !id) return false;
+  for (i = 0; i < l.length; i++){
+    c = l[i];
+    if (c.id === id) return true;
+    r = c.local || c.remote;
+    if (c.collection === 'transactions' && r && r.handoutId === id) return true;
+  }
+  return false;
+}
+
+/** Пометка «спорная» — ЕДИНСТВЕННАЯ разметка. Пустая строка, когда спора нет:
+ *  документ без споров печатается как печатался. */
+function cfMarkHTML(id){
+  return cfHeldRec(id) ? '<span class="dmark cf">' + esc(tr('cf.mark')) + '</span>' : '';
+}
+
+/** Строка списка, открывающая спорную запись: пометка — во ВТОРОЙ подписи,
+ *  той, что переносится: в первой она на узком экране съедала дату.
+ *  Одно место на все списки: товары, люди, выдачи, оплаты, расходы, долги,
+ *  поездки. Спора нет — возвращается тот же объект. */
+function cfRowMark(o){
+  var m, out, k;
+  if (!o || o.arg === undefined || o.arg === null) return o;
+  m = cfMarkHTML(String(o.arg));
+  if (!m) return o;
+  out = {};
+  for (k in o) if (ownKey(o, k)) out[k] = o[k];
+  out.sub2 = m + (o.sub2 ? ' ' + o.sub2 : '');
+  return out;
+}
+
+/** Пометка строки «Истории» человека: выдача, оплата или возврат. */
+function cfLedMark(e){
+  var id = e.kind === 'take' ? e.txId : (e.kind === 'ret' ? e.retId : e.payId), i, m;
+  m = id ? cfMarkHTML(id) : '';
+  if (m || !e.lines) return m;
+  for (i = 0; i < e.lines.length; i++){ m = cfMarkHTML(e.lines[i].id); if (m) return m; }
+  return '';
+}
+/** Текст полосы спора. Все споры списка — «удалили — а на другом устройстве
+ *  вернули или изменили» — свой текст (слово владельца 04.10.2026); есть хоть
+ *  один спор по полям — прежний общий. Число — после двоеточия: фраза верна
+ *  при любом числе. */
+function cfBarText(){
+  var l = syncStatus.conflicts, i;
+  for (i = 0; i < l.length; i++) if (l[i].kind !== 'edit-vs-delete') return tr('cf.bar', { n: l.length });
+  return l.length === 1 ? tr('cf.barDel') : tr('cf.barDelN', { n: l.length });
+}
+
+/* ---- ФАЙЛЫ УДАЛЁННОЙ ЗАПИСИ ЖДУТ НА ДИСКЕ (слово владельца 04.10.2026) ----
+ * Запись удалили навсегда — её фото и накладные на этом устройстве
+ * уничтожаются сразу, как и было, а с Диска стираются через ATT_GONE_DAYS
+ * суток. Вернули запись за это время (спор, другое устройство, копия) —
+ * оборот файлов снимает с её файлов надгробие сам (attListSeen), и они
+ * докачиваются с Диска.
+ *
+ * Надгробие файла несёт ВРЕМЯ удаления вместо единицы. Единица — «убрать
+ * сразу»: так убираются файл, который владелец сам снял или заменил у живой
+ * записи, и всё при «Удалить данные везде». Читатели надгробий значения не
+ * смотрят (own), поэтому прежнее ядро отложенное надгробие поймёт как
+ * обычное и уберёт файл сразу. */
+var ATT_GONE_DAYS = 30;
+
+/** Файлы записи, только что удалённой навсегда: их надгробия получают время.
+ *  Зовётся СРАЗУ ЗА commitThenDrop(): состояние обмена файлами берётся той же
+ *  дверью (attSyncNeed), и очередь сохраняет порядок «надгробие, потом время».
+ *  Надгробия нет (документ не сохранился) — не делается ничего. */
+function attTombLater(ids){
+  if (!ids || !ids.length) return;
+  attSyncNeed(function(){
+    var at = nowISO(), i, any = false;
+    for (i = 0; i < ids.length; i++) if (own(attSync.tombs, ids[i])){ attSync.tombs[ids[i]] = at; any = true; }
+    if (any) attSyncSave();
+  });
+}
+
+/** Надгробия, которым пора: без времени — сразу; со временем — когда прошло
+ *  ATT_GONE_DAYS суток (та же bakDays(), что считает возраст копии и
+ *  корзины). Нечитаемое время — сразу, как единица. */
+function attTombsDue(tombs){
+  var out = {}, id, t, d;
+  for (id in tombs){
+    if (!own(tombs, id)) continue;
+    t = tombs[id];
+    d = (typeof t === 'string' && t) ? bakDays(t) : null;
+    if (d !== null && d < ATT_GONE_DAYS) continue;
+    out[id] = 1;
+  }
+  return out;
+}
+/* ++++++ DISPUTE HOLD END ++++++ */
+
 function row(o){
+  o = cfRowMark(o);   /* ++++++ DISPUTE HOLD ++++++ строка спорной записи — с пометкой */
   var tag = o.act ? 'button' : 'div';
   var attrs = o.act ? ' type="button" data-act="' + o.act + '"' +
     (o.arg !== undefined ? ' data-arg="' + esc(o.arg) + '"' : '') : '';
@@ -21529,7 +22063,7 @@ function viewProductCard(){
   /* ++++++ ATTACHMENTS ++++++ the picture rides in the page header — name on
      the left, photo on the right — so the figures start one screen higher.
      Replacing and removing it live in the enlarge sheet, not here. */
-  var h = backHead(esc(p.name), tr('prod.leftOf', {n: units(st.remaining)}), cardShotHTML(p));
+  var h = backHead(esc(p.name), cfMarkHTML(p.id) + tr('prod.leftOf', {n: units(st.remaining)}), cardShotHTML(p));   /* ++++++ DISPUTE HOLD ++++++ */
   h += attErrNote();
   h += cardPhotoNoteHTML(p);
   h += hero({ k: tr('prod.card.left'), v: units(st.remaining) + ' <span class="cur">' + tr('w.pcs') + '</span>',
@@ -23162,7 +23696,7 @@ function viewPersonCard(){
   var p = personById(ui.detail.id);
   if (!p){ ui.detail = null; return viewPeople(); }
   var sec = 'people', hs = personStats(), st = hs[p.id];
-  var h = backHead(esc(p.name), esc(personSub(p)) || tr('ppl.noContacts'), personInfoBtnHTML(p.id));
+  var h = backHead(esc(p.name), cfMarkHTML(p.id) + (esc(personSub(p)) || tr('ppl.noContacts')), personInfoBtnHTML(p.id));   /* ++++++ DISPUTE HOLD ++++++ */
   if (st.outstandingCents > 0){
     h += hero({ cls:'bad', k: tr('ppl.card.debtLeft'), v: heroMoney(sec, st.outstandingCents),
       s: tr('ppl.tookPaid', {took: baseOne(st.dueCents), paid: baseOne(st.paidCents)}) });
@@ -23229,6 +23763,7 @@ function viewPersonCard(){
        см. ledTapHTML() */
     rows += '<div class="ev">' + ledTapHTML(e) + '<div class="l">' +
       '<span class="tag ' + e.kind + '">' + tr(tag) + '</span>' +
+      cfLedMark(e) +   /* ++++++ DISPUTE HOLD ++++++ */
       '<div class="txt">' + e.text + '</div>' +
       '<div class="d">' + fmtDateLong(e.date) + (e.sub ? ' · ' + e.sub : '') + extra + '</div>' +
       act + '</div>' +
@@ -24767,7 +25302,7 @@ function viewLoanCard(){
   var fig = loanFigures(state), f = own(fig.byId, ui.detail.id) ? fig.byId[ui.detail.id] : null;
   if (!f){ ui.detail = null; return viewMoney(); }
   var l = f.loan, lent = l.kind !== 'borrowed', h;
-  h = backHead(esc(l.name), loanKindWord(l) + ' · ' + tr('loan.since', { date: fmtDateLong(l.date) }),
+  h = backHead(esc(l.name), cfMarkHTML(l.id) + loanKindWord(l) + ' · ' + tr('loan.since', { date: fmtDateLong(l.date) }),   /* ++++++ DISPUTE HOLD ++++++ */
     infoBtn('loans'));
   if (f.closed){
     h += hero({ cls:'good', k: tr('loan.closedK'), v: loanHeroMoney(l.amountMinor, l.cur),
@@ -24808,12 +25343,14 @@ function loanHistoryRows(f){
   var l = f.loan, run = l.amountMinor, rows;
   rows = '<div class="ev"><div class="l"><span class="tag take">' +
       tr(l.kind === 'borrowed' ? 'loan.evBorrowed' : 'loan.evLent') + '</span>' +
+    cfMarkHTML(l.id) +   /* ++++++ DISPUTE HOLD ++++++ */
     '<div class="d">' + fmtDateLong(l.date) + '</div></div>' +
     '<div class="r"><b>' + loanMoney(l.amountMinor, l.cur) + '</b>' +
       '<small>' + tr('loan.evLeft', { sum: loanMoney(run, l.cur) }) + '</small></div></div>';
   f.repays.forEach(function(r){
     run -= r.amountMinor;
     rows += '<div class="ev"><div class="l"><span class="tag pay">' + tr('loan.evRepay') + '</span>' +
+      cfMarkHTML(r.id) +   /* ++++++ DISPUTE HOLD ++++++ */
       '<div class="d">' + fmtDateLong(r.date) + (r.note ? ' · ' + esc(r.note) : '') + '</div>' +
       '<div class="evb"><button type="button" class="chipf" data-act="repay-delete" data-arg="' +
         esc(r.id) + '">' + tr('w.delete') + '</button></div></div>' +
@@ -25085,6 +25622,7 @@ function ordRowHTML(f){
   h = '<div class="ev ordrow" data-ord="' + esc(o.id) + '"><div class="l">' +
     '<button type="button" class="ordhd" data-act="ord-open" data-arg="' + esc(o.id) + '">' +
       '<span class="tag ' + ordTagCls(o) + '">' + ordStatusWord(o) + '</span>' +
+      cfMarkHTML(o.id) +   /* ++++++ DISPUTE HOLD ++++++ */
       '<span class="txt"><b>' + esc(o.product) + '</b></span>' +
       '<span class="d">' + esc(o.name) + ' · ' + fmtDateLong(o.date) +
         (act ? '' : ' · ' + tr('ord.closedOn', { date: fmtDateLong(o.closedAt || o.date) })) + '</span>' +
@@ -25390,6 +25928,7 @@ function viewLotCard(){
   /* ++++++ TRIPS ++++++ один расчёт на поездку — его читают все строки */
   var counts = lotItemCounts(), ps = productStats(), f = lotFigures(lot, counts, ps);
   var h = backHead(lotTitleOf(lot),
+    cfMarkHTML(String(ui.detail.id)) +   /* ++++++ DISPUTE HOLD ++++++ */
     fmtDateLong(lot.date) + ' · ' + tr('lot.sub', {n: nq(lot.items.length, 'line'),
       sum: secOne(sec, buy)}),
     infoBtn('lot'));
@@ -25898,16 +26437,91 @@ function trashSectionHTML(){
  * этом файле нет и быть не должно.
  * ------------------------------------------------------------------ */
 
+/* ============================ ++++++ UNDELETE DEVICE ++++++ ==
+ * То же правило — на стороне устройства: кто ставит отмену, когда идёт
+ * уборка по сроку и каким временем она помечает удаление.
+ *
+ *   · «Восстановить» из корзины отменяет удаление, помеченное временем,
+ *     когда запись ушла в корзину;
+ *   · уборка по сроку помечает удаление ИМЕННО этим временем (а не
+ *     «сейчас»): тогда отмена от «Восстановить» попадает в него точно, и
+ *     запись возвращается на все устройства без вопроса. Ручное «удалить
+ *     навсегда» ставит «сейчас» — его такая отмена не задевает;
+ *   · уборка по сроку ждёт удачного обмена, если обмен настроен: сперва
+ *     узнать, что сделали с корзиной на других устройствах, потом убирать.
+ */
+
+/* Формат файла обмена, ниже которого программа затирала чужие правки
+   (находка А13). «Старым ядром» считается только он: формат 3 правки не
+   затирал, и его записи спором не становятся. */
+var SYNC_OLD_CUT = 3;
+
+/** Отмена удаления, сделанная на ЭТОМ устройстве. Ключ в документе
+ *  заводится только здесь: документ без отмен остаётся побайтово прежним.
+ *  Само надгробие здесь не трогается — отменённое отбрасывает слияние
+ *  (undelPrune), на любом устройстве одинаково.
+ *  Отмены устройства хранит ДОКУМЕНТ: слияние отдаёт их объединение с
+ *  пришедшими (mergeDocs → doc.syncUndel), применение кладёт его в state, а
+ *  отмена, поставленная, пока шла отправка, ложится в state уже после
+ *  применения и остаётся там — отдельной памяти в записи обмена нет. */
+function undelNote(id, t){
+  if (typeof id !== 'string' || !id || typeof t !== 'string' || !t) return;
+  if (!state.syncUndel) state.syncUndel = {};
+  undelAdd(state.syncUndel, id, t);
+}
+
+/** Когда каждая корзинная запись ушла в корзину: id → trashedAt. Снимается
+ *  ДО восстановления — оно стирает это поле раньше, чем зовёт touch(). */
+function trashWasMap(doc){
+  var out = {}, i, j, list, r;
+  for (i = 0; i < TRASH_COLS.length; i++){
+    list = doc[TRASH_COLS[i]] || [];
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (r && typeof r.id === 'string' && typeof r.trashedAt === 'string' && r.trashedAt) out[r.id] = r.trashedAt;
+    }
+  }
+  return out;
+}
+
+/** То же для записей плана уборки: { коллекция: [id] } → id → trashedAt. */
+function trashAgedMap(doc, ids){
+  var was = trashWasMap(doc), out = {}, k, i;
+  for (k in ids) if (own(ids, k)){
+    for (i = 0; i < ids[k].length; i++) if (own(was, ids[k][i])) out[ids[k][i]] = was[ids[k][i]];
+  }
+  return out;
+}
+
+/* Уборка по сроку отложена до удачного обмена; удачный обмен в этом
+   сеансе уже был. Обе — память сеанса, не документ. */
+var trashWait = false, trashSynced = false;
+
+/** Удачный обмен прошёл: если уборка ждала его — убрать то, что осталось в
+ *  корзине ПОСЛЕ обмена. Пока человек печатает, не убираем: уборка
+ *  перерисовывает экран (правило RESUME SYNC) — дождётся следующего обмена. */
+function trashPurgeSynced(){
+  trashSynced = true;
+  if (!trashWait || syncTyping()) return 0;
+  trashWait = false;
+  return trashPurgeRun();
+}
+/* ++++++ UNDELETE DEVICE END ++++++ */
+
 /** Снять записи навсегда: надгробие на каждую (dropFrom), потом файлы —
  *  и именно в этом порядке, потому что ссылка обязана лечь на диск
  *  раньше, чем гибнут байты (хрупкое место 12). */
-function trashDropIds(ids){
+function trashDropIds(ids, aged){
   var att = trashAttIds(state, ids), k;
   for (k in ids) if (own(ids, k)) trashDropOne(k, ids[k]);
+  /* ++++++ UNDELETE ++++++ уборка по сроку: удаление помечено временем, когда запись
+     ушла в корзину. До save(): он — в commitThenDrop() ниже. */
+  if (aged) for (k in aged) if (own(aged, k) && own(state.syncTombs, k)) state.syncTombs[k] = aged[k];
   if (ui.report.productId && !productById(ui.report.productId)) ui.report.productId = '';
   ui.detail = null;
   attForget(att);
   commitThenDrop(att);
+  attTombLater(att);   /* ++++++ DISPUTE HOLD ++++++ с Диска — через ATT_GONE_DAYS суток, не сразу */
 }
 /* отдельной функцией, чтобы замыкание цикла не держало переменную k */
 function trashDropOne(col, dead){
@@ -25934,7 +26548,11 @@ function trashNoDialog(html){
 /** Восстановить группу. Целиком или никак — решает ядро, здесь только
  *  слова. */
 function trashRestoreAct(group){
-  var res = trashRestore(state, group, true, remainingFor, touch);
+  var was = trashWasMap(state);   /* ++++++ UNDELETE ++++++ когда каждая запись ушла в корзину — до восстановления */
+  var res = trashRestore(state, group, true, remainingFor, function(id){
+    touch(id);
+    if (own(was, id)) undelNote(id, was[id]);
+  });
   if (res.ok){
     toast(res.parents.length
       ? tr('msg.restoredWith', { what: trashParentNames(res.parents) })
@@ -26012,6 +26630,14 @@ function trashClearAct(){
  *  в каждом подтверждении удаления. */
 function trashPurgeBoot(loaded){
   if (!loaded) return 0;
+  /* ++++++ UNDELETE ++++++ обмен настроен — сперва узнать, что сделали с корзиной на
+     других устройствах: запись, которую там вернули, убирать нельзя. Обмена
+     нет — как было. */
+  if (wipeSyncOn() && !trashSynced){ trashWait = true; return 0; }
+  return trashPurgeRun();
+}
+/** Сама уборка: всё, чему вышел срок, — прежним путём. */
+function trashPurgeRun(){
   var plan = trashPurgeIds(state);
   if (!plan.n) return 0;
   /* ++++++ SILENT DROP ++++++ у записи и её родителя сроки разные:
@@ -26019,7 +26645,7 @@ function trashPurgeBoot(loaded){
      только товар, оставив выдачу висячей. Спрашивать тут некого —
      уборка идёт при запуске, — поэтому сироты уходят вместе. */
   plan.n += trashAddOrphans(state, plan.ids);
-  trashDropIds(plan.ids);
+  trashDropIds(plan.ids, trashAgedMap(state, plan.ids));   /* ++++++ UNDELETE ++++++ */
   return plan.n;
 }
 
@@ -30555,7 +31181,7 @@ function syncOldSeen(open, ver){
     }
   }
   if (!o.version || !ver || String(ver) === String(o.version)) return false;
-  if ((open.format || 0) < SYNC_ENVELOPE){
+  if ((open.format || 0) < SYNC_OLD_CUT){   /* ++++++ UNDELETE ++++++ формат 3 правок не затирал */
     if (!syncRemoteMoved(open.doc, o.base)) return false;   /* ++++++ OLD CORE DRIFT ++++++ номер версии двигает и сам Диск */
     if (!o.oldDev){ o.oldDev = { at: nowISO() }; syncWrite(o); }
     return true;
@@ -30708,7 +31334,7 @@ function syncBarPaint(){
   if (!syncStatus.conflicts.length){ cfFold = null; removeBanner('sync-conf'); return; }
   if (cfFolded()){ removeBanner('sync-conf'); return; }   /* ++++++ OLD CORE ++++++ Г18: свёрнута крестиком */
   banner('sync-conf', 'warn',
-    esc(tr('cf.bar', {n: syncStatus.conflicts.length})) +
+    esc(cfBarText()) +   /* ++++++ DISPUTE HOLD ++++++ */
     '<span class="rb"><button type="button" class="go" data-act="sync-conf">' +
     esc(tr('cf.show')) + '</button></span>');
 }
@@ -30875,22 +31501,74 @@ function cfDecide(c, picks){
   return '';
 }
 
-/** Правку сделали здесь, удалили на другом устройстве. Вернуть запись на
- *  другие устройства этой правкой нельзя (это отдельная задача), поэтому
- *  ответов два: удалить и здесь — или решить позже, и тогда запись
- *  остаётся только здесь. */
+/** ++++++ UNDELETE ++++++ Запись удалили навсегда на одной стороне, а на другой после
+ *  этого изменили или вернули из корзины. Ответов два, и каждый называет
+ *  последствие (слово владельца 03.10.2026):
+ *    'back' — запись вернётся на всех устройствах: то удаление, о котором
+ *             спор, отменяется по его времени, и отмена едет обменом;
+ *    'gone' — запись будет удалена везде: она снимается и здесь, прежним
+ *             путём (dropFrom) — как делала прежняя кнопка «Удалить и здесь».
+ *             Спор после этого не возвращается и при спешащих часах другого
+ *             устройства: там запись равна отпечатку прошлого обмена.
+ *  Решение без окна — его же зовёт окно. Пустая строка — удалось. */
+function cfDelDecide(c, pick){
+  if (pick !== 'back' && pick !== 'gone') return tr('cf.pickOne');
+  /* «удалена везде» — вместе с её фото и накладными: пока спор ждал, файл мог
+     вернуться на Диск с устройства, где запись ещё жива. Снимается ДО удаления
+     записи: потом спросить её файлы будет не у кого. */
+  var files = pick === 'gone' ? attIdsOf(cfFind(c)) : [];
+  if (pick === 'back') undelNote(c.id, String(c.deletedAt || ''));
+  else dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
+  if (pick === 'gone') cfGoneBase(c);   /* ++++++ DISPUTE HOLD ++++++ удаление уезжает, спор не возвращается */
+  cfDone(c);
+  /* файлы — прежним путём и после сохранения: ссылка уходит с диска раньше байтов */
+  if (files.length){ commitThenDrop(files); attTombLater(files); }   /* ++++++ DISPUTE HOLD ++++++ */
+  return '';
+}
+
+/** «Сохранить выбор» неактивна, пока вариант не отмечен (слово владельца
+ *  03.10.2026): нажать её без выбора нельзя вовсе. Лист уже в документе —
+ *  dialog() кладёт его сразу. */
+function cfDelArm(names){
+  var back = document.querySelector('#modalRoot > .modal-back:last-child');
+  var b = back ? back.querySelector('.modal > .btns button[data-key="ok"]') : null;
+  if (!b) return;
+  /* ++++++ DISPUTE HOLD ++++++ окно спора по полям — так же: отмечено должно быть в КАЖДОЙ строке */
+  names = names || ['cfdel'];
+  var all = function(){
+    var i;
+    for (i = 0; i < names.length; i++) if (!back.querySelector('input[name="' + names[i] + '"]:checked')) return false;
+    return true;
+  };
+  b.disabled = !all();
+  back.addEventListener('change', function(){ b.disabled = !all(); });
+}
+
+/** Окно этого спора: два варианта, у каждого названо последствие. Первый
+ *  вариант называется по месту (слово владельца 03.10.2026): где запись
+ *  есть — «Оставить», где её нет — «Вернуть». Решение одно и то же. */
 function cfDeleteSheet(c){
+  var here = cfMine(c);   /* ++++++ DISPUTE HOLD ++++++ удалили здесь, изменили на другом устройстве: запись до решения видна и здесь */
+  var h = '<div class="note">' + tr(here ? 'cf.delAskHere' : 'cf.delAsk',
+            { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))) }) + '</div>' +
+    '<div class="cfrow">' +
+      '<label class="cfopt"><input type="radio" name="cfdel" value="back"><span>' + esc(tr('cf.optKeep')) +
+        '<small>' + esc(tr('cf.optKeepNote')) + '</small></span></label>' +
+      '<label class="cfopt"><input type="radio" name="cfdel" value="gone"><span>' + esc(tr('cf.optGone')) +
+        '<small>' + esc(tr('cf.optGoneNote')) + '</small></span></label></div>';
   dialog({
-    title: tr('wipe.cDelTitle'),
+    title: tr(here ? 'cf.delTitleHere' : 'wipe.cDelTitle'),
     sub: esc(cfTitle(c)),
-    html: '<div class="note">' + tr('cf.delBody', { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))) }) + '</div>',
+    html: h,
     cancelLabel: tr('cf.later'),
-    buttons: [{ key: 'del', label: tr('wipe.delHere'), variant: 'danger' }]
+    buttons: [{ key: 'ok', label: tr('cf.save'), variant: 'primary' }]
   }).then(function(k){
-    if (k !== 'del') return;
-    dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
-    cfDone(c);
+    if (k !== 'ok') return;
+    var x = document.querySelector('#modalRoot > .modal-back:last-child input[name="cfdel"]:checked');
+    if (!x){ toast(tr('cf.pickOne'), 'warn'); return; }
+    cfDelDecide(c, x.value);
   });
+  cfDelArm();
 }
 
 /* Окно разрешения: значения на виду, решение — владельца, по каждой строке. */
@@ -30925,6 +31603,10 @@ function syncConflictSheet(){
     if (why){ banner('sync-theirs', 'err', tr('sy.cTheirsNo', { why: esc(why) })); return; }
     cfDone(c);
   });
+  /* ++++++ DISPUTE HOLD ++++++ как в окне «удалили — изменили» (слово владельца 04.10.2026) */
+  var names = [];
+  for (i = 0; i < rows.length; i++) names.push('cf' + i);
+  cfDelArm(names);
 }
 
 /* Окружение для syncCycle(): всё, чего он не умеет сам. */
@@ -30996,6 +31678,7 @@ function syncEnv(){
     localDoc: function(){ return state; },
     baseHashes: function(){ var o = syncRead(); return (o && o.base) || {}; },
     tombs: function(){ return state.syncTombs || {}; },
+    undel: function(){ return state.syncUndel || {}; },   /* ++++++ UNDELETE ++++++ */
     meta: function(){
       var o = syncRead() || {};
       /* ++++++ LOAD FAIL SYNC ++++++ пока настройки этого устройства неизвестны
@@ -31121,7 +31804,13 @@ function syncEnv(){
  * не теряет, и там всё как было. Без AbortController — тоже как было.
  *
  * Половины файла на Диске не бывает: документ уходит одним PATCH
- * uploadType=media с полным телом, и оборванный запрос Диск не применяет.
+ * uploadType=media с полным телом — Диск применяет его целиком или не
+ * применяет вовсе. ++++++ DRIVE REV ++++++ Здесь стояло «оборванный запрос
+ * Диск не применяет» — это было рассуждение, а не замер. На живом
+ * телефоне оборванная в пути запись 8 раз из 8 оказалась на Диске уже
+ * применённой целиком: обрывается ожидание ответа, а не запись. Тогда
+ * повтор при возврате читает с Диска свой же документ и сходится
+ * обычным обменом.
  * ====================================================================== */
 var BG_GRACE_MS = 3000;
 /* когда программа ушла в фон (0 — на экране) и когда вернулась */
@@ -31323,6 +32012,7 @@ function syncRun(loud){
          которое ещё едет, и полоса называла его пришедшим с другого
          устройства (находка Г14, воспроизведено живьём 28.09.2026). */
       wipeDelBarPaint(gone);
+      trashPurgeSynced();   /* ++++++ UNDELETE ++++++ уборка по сроку ждала этого обмена */
       /* И ответ на необратимое нажатие: доехало или ждёт сети. */
       if (carriesWipe && wipeSent){ wipeSent = false; banner('wipe-done', 'ok', esc(tr('wipe.doneAll'))); }
       /* ++++++ GDRIVE ++++++ дорога у режимов разная, и сообщение об
@@ -31343,6 +32033,7 @@ function syncRun(loud){
       attSyncRun(function(ae){
         if (ae && ae !== 'off' && ae !== 'busy') toast(tr(attErrKey(ae)), 'warn');
         syncPaint();   /* ++++++ RESUME SYNC ++++++ не под полем, в котором печатают (Г16) */
+        attLostPaint();   /* ++++++ UNDELETE ++++++ файл возвращённой записи потерян — сказать */
       });
     } else {
       syncStatus.err = (r && r.err) || 'server';
