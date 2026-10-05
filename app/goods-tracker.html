@@ -897,6 +897,11 @@
      Прежняя копия отличалась радиусом и высотой — оттого кнопки листа и
      не были похожи на кнопки под ним. */
   .modal .btns .btn{flex:1 1 0;min-width:120px}
+  /* ++++++ BASE ASK ++++++ окно «Сменить основную валюту…»: подпись «Только
+     переименовать» шире половины ряда на телефоне 320 px и выходила за рамку
+     кнопки. Обе кнопки-ответа не уже своей подписи — на узком экране каждая
+     встаёт на свою строку. Адрес — ключи кнопок: они есть только в этом окне. */
+  .modal .btns .btn[data-key="relabel"],.modal .btns .btn[data-key="convert"]{min-width:max-content}
   /* ++++++ MONEY TABS ++++++ верхний ряд «Денег». Подчёркивание, а не
      капсула: под ним стоит .seg («Список / Новая»), и два одинаковых
      ряда подряд читались бы как один орган управления. Прокручивается
@@ -1869,7 +1874,7 @@ var STR = {
 /* ---------------- document / header ---------------- */
 'app.title':       { en:'Goods Sales &amp; Debt Tracker', ru:'Учёт товаров и долгов' },
 'app.titlePlain':  { en:'Goods Sales & Debt Tracker',     ru:'Учёт товаров и долгов' },
-'hdr.base':        { en:'Base currency',                     ru:'Базовая валюта' },
+'hdr.base':        { en:'Base currency',                     ru:'Основная валюта' },
 'hdr.peopleExtra': { en:'People tab &mdash; extra currency', ru:'Вкладка «Люди» &mdash; доп. валюта' },
 'hdr.lang':        { en:'Language',                          ru:'Язык' },
 
@@ -2175,7 +2180,7 @@ var STR = {
 'cur.code':       { en:'Code',        ru:'Код' },
 
 /* ---- base currency change ---- */
-'dlg.baseTitle':  { en:'Change base currency to {cur}?', ru:'Сменить базовую валюту на {cur}?' },
+'dlg.baseTitle':  { en:'Change base currency to {cur}?', ru:'Сменить основную валюту на {cur}?' },
 /* ++++++ ACTIVE CURRENCIES ++++++ решение владельца 2026-09-03: объяснять
    ПРОСТЫМИ СЛОВАМИ и НА ПРИМЕРЕ СУММЫ, а не терминами. Прежний текст
    говорил «каждая цена делится на 10.93» — это верно и это про механизм;
@@ -2207,7 +2212,7 @@ var STR = {
    описывала поведение, которого больше нет, и потому переписана целиком, а не
    дополнена. Ключ, приставка и место в словаре те же. */
 'dlg.resetAlso':  { en:'Your settings are kept — the base currency, the exchange rates you typed in, the VAT rate, the currency the Summary is read in and the interface language. Only the records go.',
-                    ru:'Настройки сохранятся: базовая валюта, набранные вами курсы обмена, ставка НДС, валюта «Сводки» и язык интерфейса. Уйдут только записи.' },
+                    ru:'Настройки сохранятся: основная валюта, набранные вами курсы обмена, ставка НДС, валюта «Сводки» и язык интерфейса. Уйдут только записи.' },
 /* ++++++ BASE CHANGE ++++++ R9: пересчёт сумм необратим, и об этом молчали.
    Приставка `dlg.` — та же, что у остальных фраз этого подтверждения. */
 /* ++++++ BASE UNDO ++++++ R9, вторая половина. Приставка `cur.` — та же,
@@ -2219,10 +2224,10 @@ var STR = {
                      ru:'предлагается, пока с тех пор ничего не менялось — один шаг, а не история' },
 'cur.undoDo':      { en:'Undo',                               ru:'Вернуть' },
 'msg.baseUndone':  { en:'The amounts and the base currency are back in {cur}.',
-                     ru:'Суммы и базовая валюта вернулись в {cur}.' },
+                     ru:'Суммы и основная валюта вернулись в {cur}.' },
 'dlg.baseUndoTitle':{ en:'Undo the conversion?',              ru:'Отменить пересчёт?' },
 'dlg.baseUndoBody': { en:'Every price, shipment total, handout price and payment goes back to the number it had before the conversion, and the base currency goes back to {cur}. The rates recorded with past handouts and payments start applying again. This is offered once: after it, there is nothing left to undo.',
-                     ru:'Каждая цена, итог партии, цена выдачи и платёж вернутся к числу, которое было до пересчёта, а базовая валюта — к {cur}. Курсы, записанные с прошлыми выдачами и оплатами, снова начнут применяться. Это предлагается один раз: после возврата отменять будет нечего.' },
+                     ru:'Каждая цена, итог партии, цена выдачи и платёж вернутся к числу, которое было до пересчёта, а основная валюта — к {cur}. Курсы, записанные с прошлыми выдачами и оплатами, снова начнут применяться. Это предлагается один раз: после возврата отменять будет нечего.' },
 'dlg.baseUndoOk':   { en:'Put the amounts back',              ru:'Вернуть суммы' },
 'dlg.baseLossy': { en:'<b>Convert amounts</b> rounds every stored price and payment. Switching the base back will not restore the original numbers — on a handout of many units the price can move by a few cents.',
                    ru:'<b>Пересчитать суммы</b> округляет каждую сохранённую цену и платёж. Вернуться к прежним числам, сменив валюту обратно, не получится: на выдаче из многих единиц цена может уехать на несколько копеек.' },
@@ -2236,13 +2241,13 @@ var STR = {
    описывала поведение, которого больше нет: снимки теперь переезжают в новую
    базу вместе с суммами. Ключ, приставка и место в словаре те же. */
 'dlg.baseSnaps':  { en:'If you convert, the rates recorded with each past handout and payment move into the new base with them, and the Summary keeps showing the past at the rates of the day. If you only re-label, they stop applying — the stored numbers are being declared a different currency, so what they were worth on their day can no longer be worked out from them, and the Summary reads everything at today\u2019s rates.',
-                    ru:'При пересчёте курсы, записанные вместе с прежними выдачами и платежами, переедут в новую базу вместе с ними — «Сводка» по-прежнему покажет прошлое по курсам того дня. При переименовании они перестанут применяться: хранимые числа объявляются другой валютой, и сколько они стоили в свой день, по ним уже не узнать — «Сводку» программа покажет по сегодняшним курсам.' },
+                    ru:'При пересчёте курсы, записанные вместе с прежними выдачами и платежами, переедут в новую основную валюту вместе с ними — «Сводка» по-прежнему покажет прошлое по курсам того дня. При переименовании они перестанут применяться: хранимые числа объявляются другой валютой, и сколько они стоили в свой день, по ним уже не узнать — «Сводку» программа покажет по сегодняшним курсам.' },
 'dlg.baseSumCur': { en:'The Summary stays set to <b>{cur}</b> — it does not follow the base currency. Change it from the tile on the Summary if you need to.',
-                    ru:'«Сводка» останется в <b>{cur}</b> — за базовой валютой она не следует. Поменяйте её сами на плашке в «Сводке», если нужно.' },
+                    ru:'«Сводка» останется в <b>{cur}</b> — за основной валютой она не следует. Поменяйте её сами на плашке в «Сводке», если нужно.' },
 
 'dlg.baseRelabel':{ en:'Re-label only',   ru:'Только переименовать' },
 'dlg.baseConvert':{ en:'Convert amounts', ru:'Пересчитать суммы' },
-'msg.baseChanged':{ en:'Base currency is now {cur}{how}', ru:'Базовая валюта теперь {cur}{how}' },
+'msg.baseChanged':{ en:'Base currency is now {cur}{how}', ru:'Основная валюта теперь {cur}{how}' },
 'msg.baseConv':   { en:' (amounts converted).',  ru:' (суммы пересчитаны).' },
 'msg.baseRelab':  { en:' (amounts re-labelled).',ru:' (суммы переименованы).' },
 
@@ -2456,7 +2461,7 @@ var STR = {
 'v.newer':       { en:'file was made by a newer version of this tool (schema {n})',
                    ru:'файл создан более новой версией программы (схема {n})' },
 'v.noSettings':  { en:'missing settings',     ru:'нет раздела settings' },
-'v.badBase':     { en:'invalid base currency',ru:'некорректная базовая валюта' },
+'v.badBase':     { en:'invalid base currency',ru:'некорректная основная валюта' },
 'v.badCode':     { en:'invalid currency code "{code}"', ru:'некорректный код валюты «{code}»' },
 'v.badRate':     { en:'invalid rate for {code}',        ru:'некорректный курс для {code}' },
 'v.notList':     { en:'{name} is not a list', ru:'«{name}» — не список' },
@@ -3152,7 +3157,7 @@ var STR = {
 'acct.sections': { en:'Sections',                           ru:'Разделы' },
 'acct.cur':      { en:'Currencies and rates',               ru:'Валюты и курсы' },
 'acct.curSub':   { en:'base currency, rates, edit history',
-                   ru:'базовая валюта, курсы, история правок' },
+                   ru:'основная валюта, курсы, история правок' },
 'acct.backup':   { en:'Backup',                             ru:'Резервная копия' },
 'acct.backupSub':{ en:'download, restore, erase data',
                    ru:'скачать, восстановить, стереть данные' },
@@ -3689,7 +3694,7 @@ var STR = {
    `msg.shipAdded` и `msg.shipPrice`). Поэтому фраза несёт ОБЕ половины —
    иначе «правка курса меняет…» читалось бы как «меняет ваши данные». */
 'cur.rateShows': { en:'Editing a rate does not change what is <b>stored</b>: amounts always live in the base currency. It changes what is <b>shown</b> — every converted figure is read at the current rate. The Summary is the exception: it uses the rates recorded with the record itself, where they were recorded.',
-                   ru:'Правка курса не меняет <b>хранимого</b>: суммы всегда лежат в базовой валюте. Она меняет <b>показанное</b> — каждая пересчитанная величина читается по текущему курсу. Исключение — «Сводка»: она берёт курсы, записанные вместе с самой записью, если они там есть.' },
+                   ru:'Правка курса не меняет <b>хранимого</b>: суммы всегда лежат в основной валюте. Она меняет <b>показанное</b> — каждая пересчитанная величина читается по текущему курсу. Исключение — «Сводка»: она берёт курсы, записанные вместе с самой записью, если они там есть.' },
 /* ++++++ RATE PAIR ++++++ раздел «Курсы»: два поля и шесть направлений */
 'rp.field':      { en:'1 {anchor} = … {cur}',              ru:'1 {anchor} = … {cur}' },
 /* ++++++ CURRENCY VAT ++++++ НДС по валютам. Восемь ключей, оба языка.
@@ -3715,7 +3720,7 @@ var STR = {
 'rp.errRate':    { en:'1 {anchor} → {cur} must be a number greater than zero. Nothing was saved.',
                    ru:'1 {anchor} → {cur} должен быть числом больше нуля. Ничего не сохранено.' },
 'rp.errAnchor':  { en:'There is no {anchor} rate against the base currency {base} — add it below first.',
-                   ru:'Нет курса {anchor} к базовой валюте {base} — сначала добавьте его ниже.' },
+                   ru:'Нет курса {anchor} к основной валюте {base} — сначала добавьте его ниже.' },
 'rp.saved':      { en:'Rates saved',                       ru:'Курсы сохранены' },
 'rp.savedSame':  { en:'Saved — no rate moved',             ru:'Сохранено — ни один курс не сдвинулся' },
 'sum.byBatchDate':{ en:'by shipment date',                  ru:'по датам партий' },
@@ -3796,7 +3801,7 @@ var STR = {
 'inv.calcManual':{ en:'{qty} pcs &times; {unit} = <b>{total} {cur}</b>',
                    ru:'{qty} шт &times; {unit} = <b>{total} {cur}</b>' },
 'inv.inBase':    { en:'in the base currency: {unit} {base} per unit &middot; item total {total} {base}',
-                   ru:'в базовой валюте: {unit} {base} за штуку &middot; позиция {total} {base}' },
+                   ru:'в основной валюте: {unit} {base} за штуку &middot; позиция {total} {base}' },
 'inv.total':     { en:'Invoice total: {sum}',               ru:'Итого по инвойсу: {sum}' },
 'inv.totalVat':  { en:'(incl. VAT {sum})',                  ru:'(в т.ч. НДС {sum})' },
 'inv.linesQty':  { en:'{n} {lines} &middot; {q} pcs',       ru:'{n} {lines} &middot; {q} шт' },
@@ -4053,7 +4058,7 @@ var STR = {
 'cp.errRate':   { en:'The rate must be a number greater than zero.',
                   ru:'Курс должен быть числом больше нуля.' },
 'cp.delBase':   { en:'{cur} is the base currency — it cannot be deleted.',
-                  ru:'{cur} — базовая валюта, её нельзя удалить.' },
+                  ru:'{cur} — основная валюта, её нельзя удалить.' },
 'cp.delPopular':{ en:'{cur} is a built-in currency — it cannot be deleted. Untick it instead.',
                   ru:'{cur} — встроенная валюта, её нельзя удалить. Снимите отметку.' },
 'cp.delUsed':   { en:'{cur} cannot be deleted: {where} are already recorded in it. Untick it — ' +
@@ -4064,7 +4069,7 @@ var STR = {
 'cp.where.pay':  { en:'payments',               ru:'оплаты' },
 'cp.where.exp':  { en:'expenses',               ru:'расходы' },
 'cp.where.inv':  { en:'supplier invoices',      ru:'накладные' },
-'cp.where.base': { en:'the base currency',      ru:'базовая валюта' },
+'cp.where.base': { en:'the base currency',      ru:'основная валюта' },
 'cp.where.sumCur': { en:'the Summary currency', ru:'валюта «Сводки»' },
 'cp.where.displayCurrency': { en:'the People tab currency', ru:'валюта вкладки «Люди»' },
 'cp.where.buyCur': { en:'the purchase currency', ru:'валюта покупки' },
@@ -4095,7 +4100,7 @@ var STR = {
                    ru:'Назначается в окне выбора валют — шестерёнка выше. Смена валюты не ' +
                        'меняет то, что показывают вкладки.' },
 'cur.peopleHint':{ en:'Extra currency next to the base one, on the People tab.',
-                   ru:'Дополнительная валюта рядом с базовой — на вкладке «Люди».' },
+                   ru:'Дополнительная валюта рядом с основной — на вкладке «Люди».' },
 /* ++++++ RATE LOG ++++++ R16. Приставка `cur.` — та же, что у остальных
    строк «Ещё → Валюты»; заголовок карточки — `hdr.`, как у соседей. */
 'hdr.rateLog':     { en:'Rate history',                       ru:'История курсов' },
@@ -4106,15 +4111,15 @@ var STR = {
 'cur.logDel':      { en:'{cur} removed — it was 1 {cur} = {was} {base}',
                      ru:'{cur} удалена — было 1 {cur} = {was} {base}' },
 'cur.logBaseConv': { en:'Base {from} &rarr; {cur}, amounts converted and every rate re-expressed',
-                     ru:'База {from} &rarr; {cur}, суммы пересчитаны и все курсы выражены заново' },
+                     ru:'Основная валюта {from} &rarr; {cur}, суммы пересчитаны и все курсы выражены заново' },
 /* ++++++ UNDO LOGGED ++++++ B4. Третий вид смены базы. Прежние две фразы
    не годятся ни одна — «пересчитаны» и «переименованы» одинаково неправда о
    возврате, — а чужая фраза записала бы в историю неверное событие (область
    43). Приставка `cur.` — та же, что у трёх соседних строк истории. */
 'cur.logBaseUndo': { en:'Base {from} &rarr; {cur} — the amounts were put back as they were before the conversion, and the rates with them',
-                   ru:'База {from} &rarr; {cur} — суммы возвращены к тому, что было до пересчёта, и курсы вместе с ними' },
+                   ru:'Основная валюта {from} &rarr; {cur} — суммы возвращены к тому, что было до пересчёта, и курсы вместе с ними' },
 'cur.logBaseRelab':{ en:'Base {from} &rarr; {cur}, re-labelled and every rate re-expressed',
-                     ru:'База {from} &rarr; {cur}, переименована и все курсы выражены заново' },
+                     ru:'Основная валюта {from} &rarr; {cur}, переименована и все курсы выражены заново' },
 'cur.logMore':     { en:'{n} in total; the last {shown} are shown',
                      ru:'всего {n}; показаны последние {shown}' },
 'cur.sectionNote':{ en:'Each tab reads money its own way. The Summary is in the currency you pick ' +
@@ -6988,8 +6993,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.30.1';
-var APP_BUILD = '2026-10-05T13:22:41.266Z';
+var APP_VERSION = '1.30.2';
+var APP_BUILD = '2026-10-05T19:35:04.104Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -27764,7 +27769,16 @@ function curPickApply(convert){
  *  состояние, которого окно не обещало. */
 function curPickFinish(){
   var ch = curPickBaseChange();
-  var money = ch && (actProducts().length || actTx().length || actPay().length);
+  /* ++++++ BASE ASK ++++++ Спрашивать надо всегда, когда есть что пересчитывать.
+     Суммы в основной валюте несут и расходы, и записи в корзине — их
+     applyBaseChange() пересчитывает наравне с живыми товарами, выдачами и
+     оплатами. Прежнее условие смотрело только на живые три — и документ с
+     одними расходами или с одной корзиной менял валюту без вопроса: числа
+     оставались, а читались уже в новой валюте, без «Вернуть суммы».
+     Ответ — тот же, что у обмена (syncHasMoney): второго мнения «есть ли
+     деньги в основной валюте» в файле быть не должно. Долги и заказы в
+     него не входят: их суммы живут в своей валюте. */
+  var money = ch && syncHasMoney(state);
   if (!money){ curPickDone(curPickApply(false)); return; }
   /* Курс берётся С УЧЁТОМ ЧЕРНОВИКА: валюта могла быть заведена в этом же
      окне, и тогда rateOf() её ещё не знает — вопрос напечатал бы «= 0». */
