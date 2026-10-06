@@ -4648,6 +4648,15 @@ var STR = {
 'exp.sheetLine': { en:'{cat} &mdash; {sum}<br>{date}',      ru:'{cat} — {sum}<br>{date}' },
 'exp.editRate':  { en:'The amount is recalculated at this record’s own rate, not today’s.',
                    ru:'Сумма пересчитывается курсом самой записи, а не сегодняшним.' },
+/* ++++++ EXP EDIT RATE ++++++ */
+'exp.editOwn':   { en:'The main currency has been re-labelled since, so that day’s rate no longer fits: the amount follows the record itself — {rate}.',
+                   ru:'Основную валюту с тех пор переименовали, и курс того дня к ней не подходит: сумма считается по самой записи — {rate}.' },
+'exp.editOwnBase': { en:'This expense was recorded before the main currency was re-labelled: 1 {cur} in it is stored as {k}. The new amount is calculated the same way — as it would have been before the re-labelling.',
+                   ru:'Расход записан до того, как основную валюту переименовали: 1 {cur} в нём хранится как {k}. Новая сумма считается так же — как считалась бы до переименования.' },
+'exp.editToday': { en:'This record has no rate of its own for {cur}: today’s rate is used.',
+                   ru:'У записи нет своего курса для {cur}: сумма считается по сегодняшнему.' },
+'exp.rateKept':  { en:'rate: 1 {cur} is stored as {k} {cur}',
+                   ru:'курс: 1 {cur} хранится как {k} {cur}' },
 'exp.hint':      { en:'Expenses are not tied to a product: they change neither stock, nor debts, nor the cost of goods.',
                    ru:'Расходы не привязаны к товару: они не меняют ни склад, ни долги, ни себестоимость.' },
 
@@ -6993,8 +7002,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.30.2';
-var APP_BUILD = '2026-10-05T19:35:04.104Z';
+var APP_VERSION = '1.30.3';
+var APP_BUILD = '2026-10-06T04:35:57.144Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -16009,12 +16018,91 @@ function expToBase(minor, code, snap){
   return Math.round(minor * r);
 }
 
+/* ============================================ ++++++ EXP EDIT RATE ++++++ ==
+ * КАКИМ КУРСОМ ПРАВКА ПЕРЕВОДИТ СУММУ РАСХОДА (находка А9).
+ *
+ * Правка берёт курс СВОЕЙ записи — из её снимка. Но снимок годен, только
+ * пока снят в нынешней основной валюте: dcRateOf() снимок из другой
+ * основной отбрасывает и молча берёт СЕГОДНЯШНИЙ курс. После смены
+ * основной валюты «только переименовать» так и выходит у каждого расхода:
+ * хранимые числа остались прежними (их объявили другой валютой), а правка
+ * 100 → 120 записывала втрое меньше, чем было, — по сегодняшнему курсу
+ * к новой основной. Подсказка при этом говорила «курсом самой записи».
+ *
+ * ПРАВИЛО. Курс самой записи известен и без снимка: это отношение её
+ * ХРАНИМОЙ суммы к ВВЕДЁННОЙ. Переименование чисел не трогает, поэтому
+ * отношение то же, что в день записи; «пересчитать» делит хранимое — и
+ * отношение переезжает вместе с ним. Отсюда три рода курса:
+ *   snap  — снимок записи в нынешней основной валюте несёт курс: он;
+ *   own   — снимок в другой основной, а сумму правят в валюте ввода
+ *           записи: курс дня из снимка, если он объясняет хранимое число,
+ *           иначе хранимое к введённому;
+ *   today — сведений о записи для этой валюты нет: сегодняшний, и
+ *           подсказка говорит об этом, а не «курсом записи».
+ * base — правят в основной валюте: число как есть, перевода нет.
+ *
+ * РОД own СПРАШИВАЕТСЯ ПЕРВЫМ, ВЫШЕ «ПРАВЯТ В ОСНОВНОЙ» (решение владельца
+ * 05.10.2026). Валюта ввода записи могла сама СТАТЬ основной: расход
+ * «100 USD» записан при основной AED (хранится 367.25), основную
+ * переименовали в USD. Правка на 120 USD записывает 440.70, а не 120.00:
+ * «правка после переименования даёт то же число, что та же правка до него.
+ * Курс самой записи». Закон один и исключений не имеет.
+ *
+ * Возвращает { r, kind }; r === null — курса нет вовсе (как у dcRateOf). */
+function expEditRate(x, code){
+  var b = state.settings.baseCurrency, s = x && x.rateSnap, now = rateOf(code), e, r;
+  if (now === null) return { r: null, kind: 'none' };
+  if (s && s.base !== b){
+    e = recEntry(x);
+    if (e && e.cur === code && e.minor > 0 && x.amountCents > 0){
+      /* Курс дня записи из её снимка — точный, и он годится, пока САМ объясняет
+         хранимое число: так бывает ровно после переименования. Не объясняет
+         (после него ещё и пересчитывали) — отношение двух целых: грубее на
+         мелкой сумме, зато всегда о нынешних числах. */
+      r = (code === s.base) ? 1 : ((s.rates && own(s.rates, code)) ? s.rates[code] : null);
+      if (typeof r === 'number' && isFinite(r) && r > 0 && Math.round(e.minor * r) === x.amountCents) return { r: r, kind: 'own' };
+      return { r: x.amountCents / e.minor, kind: 'own' };
+    }
+  }
+  if (code === b) return { r: 1, kind: 'base' };
+  if (s && s.base === b){
+    r = dcRateOf(s, code);
+    return { r: r, kind: (s.rates && own(s.rates, code) && s.rates[code] === r) ? 'snap' : 'today' };
+  }
+  return { r: now, kind: 'today' };
+}
+/** ВАЛЮТА ВВОДА РАСХОДА САМА СТАЛА ОСНОВНОЙ, А ХРАНИТСЯ ОН ДРУГИМ ЧИСЛОМ.
+ *
+ *  Расход «100 USD» записан при основной AED (хранится 367.25); основную
+ *  переименовали в USD. Набрано и хранится в ОДНОЙ валюте, а числа разные —
+ *  и список печатал одно хранимое: человек, набравший 120, видел 440.70 и
+ *  нигде не видел своих 120. Слово владельца 05.10.2026: «в списке у такой
+ *  записи видно и набранное, и записанное, как у других записей в чужой
+ *  валюте».
+ *
+ *  ЕДИНСТВЕННЫЙ ответ «такая ли это запись» — его читают список (вторая
+ *  строка суммы), лист записи («введено») и строка «курс:». Род курса
+ *  спрашивается у expEditRate(): второго признака «после переименования»
+ *  в файле нет. Только читает. */
+function expKeptOwn(x){
+  var e = recEntry(x);
+  if (!e || e.cur !== state.settings.baseCurrency || e.minor === x.amountCents) return false;
+  return expEditRate(x, e.cur).kind === 'own';
+}
+/* ============================================ ++++++ EXP EDIT RATE ++++++ END == */
+
 /* ---- «каким курсом посчитано» ------------------------------------------ */
 
 /** Курс, которым посчитана ЭТА запись, — или null, когда называть нечего
  *  (сумма введена в базовой валюте: «1 AED = 1 AED» не сведение). */
 function expRateOf(x){
   var c = x && x.entryCur;
+  /* ++++++ EXP EDIT RATE ++++++ курс САМОЙ ЗАПИСИ спрашивается первым — выше «валюта записи и
+     есть основная». После «только переименовать» снимок записи снят в
+     другой основной валюте, dcRateOf() его отбрасывает и отдаёт СЕГОДНЯШНИЙ
+     курс: «500.00 TJS / 168.00 USD · курс: 1 TJS = 0.0915 USD» — числа в
+     одной строке не сходились. Род own — тот же, которым считает правка. */
+  if (c){ var er = expEditRate(x, c); if (er.kind === 'own') return er.r; }
   if (!c || c === state.settings.baseCurrency) return null;
   return dcRateOf(x.rateSnap, c);
 }
@@ -16023,6 +16111,11 @@ function expRateOf(x){
 function expRateText(x){
   var r = expRateOf(x);
   if (r === null) return '';
+  /* ++++++ EXP EDIT RATE ++++++ валюта ввода записи сама стала основной: «1 USD = 3.6725 USD»
+     было бы бессмыслицей — сказано словами, как в подсказке формы. Строка
+     есть ровно тогда, когда в списке у записи две суммы (expKeptOwn). */
+  if (x.entryCur === state.settings.baseCurrency)
+    return expKeptOwn(x) ? tr('exp.rateKept', { cur: esc(x.entryCur), k: esc(trimNum(r)) }) : '';
   return tr('exp.rateAt', { rate: '1 ' + esc(x.entryCur) + ' = ' + esc(trimNum(r)) +
                                     ' ' + esc(state.settings.baseCurrency) });
 }
@@ -19414,9 +19507,13 @@ function secV(sec, cents){ return sec === 'people' ? bothMoney(cents) : secMoney
    расхода — сумма целиком. Напечатать entryMinor выдачи как сумму —
    значит показать цену одной штуки под видом всей выдачи, и никакой
    ошибки нигде. Угадывать по полям записи нельзя. */
-function recV(cents, rec, qty){
+function recV(cents, rec, qty, both){
   var base = state.settings.baseCurrency, m = recMainMinor(rec, qty);
-  if (m === null || !recTwoLines(state.settings, rec))
+  /* ++++++ EXP EDIT RATE ++++++ both — вызывающий знает, что запись набрана в НЫНЕШНЕЙ основной
+     валюте, а хранится другим числом (так бывает после «только
+     переименовать»): тогда печатаются обе суммы, хотя валюта у них одна.
+     Без четвёртого аргумента функция ведёт себя как вела. */
+  if (m === null || !(recTwoLines(state.settings, rec) || both === true))
     return money(cents, base) + ' ' + esc(base);
   return fmtMinor(m) + ' ' + esc(recEntry(rec).cur) +
     '<div class="conv">' + money(cents, base) + ' ' + esc(base) + '</div>';
@@ -24739,7 +24836,9 @@ function expCentsOf(f){
   if (m === null) return null;
   var x = f.editId ? expById(f.editId) : null;
   if (x && recEditKeeps(x, f.cur, m)) return x.amountCents;
-  return expToBase(m, f.cur, x ? x.rateSnap : null);
+  if (!x) return expToBase(m, f.cur, null);
+  var er = expEditRate(x, f.cur);                      /* ++++++ EXP EDIT RATE ++++++ */
+  return er.r === null ? null : Math.round(m * er.r);
 }
 
 /** Долг этого человека БЕЗ учёта редактируемой оплаты: её собственная
@@ -25063,7 +25162,7 @@ function expListHTML(){
        и длинное описание сверху её не съедает. */
     rows += row({ k: esc(tr('exp.cat.' + x.cat)), sub: sub,
       sub2: [expRateText(x), expPickText(x)].filter(function(t){ return !!t; }).join(' · '),
-      v: recV(x.amountCents, x), act:'exp-open', arg:x.id });
+      v: recV(x.amountCents, x, null, expKeptOwn(x)), act:'exp-open', arg:x.id });   /* ++++++ EXP EDIT RATE ++++++ */
   });
   return listCard(tr('tab.expenses'), rows);
 }
@@ -25100,13 +25199,29 @@ function expHintText(){
   var m = parseMoneyToCents(f.amount);
   if (m !== null && m > 0){
     var cents = expCentsOf(f);                         /* ++++++ PAY EDIT KEEP ++++++ */
+    /* ++++++ EXP EDIT RATE ++++++ не тронутая сумма, которая хранится не тем числом, что
+       введена, — «как записано», а не «будет записано»: её не пересчитывают */
+    var kept = !!x && recEditKeeps(x, f.cur, m) && (f.cur !== state.settings.baseCurrency || cents !== m);
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
-    else out.push(tr('pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
+    else out.push(tr(kept ? 'pay.keepStore' : 'pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
   }
   /* Про курс записи говорится только там, где он что-то меняет: в базовой
      валюте пересчёта нет вовсе, и фраза была бы про ничто (область 43). */
-  if (x && f.cur !== state.settings.baseCurrency) out.push(tr('exp.editRate'));
+  /* ++++++ EXP EDIT RATE ++++++ фраза называет курс, которым посчитано НА САМОМ ДЕЛЕ; у не
+     тронутой суммы её нет вовсе — там не считается ничего. Род base
+     (правят в основной, число как есть) фразы не имеет: перевода нет. */
+  if (x && !(m !== null && recEditKeeps(x, f.cur, m))){
+    var er = expEditRate(x, f.cur);
+    if (er.kind === 'snap') out.push(tr('exp.editRate'));
+    else if (er.kind === 'own' && f.cur === state.settings.baseCurrency)
+      /* валюта ввода записи сама стала основной: «1 USD = 3.6725 USD» было бы
+         бессмыслицей — сказано словами, откуда такое число */
+      out.push(tr('exp.editOwnBase', { cur: esc(f.cur), k: esc(trimNum(er.r)) }));
+    else if (er.kind === 'own') out.push(tr('exp.editOwn', { rate: '1 ' + esc(f.cur) + ' = ' + esc(trimNum(er.r)) +
+                                                            ' ' + esc(state.settings.baseCurrency) }));
+    else if (er.kind === 'today') out.push(tr('exp.editToday', { cur: esc(f.cur) }));
+  }
   return out.join(' · ');
 }
 
@@ -25458,6 +25573,10 @@ function expSheet(x){
       sum: dcMoney(dcCents(x.amountCents, x.rateSnap)), date: fmtDateLong(x.date) }) +
     (x.note ? '<br>' + esc(x.note) : '') +
     (hasEntry(x) ? '<br>' + entryInline(x) : '') +
+    /* ++++++ EXP EDIT RATE ++++++ hasEntry() молчит, когда валюта ввода и есть основная; у расхода,
+       набранного в ней до переименования, набранное число — другое, и без
+       него строка «курс:» ниже повисла бы */
+    (expKeptOwn(x) ? '<br>' + tr('entry.inline', { v: fmtMinor(x.entryMinor), cur: esc(x.entryCur) }) : '') +
     (expRateText(x) ? '<br>' + expRateText(x) : '') +
     '<br>' + tr('lot.ofExp', {what: expPickText(x)}) + '</div>';
   /* ++++++ EXPENSE LOT ++++++ распределение печатается ТОЙ ЖЕ карточкой,
@@ -26456,7 +26575,7 @@ function viewLotCard(){
     er += row({ k: esc(tr('exp.cat.' + x.cat)),
       sub: fmtDateLong(x.date) + (x.note ? ' · ' + esc(x.note) : ''),
       sub2: expSplitText(x),
-      v: recV(x.amountCents, x), act:'exp-open', arg:x.id });
+      v: recV(x.amountCents, x, null, expKeptOwn(x)), act:'exp-open', arg:x.id });   /* ++++++ EXP EDIT RATE ++++++ */
   });
   h += listCard(tr('lot.expenses'), er);
 
