@@ -1461,6 +1461,13 @@
    заголовка, а «Сначала скачать копию» ответом не является — и три
    кнопки в ряд на 430 px не помещаются, подпись обрезается. */
 .modal .body > .btn.block{margin-bottom:13px}
+/* ++++++ IMPORT TRUTH ++++++ вариант в окне импорта: заголовок, слова, строки «что изменится»; кнопка
+   «Заменить на всех устройствах» не уже своей подписи — на телефоне встаёт на свою строку
+   (приём BASE ASK; адрес — ключ кнопки, он есть только в окнах импорта) */
+.modal .impopt{display:block;margin-top:12px}
+.modal .impopt p{margin:6px 0 0}
+.modal .impopt .btn.block{margin-top:10px}
+.modal .btns .btn[data-key="all"]{min-width:max-content}
   @media (max-width:359px){
     .rmdact{padding-left:calc(var(--pad) + 6px)}
   }
@@ -2281,11 +2288,85 @@ var STR = {
 'v.dropped':    { en:'{n} could not be read and will be skipped: {list}.',
                   ru:'{n} прочитать не удалось, они пропущены: {list}.' },
 'v.dropMore':   { en:'{list}; and {n} more',                ru:'{list}; и ещё {n}' },
-'dlg.impTitle':{ en:'Replace all current data?', ru:'Заменить все текущие данные?' },
-'dlg.impBody': { en:'<p>The backup contains <b>{prod}</b> products, <b>{ppl}</b> people, <b>{tx}</b> transactions and ' +
-                     '<b>{pay}</b> payments.</p><p>Everything currently in this tool will be replaced. This cannot be undone.</p>',
-                 ru:'<p>В копии: товаров — <b>{prod}</b>, людей — <b>{ppl}</b>, выдач — <b>{tx}</b>, платежей — <b>{pay}</b>.</p>' +
-                     '<p>Всё, что сейчас в программе, будет заменено. Отменить это нельзя.</p>' },
+/* ++++++ IMPORT TRUTH ++++++ окно импорта копии: два варианта и правда про каждый вид (А11) */
+'imp.title':        { en:'Restore from a backup', ru:'Восстановить из копии' },
+'imp.inCopy':       { en:'In the backup: {list}.', ru:'В копии: {list}.' },
+'imp.copyEmpty':    { en:'The backup holds no records.', ru:'В копии нет записей.' },
+'imp.copyTrash':    { en:'In its trash: {n}.', ru:'В её корзине: {n}.' },
+'imp.g.products':   { en:'products', ru:'товаров' },
+'imp.g.people':     { en:'people', ru:'людей' },
+'imp.g.transactions':{ en:'handouts', ru:'выдач' },
+'imp.g.payments':   { en:'payments', ru:'платежей' },
+'imp.g.loans':      { en:'cash loans', ru:'долгов' },
+'imp.g.returns':    { en:'goods returns', ru:'возвратов товара' },
+'imp.g.repayments': { en:'loan repayments', ru:'возвратов долга' },
+'imp.g.orders':     { en:'orders', ru:'заказов' },
+'imp.g.lots':       { en:'trips', ru:'поездок' },
+'imp.g.expenses':   { en:'expenses', ru:'расходов' },
+'imp.n.products':   { en:'Products', ru:'Товары' },
+'imp.n.people':     { en:'People', ru:'Люди' },
+'imp.n.transactions':{ en:'Handouts', ru:'Выдачи' },
+'imp.n.payments':   { en:'Payments', ru:'Платежи' },
+'imp.n.loans':      { en:'Cash loans', ru:'Долги' },
+'imp.n.returns':    { en:'Goods returns', ru:'Возвраты товара' },
+'imp.n.repayments': { en:'Loan repayments', ru:'Возвраты долга' },
+'imp.n.orders':     { en:'Orders', ru:'Заказы' },
+'imp.n.lots':       { en:'Trips', ru:'Поездки' },
+'imp.n.expenses':   { en:'Expenses', ru:'Расходы' },
+'imp.n.rates':      { en:'Rates and currencies', ru:'Курсы и валюты' },
+'imp.missTitle':    { en:'Bring back what is missing', ru:'Вернуть недостающее' },
+'imp.missBody':     { en:'Only what the app does not have now is added from the backup: {list}. Everything already in the app stays as it is.',
+                      ru:'Из копии добавится только то, чего сейчас нет: {list}. Всё, что есть в программе, останется как есть.' },
+'imp.missDeleted':  { en:'Deleted earlier among them: {n}.', ru:'Из них удалённых ранее: {n}.' },
+'imp.missDeletedAll':{ en:'Deleted earlier among them: {n} — the return reaches the other devices too.',
+                      ru:'Из них удалённых ранее: {n} — возврат дойдёт и до других устройств.' },
+'imp.missTrash':    { en:'Of these, into the trash: {n} — that is where they lay in the backup.',
+                      ru:'Из них в корзину: {n} — там они лежали в копии.' },
+'imp.missOld':      { en:'Will not come back from the backup’s trash: {n} — their time in the trash ({days}) has run out.',
+                      ru:'Не вернётся из корзины копии: {n} — срок корзины ({days}) у них вышел.' },
+'imp.missNone':     { en:'The backup holds nothing the app does not already have — there is nothing to bring back.',
+                      ru:'В копии нет ничего, чего не было бы в программе, — возвращать нечего.' },
+'imp.missSkip':     { en:'Will not come back: {n}. The reason: the product or person of such a record is in the trash now, or that product name or phone is already taken.',
+                      ru:'Не вернётся: {n}. Причина: товар или человек такой записи сейчас в корзине, либо такое название товара или телефон уже заняты.' },
+'imp.missBase':     { en:'The backup was written in another main currency ({cur}) — records cannot be added from it: their amounts would be read in the present currency.',
+                      ru:'Копия записана в другой основной валюте ({cur}) — добавить из неё записи нельзя: их суммы прочитались бы в нынешней валюте.' },
+'imp.takeTitle':    { en:'Take the data from the backup', ru:'Взять данные из копии' },
+'imp.takeBtn':      { en:'Use the backup', ru:'Взять из копии' },
+'imp.takeBody':     { en:'The app holds no records yet — everything is taken from the backup.', ru:'В программе пока нет записей — всё возьмётся из копии.' },
+'imp.replTitleAll': { en:'Replace on all devices', ru:'Заменить на всех устройствах' },
+'imp.replLead':     { en:'The app will hold what the backup holds. What changes:',
+                      ru:'В программе станет то, что в копии. Изменится:' },
+'imp.replLeadAll':  { en:'The app will hold what the backup holds — on every device the records travel to. What changes:',
+                      ru:'В программе станет то, что в копии, — на всех устройствах, куда ездят записи. Изменится:' },
+'imp.replNone':     { en:'The backup matches what the app holds now — there is nothing to replace.',
+                      ru:'Копия совпадает с тем, что сейчас в программе, — заменять нечего.' },
+'imp.replSame':     { en:'The records and rates in the backup are the same as in the app now.', ru:'Записи и курсы в копии те же, что сейчас в программе.' },
+'imp.noUndo':       { en:'This cannot be undone.', ru:'Отменить это нельзя.' },
+'imp.cDrop':        { en:'will disappear — {n}', ru:'исчезнет — {n}' },
+'imp.cChange':      { en:'will become as in the backup — {n}', ru:'станет как в копии — {n}' },
+'imp.cAdd':         { en:'will be added — {n}', ru:'добавится — {n}' },
+'imp.cRevive':      { en:'will come back from the deleted — {n}', ru:'вернётся из удалённых — {n}' },
+'imp.cBase':        { en:'the main currency becomes {cur}', ru:'основная валюта станет {cur}' },
+'imp.cRates':       { en:'rates that change — {n}', ru:'изменится курсов — {n}' },
+'imp.cSet':         { en:'will become as in the backup', ru:'станут как в копии' },
+'imp.cLog':         { en:'The rate history stays: it never gets shorter.', ru:'История курсов сохранится: она не укорачивается.' },
+'imp.confTitleAll': { en:'Replace the data on all devices?', ru:'Заменить данные на всех устройствах?' },
+'imp.confLeadAll':  { en:'After the replacement every device will hold what the backup holds. Records made after the backup will disappear everywhere.',
+                      ru:'После замены на всех устройствах будет то, что в копии. Записанное после копии исчезнет везде.' },
+'imp.confLate':     { en:'If another device holds records that have not arrived here yet, the replacement does not touch them: they arrive with the next exchange.',
+                      ru:'Если на другом устройстве есть записи, которые сюда ещё не приехали, замена их не тронет: они приедут при обмене.' },
+'imp.doneMissing':  { en:'Brought back from the backup: {n}.', ru:'Из копии возвращено записей: {n}.' },
+'imp.doneAll':      { en:'Replaced with the backup: disappeared — {drop}, became as in the backup — {change}, came back — {add}.',
+                      ru:'Заменено по копии: исчезло — {drop}, стало как в копии — {change}, вернулось — {add}.' },
+'faq.q.backupImp':  { en:'How do I get my data back from a backup?', ru:'Как вернуть данные из копии?' },
+'faq.a.backupImp1': { en:'Open <b>Account → Backup → Import backup</b> and pick the file. The app shows when the backup was made and what it holds, and offers two ways.',
+                      ru:'Откройте <b>«Аккаунт → Резервная копия → Импорт копии»</b> и выберите файл. Программа покажет, когда копия сделана и что в ней лежит, и предложит два пути.' },
+'faq.a.backupImp2': { en:'<b>Bring back what is missing</b> adds from the backup only what the app does not have now. Example: yesterday a loan of 500 was deleted for good by mistake — it comes back, and everything written or changed after the backup stays as it is.',
+                      ru:'<b>«Вернуть недостающее»</b> — из копии добавится только то, чего сейчас нет. Пример: вчера по ошибке удалили навсегда долг на 500 — он вернётся, а всё, что записано и изменено после копии, останется как есть.' },
+'faq.a.backupImp3': { en:'<b>Replace</b> makes the app hold what the backup holds: what was written after the backup disappears, what was changed goes back to how it was. Before replacing, the app lists what changes, kind by kind. It cannot be undone — download a fresh backup first.',
+                      ru:'<b>«Заменить»</b> — в программе станет то, что в копии: записанное после копии исчезнет, изменённое вернётся к прежнему виду. Перед заменой программа покажет по видам, что изменится. Отменить замену нельзя — сначала скачайте свежую копию.' },
+'faq.a.backupImp4': { en:'If your records travel to another device, what you bring back returns there too, and the second button reads <b>Replace on all devices</b>: it acts everywhere.',
+                      ru:'Если записи ездят на другое устройство, возвращённое вернётся и там, а вторая кнопка называется <b>«Заменить на всех устройствах»</b> — она действует везде.' },
 'dlg.impOk':   { en:'Replace data', ru:'Заменить данные' },
 'msg.impCancelled':{ en:'Import cancelled — nothing changed.', ru:'Импорт отменён — ничего не изменилось.' },
 'msg.impDone': { en:'Backup imported — all data restored.', ru:'Копия импортирована — данные восстановлены.' },
@@ -2406,10 +2487,6 @@ var STR = {
 'wipe.cDelTitle':    { en:'This record was deleted on another device',
                        ru:'Эту запись удалили на другом устройстве' },
 
-'wipe.impAsk':       { en:'The backup holds <b>{n}</b> deleted earlier. Restore them on every device?',
-                       ru:'В копии <b>{n}</b>, удалённых ранее. Вернуть их на всех устройствах?' },
-'wipe.impYes':       { en:'Restore', ru:'Вернуть' },
-'wipe.impNo':        { en:'Leave deleted', ru:'Не возвращать' },
 
 
 /* ---------------- storage / banners ---------------- */
@@ -2927,8 +3004,8 @@ var STR = {
                           'one and a new purchase on the other — the app joins both changes itself. If ' +
                           'the same field was changed differently, it shows both values and asks what to ' +
                           'keep; until you answer nothing is lost: this device keeps its version and the ' +
-                          'other keeps its own. A record deleted on one device and changed on the other ' +
-                          'after that stays in the lists until you decide; the deletion does not go to other ' +
+                          'other keeps its own. A record deleted on one device and changed or added to on the ' +
+                          'other stays in the lists, with its handouts, payments and returns, until you decide; the deletion does not go to other ' +
                           'devices before that. A disputed record is marked “disputed” in the lists.',
                        ru:'Спор решается по записям, а не по часам. Если запись правили только ' +
                           'здесь, часы другого устройства не решают ничего. Если на двух устройствах ' +
@@ -2936,8 +3013,9 @@ var STR = {
                           'оформили приход, — программа соединит обе правки сама. Если одно и то же ' +
                           'поле поменяли по-разному, она покажет оба значения и спросит, что оставить; ' +
                           'до ответа ничего не теряется: здесь остаётся версия этого устройства, на ' +
-                          'другом — его. Запись, которую на одном устройстве удалили, а на другом после ' +
-                          'этого изменили, остаётся в списках, пока вы не решите; удаление до вашего решения ' +
+                          'другом — его. Запись, которую на одном устройстве удалили, а на другом ' +
+                          'изменили или дополнили новой записью, остаётся в списках вместе со своими выдачами, ' +
+                          'оплатами и возвратами, пока вы не решите; удаление до вашего решения ' +
                           'на другие устройства не уходит. Спорная запись в списках помечена словом «спорная».' },
 /* ++++++ BASE SYNC ++++++ основная валюта и обмен. Приставка `bsync.` свободна. */
 'bsync.chooseT':  { en:'The main currency differs between devices.', ru:'Основная валюта на устройствах разная.' },
@@ -3519,16 +3597,39 @@ var STR = {
 'old.up':        { en:'The app on this device is updated. If your records also travel to another device, update the app there too: until then it does not sync with this one.',
                    ru:'Программа на этом устройстве обновлена. Если записи ездят и на другое устройство — обновите программу и там: до обновления оно с этим не обменивается.' },
 /* ++++++ UNDELETE ++++++ окно спора «удалили — а на другой стороне изменили» (А7): два варианта, у каждого названо последствие */
-'cf.delAsk':     { en:'It was deleted on another device {when}, and here it was changed or restored from the trash after that. Right now it exists only on this device. Choose what happens to it on every device. Until you choose, nothing changes.',
-                   ru:'Её удалили на другом устройстве {when}, а здесь после этого изменили или вернули из корзины. Сейчас она есть только здесь. Выберите, что с ней будет на всех устройствах. Пока не выберете, ничего не меняется.' },
-'cf.delAskHere': { en:'It was deleted here {when}, and on another device it was changed or restored from the trash after that. Until you choose, it stays in the lists marked “disputed”, and the deletion does not go to other devices. Choose what happens to it on every device.',
-                   ru:'Её удалили здесь {when}, а на другом устройстве после этого изменили или вернули из корзины. Пока вы не выберете, она остаётся в списках с пометкой «спорная», а удаление на другие устройства не уходит. Выберите, что с ней будет на всех устройствах.' },
+/* ++++++ UNSEEN EDIT ++++++ слова: окно называет, что было ({what}); «после этого» снято — правка могла быть и РАНЬШЕ удаления */
+'cf.delAsk':     { en:'It was deleted on another device {when}, and here {what}. Right now it exists only on this device. Choose what happens to it on every device. Until you choose, nothing changes.',
+                   ru:'Её удалили на другом устройстве {when}, а здесь {what}. Сейчас она есть только здесь. Выберите, что с ней будет на всех устройствах. Пока не выберете, ничего не меняется.' },
+'cf.delAskHere': { en:'It was deleted here {when}, and on another device {what}. Until you choose, it stays in the lists marked “disputed”, and the deletion does not go to other devices. Choose what happens to it on every device.',
+                   ru:'Её удалили здесь {when}, а на другом устройстве {what}. Пока вы не выберете, она остаётся в списках с пометкой «спорная», а удаление на другие устройства не уходит. Выберите, что с ней будет на всех устройствах.' },
 'cf.delTitleHere':{ en:'Deleted, but changed on another device', ru:'Запись удалили, а на другом устройстве изменили' },
 'cf.mark':       { en:'disputed',                    ru:'спорная' },   /* ++++++ DISPUTE HOLD ++++++ пометка записи в списке и на карточке */
 'cf.barDel':     { en:'A record was deleted on one device and brought back on another. Nothing is lost: it stays in the lists until you choose.',
                    ru:'Запись удалили на одном устройстве и вернули на другом. Ничего не потеряно: она остаётся в списках, пока вы не выберете.' },
 'cf.barDelN':    { en:'Records deleted on one device and brought back on another: {n}. Nothing is lost: they stay in the lists until you choose.',
                    ru:'Записи удалили на одном устройстве и вернули на другом: {n}. Ничего не потеряно: они остаются в списках, пока вы не выберете.' },
+/* ++++++ DISPUTE FAMILY ++++++ что было на другой стороне спора; заголовки окна; полоса по причине; что уходит и остаётся вместе с записью */
+'cf.whatAny':    { en:'it was changed or restored from the trash', ru:'изменили или вернули из корзины' },
+'cf.whatEdit':   { en:'it was changed',                ru:'изменили' },
+'cf.whatBack':   { en:'it was restored from the trash', ru:'вернули из корзины' },
+'cf.whatChild':  { en:'a new entry was added to it',   ru:'добавили к ней новую запись' },
+'cf.delTitleHereBack': { en:'Deleted, but restored on another device', ru:'Запись удалили, а на другом устройстве вернули' },
+'cf.delTitleHereChild':{ en:'Deleted, but added to on another device', ru:'Запись удалили, а на другом устройстве к ней добавили новую' },
+'cf.barEdit':    { en:'A record was deleted on one device and changed on another. Nothing is lost: it stays in the lists until you choose.',
+                   ru:'Запись удалили на одном устройстве и изменили на другом. Ничего не потеряно: она остаётся в списках, пока вы не выберете.' },
+'cf.barEditN':   { en:'Records deleted on one device and changed on another: {n}. Nothing is lost: they stay in the lists until you choose.',
+                   ru:'Записи удалили на одном устройстве и изменили на другом: {n}. Ничего не потеряно: они остаются в списках, пока вы не выберете.' },
+'cf.barChild':   { en:'A record was deleted on one device, and a new entry was added to it on another. Nothing is lost: it stays in the lists until you choose.',
+                   ru:'Запись удалили на одном устройстве, а на другом к ней добавили новую запись. Ничего не потеряно: она остаётся в списках, пока вы не выберете.' },
+'cf.barChildN':  { en:'Records deleted on one device that got new entries on another: {n}. Nothing is lost: they stay in the lists until you choose.',
+                   ru:'Записи удалили на одном устройстве, а на другом к ним добавили новые записи: {n}. Ничего не потеряно: они остаются в списках, пока вы не выберете.' },
+'cf.barMixN':    { en:'Records deleted on one device and changed, restored or added to on another: {n}. Nothing is lost: they stay in the lists until you choose.',
+                   ru:'Записи удалили на одном устройстве, а на другом изменили, вернули или дополнили: {n}. Ничего не потеряно: они остаются в списках, пока вы не выберете.' },
+'cf.famKeep':    { en:'Kept together with it: {list}.',    ru:'Вместе с ней останется: {list}.' },
+'cf.famGone':    { en:'Deleted together with it: {list}.', ru:'Вместе с ней будет удалено: {list}.' },
+'cf.famNewOne':  { en:'{n} new', ru:'{n} — новый' },
+'cf.famNewOneF': { en:'{n} new', ru:'{n} — новая' },
+'cf.famNewMany': { en:'{n} new', ru:'{n} — новые' },
 'cf.optKeep':    { en:'Keep it',                     ru:'Оставить' },
 'cf.optKeepNote':{ en:'the record stays on every device', ru:'запись останется на всех устройствах' },
 'cf.optGone':    { en:'Delete',                      ru:'Удалить' },
@@ -3895,8 +3996,6 @@ var STR = {
                    ru:'<p><b>{q}</b> шт «{name}» снова уйдут со склада, а {sum} вернутся в долг этого человека.</p>' },
 'dlg.delTxRet':  { en:'<p>This handout has returns: <b>{n}</b> ({q} pcs). They will be deleted together with it.</p>',
                    ru:'<p>По этой выдаче есть возвраты: <b>{n}</b> ({q} шт). Они будут удалены вместе с ней.</p>' },
-'dlg.impRet':    { en:'<p>Returns in the backup: <b>{n}</b>.</p>',
-                   ru:'<p>Возвратов в копии: <b>{n}</b>.</p>' },
 'v.eReturn':     { en:'return',                             ru:'возврат' },
 'v.retNoTx':     { en:'return #{n} points to a missing handout',
                    ru:'возврат №{n} ссылается на несуществующую выдачу' },
@@ -4104,6 +4203,22 @@ var STR = {
 /* ++++++ RATE LOG ++++++ R16. Приставка `cur.` — та же, что у остальных
    строк «Ещё → Валюты»; заголовок карточки — `hdr.`, как у соседей. */
 'hdr.rateLog':     { en:'Rate history',                       ru:'История курсов' },
+/* ++++++ SETTINGS MERGE ++++++ один курс поправили на двух устройствах. Слова владельца 06.10.2026:
+   «оставлен 1 USD = 3.75 AED» — как есть, остальное сокращено так, чтобы на
+   телефоне 320 px полоса занимала не больше трёх строк (замерено). */
+'rb.bar':          { en:'The {cur} rate was changed twice: {now} is kept ({who}); the other is in the history.',
+                     ru:'Курс {cur} правили дважды: оставлен {now} ({who}), второй — в истории.' },
+'rb.me':           { en:'here',     ru:'здесь' },
+'rb.who.and':      { en:'phone',    ru:'телефон' },
+'rb.who.win':      { en:'computer', ru:'компьютер' },
+'rb.when':         { en:'{m}-{d}, {h}:{i}', ru:'{d}.{m}, {h}:{i}' },
+'cur.logBoth':     { en:'{cur}: changed on two devices', ru:'{cur}: правили на двух устройствах' },
+'cur.logBothWhat': { en:'kept 1 {cur} = {now} {base}; the other was 1 {cur} = {was} {base}',
+                     ru:'оставлен 1 {cur} = {now} {base}, второй — 1 {cur} = {was} {base}' },
+'cur.logSync':     { en:'{cur}: recalculated on sync', ru:'{cur}: пересчитан при обмене' },
+'cur.logSyncWhat': { en:'resulting rate: 1 {cur} = {now} {base}', ru:'итоговый курс: 1 {cur} = {now} {base}' },
+'faq.a.syncSet':   { en:'Settings are joined one by one, not as a set: a rate edited on one device and a currency added on another both stay; when edits of two rate fields meet in one rate, it is recalculated and the rate history names the result. If the same rate was changed differently on two devices, the later edit is kept, both edits stay in the rate history, and the app says so in a bar. A device on an older version of the app stops syncing and asks to be updated.',
+                     ru:'Настройки соединяются по одной, а не набором: курс, поправленный на одном устройстве, и валюта, добавленная на другом, остаются оба; если правки двух полей курса сошлись в одном курсе, он пересчитывается, и история курсов называет итог. Если один и тот же курс поправили на двух устройствах по-разному, остаётся более поздняя правка, обе видны в истории курсов, и программа скажет об этом полосой. Устройство с прежней версией программы обмен останавливает и просит обновиться.' },
 'cur.logEdit':     { en:'1 {cur} = {was} {base} &rarr; {now} {base}',
                      ru:'1 {cur} = {was} {base} &rarr; {now} {base}' },
 'cur.logAdd':      { en:'{cur} added — 1 {cur} = {now} {base}',
@@ -4133,7 +4248,7 @@ var STR = {
                        'основную; пересчёта там нет. Карточка человека показывает основную ' +
                        'валюту и рядом дополнительную.' },
 'bak.exportHint':{ en:'a .json file with the schema version',ru:'файл .json со схемой' },
-'bak.importHint':{ en:'replaces all data',                  ru:'заменит все данные' },
+'bak.importHint':{ en:'bring back what is missing, or replace', ru:'вернуть недостающее или заменить' },   /* ++++++ IMPORT TRUTH ++++++ */
 'bak.dangerTitle':{ en:'Dangerous',                         ru:'Опасное' },
 /* ++++++ BACKUP REMINDER ++++++ напоминание о резервной копии.
    Префикс `bk.`, а НЕ `bak.` — `bak.*` уже занят разделом «Резервная
@@ -4657,6 +4772,11 @@ var STR = {
                    ru:'У записи нет своего курса для {cur}: сумма считается по сегодняшнему.' },
 'exp.rateKept':  { en:'rate: 1 {cur} is stored as {k} {cur}',
                    ru:'курс: 1 {cur} хранится как {k} {cur}' },
+/* ++++++ EXP RATE WAS ++++++ */
+'exp.rateWas':   { en:'record’s rate: {rate} (before the re-labelling)',
+                   ru:'курс записи: {rate} (до переименования)' },
+'exp.editOwnWas': { en:'Record’s rate: {rate} (before the re-labelling). The new amount is calculated at it.',
+                   ru:'Курс записи: {rate} (до переименования). Новая сумма считается по нему.' },
 'exp.hint':      { en:'Expenses are not tied to a product: they change neither stock, nor debts, nor the cost of goods.',
                    ru:'Расходы не привязаны к товару: они не меняют ни склад, ни долги, ни себестоимость.' },
 
@@ -4780,8 +4900,6 @@ var STR = {
                         '<p>Both Summary lines are recalculated at once.</p>',
                    ru:'<p><b>{cat}</b> — {sum} за {date}</p>' +
                        '<p>Обе строки «Сводки» пересчитаются сразу.</p>' },
-'dlg.impExp':     { en:'<p>Expenses in the backup: <b>{n}</b>.</p>',
-                    ru:'<p>Расходов в копии: <b>{n}</b>.</p>' },
 
 'v.eExpense':     { en:'expense',                           ru:'расход' },
 'v.expBadAmount': { en:'expense #{n} has an invalid amount',
@@ -7002,8 +7120,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.30.3';
-var APP_BUILD = '2026-10-06T04:35:57.144Z';
+var APP_VERSION = '1.31.0';
+var APP_BUILD = '2026-10-07T17:24:23.378Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -8900,6 +9018,18 @@ function mergeCollection(locals, remotes, base, tombs, metaL, metaR){
         /* и только если эта сторона действительно ОТЛИЧАЕТСЯ от базы:
            иначе это просто та же запись, ещё не знающая об удалении */
         if (changedAfterDelete && B && recHash(survivor) === B) changedAfterDelete = false;
+        /* ++++++ UNSEEN EDIT ++++++ (находка А8) правка РАНЬШЕ удаления, которой удаливший
+           не видел, — тот же спор. Мерка не часы, а отпечаток прошлого обмена
+           ЭТОГО устройства: запись отличается от него — значит, её меняли
+           после того, как устройства сверялись.
+             · удалили здесь, а с Диска пришла запись не такая, какой её здесь
+               видели: удаляли прежнюю версию, этой не видели;
+             · изменили здесь и ещё не отправили, а с Диска пришло удаление:
+               удаливший этой правки видеть не мог.
+           Запись, лежащая в корзине, так спора не даёт: её удалили и там. Без
+           отпечатка (первая встреча устройств) остаётся прежняя мерка времени. */
+        if (!changedAfterDelete && B && recHash(survivor) !== B &&
+            !(typeof survivor.trashedAt === 'string' && survivor.trashedAt)) changedAfterDelete = true;
       }
       if (changedAfterDelete){
         /* ++++++ CONFLICT KEEP ++++++ правку сделали ЗДЕСЬ, удалили ТАМ:
@@ -9017,7 +9147,8 @@ function mergeDocs(local, remote, base, localTombs, remoteTombs, metaL, metaR, u
      Всё, чего в списке нет, остаётся местным — так `sumCur`, язык и
      запомненные валюты ввода не уезжают на чужое устройство. */
   doc.settings = mergeSettings(local.settings || {}, (remote && remote.settings) || {},
-                               local.settingsAt || '', (remote && remote.settingsAt) || '');
+                               local.settingsAt || '', (remote && remote.settingsAt) || '',
+                               ownKey(base, SET_BASE) ? base[SET_BASE] : null);   /* ++++++ SETTINGS MERGE ++++++ */
   send.settings = doc.settings;
 
   for (i = 0; i < SYNC_COLS.length; i++){
@@ -9179,19 +9310,278 @@ function undelMapOf(v){
 }
 /* ++++++ UNDELETE END ++++++ */
 
-/* Настройки: набором, по метке времени. Равные метки или их отсутствие —
-   остаются местные: своё привычнее чужого, и это не деньги. */
-function mergeSettings(localS, remoteS, localAt, remoteAt){
-  var out = {}, k, i;
-  for (k in localS) if (ownKey(localS, k)) out[k] = localS[k];
-  if (!remoteAt) return out;
-  if (localAt && localAt >= remoteAt) return out;
+/* ============================================ ++++++ SETTINGS MERGE ++++++ ==
+ * НАСТРОЙКИ СЛИВАЮТСЯ ПО ПОЛЯМ, С ТРЕТЬЕЙ СТОРОНОЙ (находка А10).
+ *
+ * Было: ездящие настройки (SYNC_SETTINGS) брались НАБОРОМ того устройства,
+ * чья отметка правки позже. Компьютер поправил курс, телефон позже добавил
+ * валюту — курс откатывался на обоих, запись из истории курсов пропадала,
+ * молча. Что именно правила каждая сторона, слияние не знало.
+ *
+ * Стало: третья сторона — ездящие настройки на момент прошлого удачного
+ * обмена — лежит рядом с отпечатками записей (baseOf(), ключ SET_BASE).
+ * Для каждой настройки: изменилась только здесь — остаётся своя; только
+ * там — приезжает чужая; на обеих одинаково — она; на обеих по-разному —
+ * разбор внутри неё:
+ *   · курсы и НДС по валютам — по каждой валюте отдельно, тем же правилом
+ *     (курсы — с оглядкой на якорь, см. setRates);
+ *   · набор валют — добавленное и снятое каждой стороной;
+ *   · история курсов — объединение записей обеих сторон по времени,
+ *     ничего не выбрасывается;
+ *   · ОДИН КУРС, поправленный на двух устройствах по-разному (решение
+ *     владельца 06.10.2026): остаётся более поздняя правка — по времени её
+ *     записи в истории курсов; обе записи остаются в истории, и рядом с ними
+ *     ложится третья, «both», — по ней каждое устройство скажет об этом
+ *     полосой. Обмен не останавливается;
+ *   · одно значение без истории (ставка НДС одной валюты, валюта покупки) —
+ *     остаётся то, чья отметка правки настроек позже.
+ * Третьей стороны ещё нет (первый обмен после обновления программы), а
+ * основная валюта одна: курсы и история сливаются так же — своя правка
+ * курса видна по записи истории, которой нет у другой стороны; остальное —
+ * по отметке, но уже по одной настройке, а не набором, и валюта, добавленная
+ * на другой стороне, не теряется.
+ * Основные валюты сторон разные (курсы выражены в разных валютах; что
+ * делать, решает защита base-sync) — прежнее правило: набор целиком, по
+ * отметке.
+ * ================================================================== */
+var SET_BASE = '@settings';
+
+/** Ездящие настройки документа — копией. Это третья сторона слияния. */
+function setTravel(s){
+  var out = {}, i, f;
+  s = s || {};
   for (i = 0; i < SYNC_SETTINGS.length; i++){
-    var f = SYNC_SETTINGS[i];
-    if (ownKey(remoteS, f)) out[f] = remoteS[f];
+    f = SYNC_SETTINGS[i];
+    if (ownKey(s, f) && s[f] !== undefined) out[f] = JSON.parse(JSON.stringify(s[f]));
   }
   return out;
 }
+function setSame(a, b){ return canonJSON(a === undefined ? null : a) === canonJSON(b === undefined ? null : b); }
+function setObj(v){ return (v && typeof v === 'object' && Object.prototype.toString.call(v) !== '[object Array]') ? v : {}; }
+function setArr(v){ return Object.prototype.toString.call(v) === '[object Array]' ? v : []; }
+
+/** Основная валюта у обеих сторон одна — настройки можно сливать по полям. */
+function setSameBase(localS, remoteS){
+  var b = localS && localS.baseCurrency;
+  return typeof b === 'string' && b !== '' && !!remoteS && remoteS.baseCurrency === b;
+}
+/** Есть ли третья сторона — и в той же основной валюте. */
+function setThreeWay(localS, baseS){
+  return !!baseS && typeof baseS === 'object' && baseS.baseCurrency === localS.baseCurrency;
+}
+
+/** Карта «код → значение» (НДС по валютам): по каждому коду отдельно. three —
+ *  третья сторона есть. Спор одного значения — позже отмеченная сторона, а
+ *  если значение есть только у одной — оно. */
+function setMapMerge(L, R, B, three, mine){
+  var out = {}, keys = [], k, i, l, r, b, v;
+  L = setObj(L); R = setObj(R); B = setObj(B);
+  for (k in L) if (ownKey(L, k)) keys.push(k);
+  for (k in R) if (ownKey(R, k) && !ownKey(L, k)) keys.push(k);
+  for (i = 0; i < keys.length; i++){
+    k = keys[i];
+    l = ownKey(L, k) ? L[k] : undefined; r = ownKey(R, k) ? R[k] : undefined; b = ownKey(B, k) ? B[k] : undefined;
+    if (setSame(l, r)) v = l;
+    else if (three && setSame(l, b)) v = r;
+    else if (three && setSame(r, b)) v = l;
+    else v = l === undefined ? r : (r === undefined ? l : (mine ? l : r));
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+/** Набор валют: своё, кроме снятого там, плюс добавленное там. */
+function setListMerge(L, R, B){
+  var out = [], i;
+  L = setArr(L); R = setArr(R); B = setArr(B);
+  for (i = 0; i < L.length; i++)
+    if (!(B.indexOf(L[i]) > -1 && R.indexOf(L[i]) < 0) && out.indexOf(L[i]) < 0) out.push(L[i]);
+  for (i = 0; i < R.length; i++)
+    if (L.indexOf(R[i]) < 0 && B.indexOf(R[i]) < 0 && out.indexOf(R[i]) < 0) out.push(R[i]);
+  return out;
+}
+
+/** Третьей стороны нет: набор валют позже отмеченной стороны плюс валюты,
+ *  которые ДОБАВИЛА другая (по записи истории, которой нет у первой). */
+function setListAdd(win, lose, loseLog, winLog){
+  var out = setArr(win).slice(), i, e;
+  lose = setArr(lose);
+  for (i = 0; i < lose.length; i++){
+    if (out.indexOf(lose[i]) > -1) continue;
+    e = setLogLast(loseLog, winLog, [], lose[i]).d;
+    if (e && e.k === 'add') out.push(lose[i]);
+  }
+  return out;
+}
+
+/** Порядок двух записей истории: по времени; запись о споре — после правок
+ *  того же мига, запись «пересчитан при обмене» — после неё; при равном — по
+ *  тексту записи (обе стороны обязаны ответить одинаково, чьи бы часы ни были
+ *  «свои»). */
+function setLogRank(e){ return (e && e.k === 'both') ? 1 : ((e && e.k === 'sync') ? 2 : 0); }
+function setLogCmp(a, b){
+  var x = (a && a.at) || '', y = (b && b.at) || '';
+  if (x !== y) return x < y ? -1 : 1;
+  x = setLogRank(a); y = setLogRank(b);
+  if (x !== y) return x - y;
+  x = canonJSON(a); y = canonJSON(b);
+  return x === y ? 0 : (x < y ? -1 : 1);
+}
+
+/** Записи истории о курсе cur, сделанные ТОЛЬКО на этой стороне (их нет ни в
+ *  истории прошлого обмена, ни у другой стороны; запись другой стороны, уже
+ *  принятая сюда, своей правкой не считается). d — последняя ПРЯМАЯ: правили
+ *  сам этот курс. v — последняя ПРОИЗВОДНАЯ: правили курс якоря, а этот
+ *  пересчитался следом (поля курсов выражены от якоря). */
+function setLogLast(own, other, base, cur){
+  var skip = {}, out = { d: null, v: null }, i, j, e, hit;
+  own = setArr(own); other = setArr(other); base = setArr(base);
+  for (i = 0; i < other.length; i++) skip[canonJSON(other[i])] = 1;
+  for (i = 0; i < base.length; i++) skip[canonJSON(base[i])] = 1;
+  for (i = 0; i < own.length; i++){
+    e = own[i];
+    if (!e || typeof e !== 'object' || (e.k !== 'edit' && e.k !== 'add' && e.k !== 'del')) continue;
+    if (ownKey(skip, canonJSON(e))) continue;
+    if (e.cur === cur){ if (!out.d || setLogCmp(e, out.d) > 0) out.d = e; continue; }
+    hit = false;
+    if (setArr(e.derived).length)
+      for (j = 0; j < e.derived.length; j++) if (e.derived[j] && e.derived[j].cur === cur) hit = true;
+    if (hit && (!out.v || setLogCmp(e, out.v) > 0)) out.v = e;
+  }
+  return out;
+}
+
+/** КУРСЫ: по каждой валюте отдельно.
+ *
+ *  Курс хранится как «1 валюта = r основной», а вводится от якоря («1 USD =
+ *  … AED», «1 USD = … TJS»): правка поля основной валюты двигает курс якоря, а
+ *  с ним пересчитываются и остальные — в истории это одна запись о якоре с
+ *  производными внутри. Поэтому спор одного курса разбирается по истории:
+ *    · обе стороны правили САМ этот курс — остаётся более поздняя правка, в
+ *      notes ложится запись «both» (решение владельца 06.10.2026);
+ *    · здесь правили сам курс, а там он пересчитался от якоря (или наоборот) —
+ *      остаётся введённое руками, приведённое к якорю, победившему в слиянии:
+ *      обе правки владельца целы;
+ *    · пересчитался на обеих сторонах — идёт за тем курсом якоря, что остался;
+ *      Когда введённое руками приведено к ДРУГОМУ курсу якоря, итог — число,
+ *      которого нет ни у одной стороны и ни в одной строке истории: в notes
+ *      ложится запись «sync» — «пересчитан при обмене», с итоговым курсом
+ *      (слово владельца 06.10.2026). Время записи — позднейшая из двух правок,
+ *      из которых итог сложен: его называет история, а не часы устройства,
+ *      поэтому два устройства, посчитав одно и то же, дадут ОДНУ запись;
+ *    · своя запись есть только у одной стороны — её значение (у другой лежит
+ *      принятое раньше чужое); истории нет ни у кого — значение есть только
+ *      у одной стороны — оно, иначе позже отмеченная сторона (mine). */
+function setRates(L, R, B, three, mine, logL, logR, logB, base, notes){
+  var out = {}, keys = [], late = [], k, i, l, r, b, v, x, y, keepL, win, lose, n, an, a, la, ra;
+  L = setObj(L); R = setObj(R); B = setObj(B);
+  for (k in L) if (ownKey(L, k)) keys.push(k);
+  for (k in R) if (ownKey(R, k) && !ownKey(L, k)) keys.push(k);
+  for (i = 0; i < keys.length; i++){
+    k = keys[i];
+    l = ownKey(L, k) ? L[k] : undefined; r = ownKey(R, k) ? R[k] : undefined; b = ownKey(B, k) ? B[k] : undefined;
+    if (setSame(l, r)) v = l;
+    else if (three && setSame(l, b)) v = r;
+    else if (three && setSame(r, b)) v = l;
+    else {
+      x = setLogLast(logL, logR, logB, k); y = setLogLast(logR, logL, logB, k);
+      if (x.d && y.d){
+        keepL = setLogCmp(x.d, y.d) > 0; win = keepL ? x.d : y.d; lose = keepL ? y.d : x.d;
+        v = keepL ? l : r;
+        if (typeof l === 'number' && typeof r === 'number'){
+          n = { at: win.at || '', k: 'both', cur: k, base: base, now: v, was: keepL ? r : l, at2: lose.at || '' };
+          if (typeof win.dev === 'string') n.dev = win.dev;
+          if (typeof win.by === 'string') n.by = win.by;
+          notes.push(n);
+        }
+      }
+      else if (x.d && y.v){ late.push([k, 'L', y.v.cur, setLogCmp(x.d, y.v) > 0 ? x.d.at : y.v.at]); continue; }
+      else if (y.d && x.v){ late.push([k, 'R', x.v.cur, setLogCmp(y.d, x.v) > 0 ? y.d.at : x.v.at]); continue; }
+      else if (x.d) v = l;
+      else if (y.d) v = r;
+      else if (x.v && y.v){ late.push([k, '', x.v.cur]); continue; }
+      else if (x.v) v = l;
+      else if (y.v) v = r;
+      else v = l === undefined ? r : (r === undefined ? l : (mine ? l : r));
+    }
+    if (v !== undefined) out[k] = v;
+  }
+  /* вторым заходом — курсы, которые идут за якорем: его курс уже решён */
+  for (i = 0; i < late.length; i++){
+    k = late[i][0]; an = late[i][2];
+    l = L[k]; r = R[k]; a = out[an]; la = L[an]; ra = R[an];
+    if (late[i][1] === 'L') v = (typeof a === 'number' && typeof la === 'number' && typeof l === 'number' && la > 0 && a !== la) ? a * l / la : l;
+    else if (late[i][1] === 'R') v = (typeof a === 'number' && typeof ra === 'number' && typeof r === 'number' && ra > 0 && a !== ra) ? a * r / ra : r;
+    else v = a === la ? l : (a === ra ? r : (mine ? l : r));
+    /* итог посчитан слиянием: такого числа нет ни у одной стороны — в историю */
+    if (late[i][1] && typeof v === 'number' && v !== l && v !== r)
+      notes.push({ at: late[i][3] || '', k: 'sync', cur: k, base: base, now: v });
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+/** История курсов: объединение без повторов, по времени. */
+function setLogMerge(L, R, notes){
+  var out = [], seen = {}, i, add = function(e){
+    var c;
+    if (!e || typeof e !== 'object') return;
+    c = canonJSON(e);
+    if (ownKey(seen, c)) return;
+    seen[c] = 1; out.push(e);
+  };
+  L = setArr(L); R = setArr(R);
+  for (i = 0; i < L.length; i++) add(L[i]);
+  for (i = 0; i < R.length; i++) add(R[i]);
+  for (i = 0; i < notes.length; i++) add(notes[i]);
+  out.sort(setLogCmp);
+  return out;
+}
+
+function mergeSettings(localS, remoteS, localAt, remoteAt, baseS){
+  var out = {}, k, i, f, L, R, B, v, notes = [], three, baseLog;
+  for (k in localS) if (ownKey(localS, k)) out[k] = localS[k];
+  /* чья отметка правки настроек позже; равные или пустые — своя */
+  var mine = !(remoteAt && (!localAt || remoteAt > localAt));
+  if (!setSameBase(localS, remoteS) || (!localAt && remoteAt)){
+    /* Основные валюты разные (или той стороны нет): набором, по метке
+       времени — как было. Равные метки или их отсутствие — остаются
+       местные: своё привычнее чужого, и это не деньги.
+       И ТАК ЖЕ — когда своя отметка ПУСТА: «о своих настройках ничего не
+       знаю» (документ не прочитался — находка А12 — или устройство ещё ни
+       разу не обменивалось и настроек не правило). По полям тут нельзя:
+       настройки, которых устройство лишилось, выглядели бы правкой
+       «владелец стёр курсы и валюты» и уехали бы урезанными на все
+       устройства. Найдено прогоном по кандидату, набором load-fail-sync. */
+    if (!remoteAt) return out;
+    if (localAt && localAt >= remoteAt) return out;
+    for (i = 0; i < SYNC_SETTINGS.length; i++){
+      f = SYNC_SETTINGS[i];
+      if (ownKey(remoteS, f)) out[f] = remoteS[f];
+    }
+    return out;
+  }
+  three = setThreeWay(localS, baseS);
+  baseLog = three ? baseS.rateLog : [];
+  for (i = 0; i < SYNC_SETTINGS.length; i++){
+    f = SYNC_SETTINGS[i];
+    if (f === 'rateLog') continue;                    /* после курсов: спор курса дописывает в неё запись */
+    L = localS[f]; R = remoteS[f]; B = three ? baseS[f] : undefined;
+    if (R === undefined || setSame(L, R)) continue;   /* у той стороны поля нет или оно такое же — своё */
+    if (L === undefined || (three && setSame(L, B))) v = R;
+    else if (three && setSame(R, B)) continue;
+    else if (f === 'rates') v = setRates(L, R, B, three, mine, localS.rateLog, remoteS.rateLog, baseLog, localS.baseCurrency, notes);
+    else if (f === 'curVat') v = setMapMerge(L, R, B, three, mine);
+    else if (f === 'curActive') v = three ? setListMerge(L, R, B)
+      : (mine ? setListAdd(L, R, remoteS.rateLog, localS.rateLog) : setListAdd(R, L, localS.rateLog, remoteS.rateLog));
+    else v = mine ? L : R;
+    out[f] = v;
+  }
+  if (notes.length || (remoteS.rateLog !== undefined && !setSame(localS.rateLog, remoteS.rateLog)))
+    out.rateLog = setLogMerge(localS.rateLog, remoteS.rateLog, notes);
+  return out;
+}
+/* ============================================ ++++++ SETTINGS MERGE ++++++ END == */
 
 /* ------------------------------------------------------------------ */
 /* База отпечатков                                                    */
@@ -9210,6 +9600,9 @@ function baseOf(doc){
     }
     out[col] = m;
   }
+  /* ++++++ SETTINGS MERGE ++++++ ездящие настройки на этот же момент: третья сторона их слияния.
+     Ключ не имя коллекции — читатели отпечатков его не видят. */
+  out[SET_BASE] = setTravel(doc.settings);
   return out;
 }
 
@@ -9235,7 +9628,11 @@ function baseOf(doc){
    удалений. Ядро конверта 3 (1.29.0) отмен не знает и молча удалило бы
    возвращённую запись своим надгробием; увидев 4, оно останавливает обмен
    и просит обновиться. Конверты 1–3 это ядро читает как прежде. */
-var SYNC_ENVELOPE = 4;
+/* ++++++ SETTINGS MERGE ++++++ конверт 5 (решение владельца 06.10.2026). Настройки в нём сливаются по
+   полям. Ядро конверта 4 берёт настройки набором и стёрло бы чужую правку;
+   увидев 5, оно останавливает обмен и просит обновиться. Конверты 1–4 это
+   ядро читает как прежде. */
+var SYNC_ENVELOPE = 5;
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -9413,6 +9810,8 @@ function syncSettingsSig(){
 function syncSettingsTouch(){
   var sig;
   try { sig = syncSettingsSig(); } catch(e){ return; }
+  /* ++++++ SETTINGS MERGE ++++++ настройки только что применил ОБМЕН: это не правка владельца */
+  if (syncSetHold){ syncSetHold = false; syncSigLast = sig; return; }
   if (syncSigLast === null){ syncSigLast = sig; return; }
   if (sig === syncSigLast) return;
   syncSigLast = sig;
@@ -9420,6 +9819,18 @@ function syncSettingsTouch(){
   if (!cur) return;              /* обмен не настроен — помечать нечего */
   cur.settingsAt = nowISO();
   syncWrite(cur);
+}
+/* ++++++ SETTINGS MERGE ++++++ ОТМЕТКА ГОВОРИТ ПРАВДУ. Подпись запоминалась при ПЕРВОМ сохранении
+   сеанса: программу открыли и сразу поправили курс — подпись запоминалась уже
+   изменённой, и правка правкой не считалась. А применение чужих настроек
+   обменом шло через то же save() и ставило отметку «сейчас», будто правил
+   владелец; при сорванной отправке она оставалась. Теперь подпись запоминается
+   при загрузке документа, а сохранение внутри применения обменом её только
+   обновляет. */
+var syncSetHold = false;
+/** Документ загружен: запомнить подпись ездящих настроек. Не правка. */
+function syncSettingsSeen(){
+  try { syncSigLast = syncSettingsSig(); } catch(e){}
 }
 function syncForget(){
   try{ window.localStorage.removeItem(SYNC_KEY); return true; }
@@ -10319,6 +10730,17 @@ function raceCands(list, w){
   for (i = a + 1; i < list.length; i++) if (list[i].size === w.size) out.push(list[i].id);
   return out;
 }
+/* ++++++ DEBT FORMAT ++++++ (находка Г29, слово владельца 06.10.2026) Кто писал на Диск
+   НЫНЕШНИМ форматом — по одному прочитанному файлу. У файла прежнего формата
+   таких нет: его список — про прежний формат. То же правило держит оборот
+   (syncCycle: «файл прежнего формата список не начинает»). Без него починка,
+   слившая ревизию прежнего формата, записывала файл нового формата с номером
+   устройства, которое новым форматом не писало ни разу, — и подсказка
+   «обновите программу и на других устройствах» снималась (или не вставала
+   вовсе), не дождавшись обновления того устройства. */
+function raceWriters(E){
+  return (E && (E.format || 0) >= SYNC_ENVELOPE && E.writers) ? E.writers : [];
+}
 /** Починка: голова файла (S) сливается с затёртой ревизией (N), общий
  *  предок — ревизия, прочитанная перед записью (A). «Здесь» для слияния —
  *  голова: при споре одного поля на Диск уходит значение затёртой ревизии. */
@@ -10327,11 +10749,12 @@ function raceMerge(S, N, A){
   var merged = mergeDocs(mergeInSettingsAt(S.doc, S.settingsAt), mergeInSettingsAt(N.doc, N.settingsAt),
                          base, S.tombstones, N.tombstones, S.doc.syncMeta, N.doc.syncMeta, S.undel, N.undel);
   syncDelMine(merged, N.doc, N.tombstones);
+  syncDelFamily(merged, S.doc, N.doc, N.tombstones, S.doc.syncMeta, N.doc.syncMeta, S.undel, N.undel, S.tombstones);   /* ++++++ DISPUTE FAMILY ++++++ */
   var send = merged.send || merged.doc;
   var won = (N.settingsAt && (!S.settingsAt || N.settingsAt > S.settingsAt)) ? N.settingsAt : S.settingsAt;
   var env = envelopeOf(send, merged.sendTombs || merged.tombstones, {
     updatedAt: nowISO(), updatedBy: S.updatedBy || '',
-    writers: syncWriters((S.writers || []).concat(N.writers || [])),
+    writers: syncWriters(raceWriters(S).concat(raceWriters(N))),   /* ++++++ DEBT FORMAT ++++++ */
     oldRecs: syncOldCarry([S.oldRecs, N.oldRecs], send),
     undel: merged.undel, settingsAt: won, map: send.syncMeta
   });
@@ -10502,6 +10925,14 @@ function raceTransport(raw, cfg, st, withFile){
           if (S.err === 'newer' || N.err === 'newer'){ cb('newer'); return; }
           if (S.err){ cb('badremote'); return; }
           if (N.err || A.err){ dropFirst(true, raceNames(S, N)); repair(access, cb); return; }
+          /* ++++++ DEBT FORMAT ++++++ Голова файла — то, что обычное чтение этого обмена
+             увидело бы на Диске, не перепиши её починка. Она прежнего формата —
+             значит, это устройство перешло на новую версию первым: та же отметка
+             (upHint), тем же кодом и по тем же условиям, что у обычного чтения.
+             Метка файла не передаётся: «старое устройство» (А13) судит только
+             обычное чтение. Стоит ДО чтения записи обмена ниже: та запись при
+             споре сохраняется целиком и стёрла бы отметку. */
+          syncOldSeen(S, '');
           fix = raceMerge(S, N, A);
           o = syncRead();
           if (fix.conflicts.length){
@@ -12808,6 +13239,8 @@ function syncCycle(env, cb, attempt){
                            remoteDoc ? remoteDoc.syncMeta : null,
                            env.undel ? env.undel() : null, remoteUndel);   /* ++++++ UNDELETE ++++++ */
     syncDelMine(merged, remoteDoc, remoteTombs);   /* ++++++ DISPUTE HOLD ++++++ удаление с этого устройства не едет, пока спор не решён */
+    syncDelFamily(merged, localDoc, remoteDoc, remoteTombs, env.meta ? env.meta() && env.meta().map : null,
+                  remoteDoc ? remoteDoc.syncMeta : null, env.undel ? env.undel() : null, remoteUndel, env.tombs());   /* ++++++ DISPUTE FAMILY ++++++ спор держит запись вместе с её семьёй (А17, А18) */
     /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
        проверка, что внутри mergeSettings(), и другой она быть не может —
        иначе конверт уедет с меткой от чужих настроек, а внутри будут
@@ -12827,7 +13260,9 @@ function syncCycle(env, cb, attempt){
        она может. Копия стоит доли секунды и один файл. */
     var needBackup = !!remoteDoc;
     var proceed = function(){
+      var setHad = syncSetBefore();   /* ++++++ SETTINGS MERGE ++++++ */
       env.apply(merged.doc, function(applyErr){
+        syncSetAfter(setHad, applyErr);
         if (applyErr){ cb({ err: 'apply', detail: applyErr }); return; }
 
         /* --- отправить ------------------------------------------------ */
@@ -12899,6 +13334,81 @@ function mergeInSettingsAt(doc, at){
   return out;
 }
 
+/* ============================================ ++++++ SETTINGS MERGE ++++++ ==
+ * ПОЛОСА «КУРС ПОПРАВИЛИ НА ДВУХ УСТРОЙСТВАХ».
+ *
+ * Спор одного курса решает слияние (setRates): остаётся более поздняя
+ * правка, а в историю курсов ложится запись «both». Она едет вместе с
+ * историей, поэтому полосу видит КАЖДОЕ устройство — и то, чья правка
+ * осталась, и то, чья стала второй: появилась в истории новая запись «both»
+ * после применения обмена — сказать. Полоса живёт до крестика и переживает
+ * перезапуск: список — в записи обмена устройства (sync-v1.rateNotes), не в
+ * документе.
+ * ================================================================== */
+var RATE_NOTES_MAX = 5;
+
+/** Какие записи «both» уже есть в истории — перед применением обмена. И
+ *  отметка «сейчас настройки применит обмен» (syncSettingsTouch). */
+function syncSetBefore(){
+  var had = {}, log = state.settings && state.settings.rateLog, i;
+  syncSetHold = true;
+  if (Object.prototype.toString.call(log) === '[object Array]')
+    for (i = 0; i < log.length; i++) if (log[i] && log[i].k === 'both') had[canonJSON(log[i])] = 1;
+  return had;
+}
+/** После применения: новые записи «both» — в память устройства и на экран. */
+function syncSetAfter(had, err){
+  var log, i, fresh = [], o;
+  syncSetHold = false;
+  if (err) return;
+  log = state.settings && state.settings.rateLog;
+  if (Object.prototype.toString.call(log) !== '[object Array]') return;
+  for (i = 0; i < log.length; i++)
+    if (log[i] && log[i].k === 'both' && !ownKey(had || {}, canonJSON(log[i]))) fresh.push(log[i]);
+  if (!fresh.length) return;
+  o = syncRead() || {};
+  o.rateNotes = (Object.prototype.toString.call(o.rateNotes) === '[object Array]' ? o.rateNotes : []).concat(fresh).slice(-RATE_NOTES_MAX);
+  syncWrite(o);
+  rateBothPaint();
+}
+/** Чьё устройство сделало оставленную правку — словами для ЭТОГО устройства. */
+function rateBothWho(e){
+  var o = syncRead() || {};
+  if (e.by && typeof o.devId === 'string' && o.devId === e.by) return tr('rb.me');
+  /* своё названо «здесь», поэтому «телефон» и «компьютер» — всегда ДРУГОЕ устройство */
+  if (e.dev === 'and') return tr('rb.who.and');
+  if (e.dev === 'win') return tr('rb.who.win');
+  return '';
+}
+/** Когда — коротко, без года: полоса на телефоне обязана уместиться в три строки. */
+function rateBothWhen(iso){
+  var t = Date.parse(iso);
+  if (isNaN(t)) return '';
+  var d = new Date(t);
+  function p(n){ return (n < 10 ? '0' : '') + n; }
+  return tr('rb.when', { d: p(d.getDate()), m: p(d.getMonth() + 1), h: p(d.getHours()), i: p(d.getMinutes()) });
+}
+function rateBothText(e){
+  var who = rateBothWho(e), when = rateBothWhen(e.at);
+  return tr('rb.bar', { cur: esc(e.cur), now: '1 ' + esc(e.cur) + ' = ' + esc(trimNum(e.now)) + ' ' + esc(e.base || ''),
+    who: esc(who) + (who && when ? ', ' : '') + esc(when) });
+}
+/** Полоса: последние записи, новые сверху. Только рисует. */
+function rateBothPaint(){
+  var o = syncRead() || {}, list = Object.prototype.toString.call(o.rateNotes) === '[object Array]' ? o.rateNotes : [], rows = [], i;
+  for (i = list.length - 1; i >= 0 && rows.length < 3; i--)
+    if (list[i] && typeof list[i] === 'object' && typeof list[i].cur === 'string' && typeof list[i].now === 'number') rows.push(rateBothText(list[i]));
+  if (!rows.length){ removeBanner('rate-both'); return; }
+  banner('rate-both', 'info', rows.join('<br>'));
+}
+/** Крестик: прочитано. */
+function rateBothClose(){
+  var o = syncRead();
+  if (!o || !o.rateNotes) return;
+  delete o.rateNotes;
+  syncWrite(o);
+}
+/* ============================================ ++++++ SETTINGS MERGE ++++++ END (полоса) == */
 function countsOf(doc){
   return {
     products: (doc.products || []).length,
@@ -13259,6 +13769,7 @@ function loadFromStorage(){
     loadNotes = notes;
     loadRaw = raw;
   }
+  syncSettingsSeen();   /* ++++++ SETTINGS MERGE ++++++ от этого документа и считаются правки настроек */
   return true;
 }
 
@@ -16060,7 +16571,10 @@ function expEditRate(x, code){
          (после него ещё и пересчитывали) — отношение двух целых: грубее на
          мелкой сумме, зато всегда о нынешних числах. */
       r = (code === s.base) ? 1 : ((s.rates && own(s.rates, code)) ? s.rates[code] : null);
-      if (typeof r === 'number' && isFinite(r) && r > 0 && Math.round(e.minor * r) === x.amountCents) return { r: r, kind: 'own' };
+      /* ++++++ EXP RATE WAS ++++++ was — в какой основной валюте этот курс ЗАПИСАН: снимок помнит её
+         имя, и строка «курс:» его называет. У отношения двух целых ниже имени нет —
+         после переименования суммы ещё и пересчитывали, число уже не в валюте снимка. */
+      if (typeof r === 'number' && isFinite(r) && r > 0 && Math.round(e.minor * r) === x.amountCents) return { r: r, kind: 'own', was: s.base };
       return { r: x.amountCents / e.minor, kind: 'own' };
     }
   }
@@ -16114,8 +16628,16 @@ function expRateText(x){
   /* ++++++ EXP EDIT RATE ++++++ валюта ввода записи сама стала основной: «1 USD = 3.6725 USD»
      было бы бессмыслицей — сказано словами, как в подсказке формы. Строка
      есть ровно тогда, когда в списке у записи две суммы (expKeptOwn). */
-  if (x.entryCur === state.settings.baseCurrency)
-    return expKeptOwn(x) ? tr('exp.rateKept', { cur: esc(x.entryCur), k: esc(trimNum(r)) }) : '';
+  if (x.entryCur === state.settings.baseCurrency){
+    if (!expKeptOwn(x)) return '';
+    /* ++++++ EXP RATE WAS ++++++ слово владельца 06.10.2026: программа помнит прежнее имя основной
+       валюты (оно в снимке записи) — строка называет курс так, как он был записан:
+       «курс записи: 1 USD = 3.6725 AED (до переименования)». Не помнит — прежние слова. */
+    var was = expEditRate(x, x.entryCur).was;
+    return was
+      ? tr('exp.rateWas', { rate: '1 ' + esc(x.entryCur) + ' = ' + esc(trimNum(r)) + ' ' + esc(was) })
+      : tr('exp.rateKept', { cur: esc(x.entryCur), k: esc(trimNum(r)) });
+  }
   return tr('exp.rateAt', { rate: '1 ' + esc(x.entryCur) + ' = ' + esc(trimNum(r)) +
                                     ' ' + esc(state.settings.baseCurrency) });
 }
@@ -17676,6 +18198,7 @@ var FAQ = [
   html: function(){
     var h = infoP(tr('faq.a.syncWhat1')) + infoP(tr('faq.a.syncWhat2'));
     h += infoP(tr(modeIsProduct() ? 'faq.a.syncWhat3gd' : 'faq.a.syncWhat3gh'));
+    h += infoP(tr('faq.a.syncSet'));   /* ++++++ SETTINGS MERGE ++++++ настройки ездят по одной, не набором */
     return h + infoP(tr('faq.a.syncWhat4')) + infoP(tr('faq.a.syncWhat5'));   /* ++++++ BASE SYNC ++++++ */
   },
   see: ['sync', 'backup.why', 'backup.wipe']
@@ -17710,6 +18233,16 @@ var FAQ = [
     return h + infoP(tr('faq.a.backupWhy2')) + infoP(tr('faq.a.backupWhy3'));
   },
   see: ['backup', 'sync.what', 'backup.wipe']
+},
+/* ++++++ IMPORT TRUTH ++++++ импорт копии: два пути и чем они отличаются */
+{
+  key: 'backup.import', topic: 'backup', icon: false,
+  q: function(){ return tr('faq.q.backupImp'); },
+  html: function(){
+    return infoP(tr('faq.a.backupImp1')) + infoP(tr('faq.a.backupImp2')) +
+           infoP(tr('faq.a.backupImp3')) + infoP(tr('faq.a.backupImp4'));
+  },
+  see: ['backup.why', 'backup.trash']
 },
 
 /* «Корзина». ОБА предложения, всегда: на экране их разводило
@@ -18628,6 +19161,10 @@ function rateLogPush(e){
   if (!Array.isArray(state.settings.rateLog)) state.settings.rateLog = [];
   e.at = new Date().toISOString();
   e.base = state.settings.baseCurrency;
+  /* ++++++ SETTINGS MERGE ++++++ кто правил — чтобы спор одного курса назвал устройство. Только
+     когда обмен настроен: без него запись прежняя до байта. */
+  var so = syncRead();
+  if (so && typeof so.devId === 'string' && so.devId){ e.by = so.devId; e.dev = uiPlat(); }
   state.settings.rateLog.push(e);
 }
 /** Четыре вида события. Мест, где курс меняется, ПЯТЬ: четыре прямых —
@@ -18659,6 +19196,12 @@ function rateLogBase(from, to, mode){ rateLogPush({ k:'base', cur:to, from:from,
 /** Одна строка истории, готовым текстом. */
 function rateLogLine(e){
   var v = { cur: esc(e.cur), base: esc(e.base || '') };
+  /* ++++++ SETTINGS MERGE ++++++ курс поправили на двух устройствах. Что оставлено и что было вторым —
+     второй подписью (rateLogDerivedText): она переносится, а заголовок строки
+     на телефоне обрезается многоточием */
+  if (e.k === 'both') return tr('cur.logBoth', v);
+  /* курс посчитал обмен: две правки разных полей сложены, итог — второй подписью */
+  if (e.k === 'sync') return tr('cur.logSync', v);
   if (e.k === 'edit'){ v.was = esc(trimNum(e.was)); v.now = esc(trimNum(e.now));
                        return tr('cur.logEdit', v); }
   if (e.k === 'add'){ v.now = esc(trimNum(e.now)); return tr('cur.logAdd', v); }
@@ -18676,6 +19219,10 @@ function rateLogLine(e){
  *  стоит первым и не убирается: оно и отличает их от того, что ввели
  *  руками. Производных нет — не печатается ничего (область 44). */
 function rateLogDerivedText(e){
+  /* ++++++ SETTINGS MERGE ++++++ запись о споре: оставленное и второе значение — здесь, эта подпись переносится */
+  if (e && e.k === 'both') return tr('cur.logBothWhat', { cur: esc(e.cur), base: esc(e.base || ''),
+    now: esc(trimNum(e.now)), was: esc(trimNum(e.was)) });
+  if (e && e.k === 'sync') return tr('cur.logSyncWhat', { cur: esc(e.cur), base: esc(e.base || ''), now: esc(trimNum(e.now)) });
   if (!e || !e.derived || !e.derived.length) return '';
   var base = esc(e.base || ''), parts = [];
   e.derived.forEach(function(d){
@@ -18748,7 +19295,15 @@ function rateLogOf(v){
     else if (e.k === 'base'){ if (!code(e.from)) return; o.from = e.from.toUpperCase();
                               o.mode = (e.mode === 'convert' || e.mode === 'undo')
                                        ? e.mode : 'relabel'; }
+    /* ++++++ SETTINGS MERGE ++++++ запись о споре одного курса: оставленное, второе и время второй правки */
+    else if (e.k === 'both'){ if (!num(e.was) || !num(e.now)) return; o.was = e.was; o.now = e.now;
+                              if (typeof e.at2 === 'string' && e.at2) o.at2 = e.at2; }
+    /* запись «пересчитан при обмене»: итоговый курс */
+    else if (e.k === 'sync'){ if (!num(e.now)) return; o.now = e.now; }
     else return;
+    /* ++++++ SETTINGS MERGE ++++++ устройство, сделавшее правку. Кривое — отбрасывается само, запись остаётся. */
+    if (e.dev === 'and' || e.dev === 'win') o.dev = e.dev;
+    if (typeof e.by === 'string' && /^dev-[a-z0-9-]{1,40}$/.test(e.by)) o.by = e.by;
     /* ++++++ ACTIVE CURRENCIES ++++++ производные сдвиги. Кривой элемент
        отбрасывается, САМА запись — нет: это список независимых фактов
        внутри факта, и политика та же, что у всей истории (R16). */
@@ -19141,6 +19696,12 @@ function finishImport(d, atts, res, revive){
   }
   function apply(){
     d.settings.lang = getLang();          // keep the language you are looking at
+    /* ++++++ IMPORT TRUTH ++++++ «Вернуть недостающее» и «Заменить на всех устройствах»:
+       документ, который станет state, собирается ЗДЕСЬ, от документа, каков он
+       в этот миг, — пока окно было открыто, обмен мог принести чужие записи.
+       Метку правки и отмену удаления ставит прежний цикл ниже (touch() и
+       undelNote()), поэтому id записей уходят в его список. */
+    if (res.impMode){ res.impDone = impTake(res.impMode, d); d = res.impDone.doc; revive = res.impDone.touch; }
     var wasT = state.syncTombs || {};   /* ++++++ UNDELETE ++++++ времена удалений: после замены документа их в нём уже нет */
     state = d;
     /* ++++++ ERASE SPLIT ++++++ ВОСКРЕШЕНИЕ. Владелец ответил «вернуть»,
@@ -19175,11 +19736,13 @@ function finishImport(d, atts, res, revive){
        схему, поправить даты и пересобрать партии, а сам файл мог быть
        годовалым. Единственное честное состояние здесь — «копии этих
        данных ещё не делали» (краевой случай 9). */
-    bakForget();
+    /* ++++++ IMPORT TRUTH ++++++ «Вернуть недостающее» документа не подменяет: прежняя копия
+       по-прежнему его копия, а что записи с тех пор изменились, напоминание скажет само */
+    if (!(res.impDone && res.impDone.mode === 'missing')) bakForget();
     ui.bakHidden = false;
     var saved = save();
     render();
-    toast(tr('msg.impDone'),'ok');
+    if (!res.impDone) toast(tr('msg.impDone'),'ok');   /* ++++++ IMPORT TRUTH ++++++ итог режима говорит impAfter() */
     /* what was silently dropped is said out loud, never swallowed */
     var lost = [];
     /* ++++++ PARTIAL IMPORT ++++++ то же, что сказало подтверждение ДО
@@ -19200,6 +19763,7 @@ function finishImport(d, atts, res, revive){
     if (lost.length) banner('import-lost','warn', lost.join('<br>'));
     /* only now: the previous owner's files, if the new document is on disk */
     if (saved) attSweep(true, function(){ render(); });
+    if (res.impDone) impAfter(res.impDone);   /* ++++++ IMPORT TRUTH ++++++ */
   }
   if (!attOn()){ apply(); return; }
   attImportPut(write, function(err){
@@ -19302,36 +19866,461 @@ function importBackup(file){
      * Один вопрос вместо двухсот конфликтов, и только когда есть о чём:
      * без пересечения диалог импорта прежний ПОБАЙТОВО — та же
      * confirmBox с тем же телом. */
-    var impBody = impStampHTML(parsed) +
-      (res.dropped && res.dropped.length ? '<p>' + dropLine(res.dropped) + '</p>' : '') +
-      tr('dlg.impBody', {prod: d.products.length, ppl: d.people.length,
-                         /* ++++++ MULTI FORM ++++++ выдач, а не строк */
-                         tx: handoutCountIn(d.transactions), pay: d.payments.length}) +
-      (d.returns.length ? tr('dlg.impRet', {n: d.returns.length}) : '') +
-      /* ++++++ EXPENSES ++++++ говорится только когда есть о чём: копия без
-         расходов печатает диалог байт в байт прежний. */
-      (d.expenses.length ? tr('dlg.impExp', {n: d.expenses.length}) : '') + extra;
-    var revive = wipeImportClash(state.syncTombs || {}, d);
-    if (!revive.length){
-      confirmBox(tr('dlg.impTitle'), impBody, tr('dlg.impOk'), true).then(function(ok){
-        if (!ok){ toast(tr('msg.impCancelled'),'info'); return; }
-        finishImport(d, atts, res);
-      });
-      return;
-    }
-    dialog({
-      title: tr('dlg.impTitle'),
-      html: impBody + '<div class="note warn">' +
-            tr('wipe.impAsk', { n: nq(revive.length, 'record') }) + '</div>',
-      buttons: [{ key:'no', label: tr('wipe.impNo') },
-                { key:'yes', label: tr('wipe.impYes'), variant:'primary' }]
-    }).then(function(k){
-      if (!k){ toast(tr('msg.impCancelled'),'info'); return; }
-      finishImport(d, atts, res, k === 'yes' ? revive : null);
-    });
-
+    /* ++++++ IMPORT TRUTH ++++++ прежнее окно обещало «всё будет заменено» и при обмене
+       этого не делало; о долгах, заказах и поездках молчало. Окно с двумя
+       вариантами и правдой про каждый вид — impAsk(). Прежний вопрос «Вернуть
+       удалённые?» в него вошёл числом «из них удалённых ранее». */
+    impAsk(parsed, res, extra);
   };
   reader.readAsText(file);
+}
+
+/* ================================== ++++++ IMPORT TRUTH ++++++ ==
+ * ИМПОРТ КОПИИ ГОВОРИТ ПРАВДУ И ДАЁТ ВЫБОР (находка А11 аудита; решение
+ * владельца 07.10.2026: «две кнопки: „Вернуть недостающее“ — добавляет из
+ * копии только то, чего нет, ничего не перезаписывает; „Заменить на всех
+ * устройствах“ — откат к копии, с подтверждением и списком, что изменится,
+ * по видам. Окно говорит правду про каждый вид»).
+ *
+ * ЧТО БЫЛО. Окно говорило «Всё, что сейчас в программе, будет заменено», а
+ * при включённом обмене выходила смесь: записанное после копии возвращалось
+ * с Диска, изменённое после копии молча откатывалось к копии на всех
+ * устройствах. Причина: документ заменялся документом копии ВМЕСТЕ с её
+ * картами обмена, а отпечатки прошлого обмена оставались здешними — слияние
+ * честно читало это как «изменили только здесь». О долгах, возвратах долга,
+ * заказах и поездках окно не говорило вовсе.
+ *
+ * ПРАВИЛО, ИЗ КОТОРОГО СЛЕДУЕТ ВСЁ: при настроенном обмене импорт — это
+ * ПРАВКИ И УДАЛЕНИЯ, сделанные здесь и сейчас, а не подмена документа.
+ * Записи становятся такими, как решил владелец, а карты обмена остаются
+ * ЗДЕШНИМИ: удаление получает надгробие существующим dropFrom(), правка и
+ * возврат — метку существующим touch(), возврат удалённого — отмену
+ * существующим undelNote(). Тогда обмен доносит до остальных устройств
+ * ровно то, что обещало окно.
+ *
+ *   «Вернуть недостающее»  — из копии берутся только записи, которых сейчас
+ *                            нет (ни живых, ни в корзине), и такими, какими
+ *                            они лежат в копии: живая — живой, лежавшая в
+ *                            корзине — в корзину. Ничего не перезаписывается
+ *                            и не удаляется, настройки не трогаются. Работает
+ *                            и без обмена.
+ *   «Заменить…»            — в программе становится ровно то, что в копии.
+ *                            С обменом — на всех устройствах: чего нет в
+ *                            копии, удаляется с надгробием; что отличается —
+ *                            становится как в копии; настройки — как в копии.
+ *                            Без обмена — прежняя замена документа.
+ *   программа пуста         — основная валюта ещё не выбрана (первый запуск
+ *                            или документ не прочитался): ни «недостающего»,
+ *                            ни «заменяемого» нет, вариант один — взять копию
+ *                            целиком, прежней заменой документа.
+ *
+ * ПЛАН СЧИТАЕТСЯ ДВАЖДЫ. Для окна — чтобы сказать правду ДО выбора; и ещё
+ * раз в миг применения, от документа, каков он в этот миг: пока окно
+ * открыто, обмен мог принести чужие записи, и применять вчерашний план
+ * значило бы затереть их.
+ *
+ * ЗАПИСЬ ИЗ КОРЗИНЫ КОПИИ ВОЗВРАЩАЕТСЯ В КОРЗИНУ. «Удалил навсегда — вернул
+ * из копии» — самый частый повод открыть это окно, а к «удалить навсегда»
+ * ведёт только корзина: в свежей копии такая запись лежит именно там. Так
+ * работал возврат удалённого и до этой задачи (trash-restore, 04.10), и
+ * первая редакция блока его сломала: корзинное пропускалось, окно отвечало
+ * «возвращать нечего». Поймал прогон по кандидату — стенд той задачи.
+ *
+ * ЧЕГО «ВЕРНУТЬ НЕДОСТАЮЩЕЕ» НЕ БЕРЁТ, и окно называет это числом:
+ *   · живую запись, которой не на что опереться, — её товар, человек, выдача
+ *     или долг сейчас в корзине: активной записи при корзинном родителе не
+ *     бывает (записи, которая сама вернётся в корзину, хватает любого
+ *     родителя — живого или корзинного);
+ *   · товар, чьё название уже носит другой товар, и человека, чей телефон
+ *     уже записан у другого, — те же два отказа, что у восстановления из
+ *     корзины; записей, идущих в корзину, это не касается;
+ *   · запись из корзины копии, у которой срок корзины вышел: она вернулась
+ *     бы и была бы убрана первой же уборкой.
+ * Копия в ДРУГОЙ основной валюте не годится вовсе: суммы её записей
+ * прочитались бы в нынешней валюте (правило BASE SYNC).
+ * ================================================================ */
+
+/* Виды записей в порядке, в котором их называет окно; родители раньше детей.
+   Обязан покрывать SYNC_COLS: вид, которого здесь нет, импорт не заметил бы
+   вовсе. */
+var IMP_KINDS = ['products', 'people', 'transactions', 'payments', 'loans', 'returns',
+                 'repayments', 'orders', 'lots', 'expenses'];
+
+function impIdx(list){
+  var m = {}, i, r;
+  for (i = 0; i < (list || []).length; i++){
+    r = list[i];
+    if (r && typeof r.id === 'string' && r.id) m[r.id] = r;
+  }
+  return m;
+}
+function impIds(list){
+  var out = [], i;
+  for (i = 0; i < list.length; i++) out.push(list[i].id);
+  return out;
+}
+/** Сколько это для человека: выдача из трёх товаров — одна выдача. */
+function impCount(col, list){
+  return col === 'transactions' ? handoutCountIn(list) : list.length;
+}
+/** На кого запись опирается: без них она не живёт. */
+function impParents(col, r){
+  if (col === 'transactions') return [r.personId, r.productId];
+  if (col === 'payments') return [r.personId];
+  if (col === 'returns') return [r.txId];
+  if (col === 'repayments') return [r.loanId];
+  return [];
+}
+/** Чем ездящие настройки копии (b) отличаются от здешних (a). История
+ *  курсов не сравнивается: она не укорачивается и при обмене объединяется. */
+function impSetDiff(a, b){
+  var out = { any: false, base: '', rates: 0, other: false };
+  var ra = (a && a.rates) || {}, rb = (b && b.rates) || {}, c, i, f;
+  if (((a && a.baseCurrency) || '') !== ((b && b.baseCurrency) || '')) out.base = (b && b.baseCurrency) || '';
+  for (c in ra) if (own(ra, c) && (!own(rb, c) || ra[c] !== rb[c])) out.rates++;
+  for (c in rb) if (own(rb, c) && !own(ra, c)) out.rates++;
+  for (i = 0; i < SYNC_SETTINGS.length; i++){
+    f = SYNC_SETTINGS[i];
+    if (f === 'rateLog' || f === 'rates' || f === 'baseCurrency') continue;
+    if (canonJSON(a && a[f] !== undefined ? a[f] : null) !== canonJSON(b && b[f] !== undefined ? b[f] : null)) out.other = true;
+  }
+  out.any = !!(out.base || out.rates || out.other);
+  return out;
+}
+/** ЕДИНСТВЕННЫЙ ответ «что копия (d) сделала бы с документом (cur)».
+ *  Ничего не меняет. По каждому виду:
+ *    add    — в копии есть, здесь нет и не удаляли;
+ *    revive — в копии есть, здесь удалили навсегда (стоит надгробие);
+ *    change — есть и там, и здесь, но записи разные (в том числе «здесь в корзине»);
+ *    drop   — здесь есть (живая или в корзине), в копии нет. */
+function impPlan(cur, d){
+  var tombs = (cur && cur.syncTombs) || {};
+  var plan = { kinds: {}, add: 0, revive: 0, change: 0, drop: 0,
+               set: impSetDiff((cur && cur.settings) || {}, (d && d.settings) || {}) };
+  var i, col, a, b, k, id;
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    a = impIdx(cur && cur[col]); b = impIdx(d && d[col]);
+    k = { add: [], revive: [], change: [], drop: [] };
+    for (id in b) if (own(b, id)){
+      if (!own(a, id)) (wipeOwn(tombs, id) ? k.revive : k.add).push(b[id]);
+      else if (recHash(a[id]) !== recHash(b[id])) k.change.push(b[id]);
+    }
+    for (id in a) if (own(a, id) && !own(b, id)) k.drop.push(a[id]);
+    plan.kinds[col] = k;
+    plan.add += k.add.length; plan.revive += k.revive.length;
+    plan.change += k.change.length; plan.drop += k.drop.length;
+  }
+  return plan;
+}
+function impHasChange(plan){ return plan.add + plan.revive + plan.change + plan.drop > 0 || plan.set.any; }
+
+/** ЕДИНСТВЕННЫЙ ответ «что вернёт „Вернуть недостающее“»: записи копии,
+ *  которых здесь нет и которым есть на что опереться. Числа окна и сам
+ *  возврат читают одно и то же — разойтись им нечем.
+ *    take   — по видам, что вернётся;
+ *    n      — сколько записей; revive — сколько из них удалённых ранее;
+ *    trash  — сколько из них вернётся в корзину (там они лежали в копии);
+ *    skip   — сколько не вернётся (нет опоры, занято название или телефон);
+ *    old    — сколько не вернётся из корзины копии: срок корзины вышел;
+ *    base   — основная валюта копии, когда она другая: тогда не берётся ничего. */
+function impMissing(cur, d, plan){
+  var out = { take: {}, n: 0, revive: 0, trash: 0, skip: 0, old: 0, base: '' };
+  var live = {}, any = {}, names = {}, phones = {}, tombs = (cur && cur.syncTombs) || {};
+  var i, j, k, col, list, r, ps, ok, key, bin;
+  for (i = 0; i < IMP_KINDS.length; i++) out.take[IMP_KINDS[i]] = [];
+  if (((cur.settings || {}).baseCurrency || '') !== ((d.settings || {}).baseCurrency || '')){
+    out.base = (d.settings || {}).baseCurrency || '';
+    return out;
+  }
+  /* на что можно опереться: живой записи — активные записи нынешнего
+     документа; записи, которая вернётся в корзину, — любые его записи */
+  for (i = 0; i < IMP_KINDS.length; i++){
+    list = cur[IMP_KINDS[i]] || [];
+    for (j = 0; j < list.length; j++) if (list[j] && list[j].id) any[list[j].id] = true;
+    list = trashActive(list);
+    for (j = 0; j < list.length; j++) live[list[j].id] = true;
+  }
+  list = trashActive(cur.products || []);
+  for (j = 0; j < list.length; j++) names[normQ(list[j].name)] = true;
+  list = trashActive(cur.people || []);
+  for (j = 0; j < list.length; j++){ key = phoneKey(list[j].phone); if (key) phones[key] = true; }
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    list = plan.kinds[col].add.concat(plan.kinds[col].revive);
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      bin = trashIs(r);                            /* в копии лежала в корзине — туда и вернётся */
+      if (bin && trashAge(r.trashedAt) >= TRASH_DAYS){ out.old++; continue; }   /* срок вышел: уборка унесла бы её сразу */
+      ok = true;
+      ps = impParents(col, r);
+      for (k = 0; k < ps.length; k++) if (!own(bin ? any : live, ps[k])) ok = false;
+      key = '';
+      if (!bin){
+        if (ok && col === 'products' && own(names, normQ(r.name))) ok = false;
+        key = col === 'people' ? phoneKey(r.phone) : '';
+        if (ok && key && own(phones, key)) ok = false;
+      }
+      if (!ok){ out.skip++; continue; }
+      out.take[col].push(r); out.n++;
+      any[r.id] = true;
+      if (bin) out.trash++;
+      else {
+        live[r.id] = true;
+        if (col === 'products') names[normQ(r.name)] = true;
+        if (key) phones[key] = true;
+      }
+      if (wipeOwn(tombs, r.id)) out.revive++;
+    }
+  }
+  return out;
+}
+
+/** Документ «здешний плюс недостающее из копии» — через validate(), как
+ *  всякий документ, который станет state. */
+function impMissingDoc(cur, ms){
+  var doc = JSON.parse(JSON.stringify(cur)), want = [], i, j, col, list, v, kept = [], idx;
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    list = ms.take[col];
+    if (!list.length) continue;
+    if (!doc[col]) doc[col] = [];
+    for (j = 0; j < list.length; j++){
+      doc[col].push(JSON.parse(JSON.stringify(list[j])));
+      want.push([col, list[j].id]);
+    }
+  }
+  v = validate(doc);
+  if (!v.ok) return { ok: false, error: v.error, doc: null, touch: [], dropped: [] };
+  for (i = 0; i < want.length; i++){
+    idx = impIdx(v.data[want[i][0]]);
+    if (own(idx, want[i][1])) kept.push(want[i][1]);
+  }
+  return { ok: true, doc: v.data, touch: kept, dropped: v.dropped || [] };
+}
+
+/** Файлы, которые нынешний документ называет, а копия — нет: у ушедших
+ *  товаров и у товаров, чьё фото или накладные в копии другие. */
+function impGoneAtts(cur, d){
+  var keep = {}, out = [], i, j, ids;
+  for (i = 0; i < (d.products || []).length; i++){
+    ids = attIdsOf(d.products[i]);
+    for (j = 0; j < ids.length; j++) keep[ids[j]] = true;
+  }
+  for (i = 0; i < (cur.products || []).length; i++){
+    ids = attIdsOf(cur.products[i]);
+    for (j = 0; j < ids.length; j++) if (!own(keep, ids[j])) out.push(ids[j]);
+  }
+  return out;
+}
+/** Курсы, которые замена изменит, — в историю курсов, ДО замены (хрупкое
+ *  место 55): курс на экране обязан объясняться историей, и спор одного
+ *  курса при обмене решает время правки из неё. При другой основной валюте
+ *  записей нет: курсы копии выражены в другой валюте, сравнивать их не с чем. */
+function impRatesNote(a, b){
+  var ra = (a && a.rates) || {}, rb = (b && b.rates) || {}, c;
+  if (((a && a.baseCurrency) || '') !== ((b && b.baseCurrency) || '')) return;
+  for (c in ra) if (own(ra, c)){
+    if (!own(rb, c)) rateLogDel(c, ra[c]);
+    else if (ra[c] !== rb[c]) rateLogEdit(c, ra[c], rb[c]);
+  }
+  for (c in rb) if (own(rb, c) && !own(ra, c)) rateLogAdd(c, rb[c]);
+}
+
+/** Применение выбранного режима — зовётся из finishImport() в миг замены
+ *  документа. Отдаёт документ, который станет state, и id записей, которым
+ *  нужна метка правки (её и отмену удаления ставит прежний цикл finishImport:
+ *  touch() и undelNote() — единственные места, где они ставятся). */
+function impTake(mode, d){
+  var plan = impPlan(state, d);
+  var out = { mode: mode, plan: plan, doc: null, touch: [], dropped: [], att: [], failed: '' };
+  var i, col, k, dead, m;
+  if (mode === 'missing'){
+    m = impMissingDoc(state, impMissing(state, d, plan));
+    if (!m.ok){ out.doc = state; out.failed = m.error; return out; }
+    out.doc = m.doc; out.touch = m.touch; out.dropped = m.dropped;
+    return out;
+  }
+  /* «Заменить на всех устройствах». Файлы считаются ДО снятия записей:
+     после него спросить фотографию не у кого. */
+  out.att = impGoneAtts(state, d);
+  impRatesNote(state.settings, d.settings);
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i]; k = plan.kinds[col];
+    dead = impIds(k.drop);
+    /* надгробие — существующей дверью: без него сосед вернул бы запись первым же обменом */
+    if (dead.length) trashDropOne(col, dead);
+    out.touch = out.touch.concat(impIds(k.add), impIds(k.revive), impIds(k.change));
+  }
+  /* записи и настройки — копии; карты обмена — ЗДЕШНИЕ. Копией, а не ссылкой:
+     finishImport() помнит прежние времена удалений (wasT), а touch() снимает
+     надгробие уже из нового документа — в общем объекте отмена не встала бы. */
+  d.syncMeta = JSON.parse(JSON.stringify(state.syncMeta || {}));
+  d.syncTombs = JSON.parse(JSON.stringify(state.syncTombs || {}));
+  if (state.syncUndel) d.syncUndel = JSON.parse(JSON.stringify(state.syncUndel)); else delete d.syncUndel;
+  /* история курсов не укорачивается: здешняя и та, что в копии, — вместе */
+  d.settings.rateLog = setLogMerge(state.settings.rateLog, d.settings.rateLog, []);
+  out.doc = d;
+  return out;
+}
+/** Хвост импорта в одном из двух режимов: что сказать и что убрать. */
+function impAfter(t){
+  var p = t.plan;
+  if (t.failed){ banner('import', 'err', tr('imp.failed', { err: esc(t.failed) })); return; }
+  if (t.mode === 'missing'){
+    toast(tr('imp.doneMissing', { n: t.touch.length }), 'ok');
+  } else {
+    toast(tr('imp.doneAll', { drop: p.drop, change: p.change, add: p.add + p.revive }), 'ok');
+    if (t.att.length){
+      attForget(t.att);
+      commitThenDrop(t.att);
+      attTombLater(t.att);     /* с Диска — через ATT_GONE_DAYS суток, как при «удалить навсегда» */
+    }
+  }
+  /* правки и удаления импорта — такие же, как сделанные руками: их везёт обмен */
+  if (syncCfgFull()) syncSoon(function(){ syncRun(false); });
+}
+
+/* ---- окно ---- */
+
+/** «товаров — 3, людей — 2»: виды, которых нет, не называются. */
+function impKindList(counts){
+  var out = [], i, col;
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    if (counts[col] > 0) out.push(esc(tr('imp.g.' + col)) + ' — <b>' + counts[col] + '</b>');
+  }
+  return out.join(', ');
+}
+/** Что лежит в копии: живые записи по видам и сколько в её корзине. */
+function impCountsOf(doc){
+  var c = { trash: 0 }, i, col, all, act;
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    all = (doc && doc[col]) || []; act = trashActive(all);
+    c[col] = impCount(col, act);
+    c.trash += all.length - act.length;
+  }
+  return c;
+}
+function impMissingCounts(ms){
+  var c = {}, i, col;
+  for (i = 0; i < IMP_KINDS.length; i++){ col = IMP_KINDS[i]; c[col] = impCount(col, ms.take[col]); }
+  return c;
+}
+/** Строки «что изменится», по видам; пустые виды не печатаются. */
+function impChangeRows(plan, synced){
+  var out = [], i, col, k, parts, s = plan.set;
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i]; k = plan.kinds[col]; parts = [];
+    if (k.drop.length) parts.push(tr('imp.cDrop', { n: impCount(col, k.drop) }));
+    if (k.change.length) parts.push(tr('imp.cChange', { n: impCount(col, k.change) }));
+    if (k.add.length) parts.push(tr('imp.cAdd', { n: impCount(col, k.add) }));
+    if (k.revive.length) parts.push(tr('imp.cRevive', { n: impCount(col, k.revive) }));
+    if (parts.length) out.push('<p class="improw"><b>' + esc(tr('imp.n.' + col)) + '</b>: ' + esc(parts.join(' · ')) + '</p>');
+  }
+  if (s.any){
+    parts = [];
+    if (s.base) parts.push(tr('imp.cBase', { cur: s.base }));
+    if (s.rates) parts.push(tr('imp.cRates', { n: s.rates }));
+    if (!s.base && !s.rates) parts.push(tr('imp.cSet'));
+    out.push('<p class="improw"><b>' + esc(tr('imp.n.rates')) + '</b>: ' + esc(parts.join(' · ')) +
+             (synced ? ' ' + esc(tr('imp.cLog')) : '') + '</p>');
+  }
+  return out.join('');
+}
+/** Файлы копии для «Вернуть недостающее»: только у товаров, которые вернутся. */
+function impAttsFor(atts, ms){
+  var need = impIdx(ms.take.products), out = [], i;
+  for (i = 0; i < (atts || []).length; i++) if (atts[i] && own(need, atts[i].productId)) out.push(atts[i]);
+  return out;
+}
+/** Блок «Вернуть недостающее»: что вернётся, чего не вернётся и почему. */
+function impMissHTML(ms, synced){
+  var h = '<div class="note impopt"><b>' + esc(tr('imp.missTitle')) + '</b>';
+  if (ms.base) return h + '<p>' + esc(tr('imp.missBase', { cur: ms.base })) + '</p></div>';
+  if (!ms.n){ if (!ms.skip && !ms.old) h += '<p>' + esc(tr('imp.missNone')) + '</p>'; }
+  else h += '<p>' + tr('imp.missBody', { list: impKindList(impMissingCounts(ms)) }) + '</p>' +
+            (ms.trash ? '<p>' + esc(tr('imp.missTrash', { n: ms.trash })) + '</p>' : '') +
+            (ms.revive ? '<p>' + esc(tr(synced ? 'imp.missDeletedAll' : 'imp.missDeleted', { n: ms.revive })) + '</p>' : '');
+  if (ms.skip) h += '<p>' + esc(tr('imp.missSkip', { n: ms.skip })) + '</p>';
+  if (ms.old) h += '<p>' + esc(tr('imp.missOld', { n: ms.old, days: nq(TRASH_DAYS, 'day') })) + '</p>';
+  if (ms.n) h += '<button type="button" class="btn sec block" data-key="missing">' + esc(tr('imp.missTitle')) + '</button>';
+  return h + '</div>';
+}
+/** Окно импорта: возраст копии, что в ней, и варианты — у каждого свои
+ *  слова и свои числа. Зовётся из importBackup(), когда копия прочитана;
+ *  files — готовая фраза importBackup() о файлах копии.
+ *
+ *  КНОПКИ. «Вернуть недостающее» — в своём блоке. Замена — в нижнем ряду,
+ *  рядом с «Отменой», как у прежнего окна: без обмена её ключ прежний, 'ok',
+ *  и нажатие делает то же, что делало. С обменом ключ другой — 'all': это
+ *  другое действие, и оно идёт через подтверждение. */
+function impAsk(parsed, res, files){
+  var d = res.data, atts = res.attachments;
+  var synced = wipeSyncOn();
+  var blank = !curSetupDone(state.settings);
+  var plan = impPlan(state, d);
+  var ms = impMissing(state, d, plan);
+  var cnt = impCountsOf(d), inCopy = impKindList(cnt);
+  var some = impHasChange(plan);
+  var btns = [];
+  var body = impStampHTML(parsed) +
+    (res.dropped && res.dropped.length ? '<p>' + dropLine(res.dropped) + '</p>' : '') +
+    '<p>' + (inCopy ? tr('imp.inCopy', { list: inCopy }) : esc(tr('imp.copyEmpty'))) +
+      (cnt.trash ? ' ' + esc(tr('imp.copyTrash', { n: cnt.trash })) : '') + '</p>' + (files || '');
+  if (blank){
+    /* программа пуста: ни недостающего, ни заменяемого — вариант один */
+    body += '<div class="note impopt"><b>' + esc(tr('imp.takeTitle')) + '</b>' +
+      '<p>' + esc(tr('imp.takeBody')) + '</p></div>';
+    btns = [{ key: 'ok', label: tr('imp.takeBtn'), variant: 'primary' }];
+  } else {
+    body += impMissHTML(ms, synced) +
+      /* вариант второй: откат к копии; его кнопка — в нижнем ряду */
+      '<div class="note impopt' + (some ? ' warn' : '') + '"><b>' + esc(tr(synced ? 'imp.replTitleAll' : 'dlg.impOk')) + '</b>' +
+        (some
+          ? '<p>' + esc(tr(synced ? 'imp.replLeadAll' : 'imp.replLead')) + '</p>' + impChangeRows(plan, synced) +
+            '<p>' + esc(tr('imp.noUndo')) + '</p>'
+          : '<p>' + esc(tr(synced ? 'imp.replNone' : 'imp.replSame')) + '</p>' +
+            /* без обмена кнопка замены есть и тут: документ заменится копией целиком */
+            (synced ? '' : '<p>' + esc(tr('imp.noUndo')) + '</p>')) +
+      '</div>';
+    /* Без обмена кнопка есть всегда, как у прежнего окна: документ заменяется
+       копией целиком — вместе с настройками этого устройства, которых список
+       «что изменится» не называет. С обменом замена — это правки и удаления
+       записей; когда их нет, нет и кнопки. */
+    if (some || !synced) btns = [synced ? { key: 'all', label: tr('imp.replTitleAll'), variant: 'danger' }
+                                        : { key: 'ok', label: tr('dlg.impOk'), variant: 'danger' }];
+  }
+  dialog({ title: tr('imp.title'), html: body, buttons: btns }).then(function(k){
+    /* вариант исполняется, только когда его кнопка была на экране */
+    if (k === 'missing' && !blank && ms.n && !ms.base){
+      res.impMode = 'missing';
+      finishImport(d, impAttsFor(atts, ms), res);
+      return;
+    }
+    if (k === 'ok' && (blank || !synced)){
+      /* программа пуста или обмена нет — прежняя замена документа; удалённое
+         после копии возвращается вместе со всем */
+      finishImport(d, atts, res, wipeImportClash(state.syncTombs || {}, d));
+      return;
+    }
+    if (k !== 'all' || blank || !some || !synced){ toast(tr('msg.impCancelled'), 'info'); return; }
+    /* «на всех устройствах» — только после подтверждения со списком */
+    dialog({
+      title: tr('imp.confTitleAll'),
+      html: '<div class="note err">' + esc(tr('imp.confLeadAll')) + '</div>' +
+            impChangeRows(impPlan(state, d), true) +
+            '<p>' + esc(tr('imp.confLate')) + '</p>' +
+            '<p>' + esc(tr('imp.noUndo')) + '</p>' +
+            '<button type="button" class="btn sec block" data-act="export">' + esc(tr('wipe.allBackup')) + '</button>',
+      buttons: [{ key: 'all', label: tr('imp.replTitleAll'), variant: 'danger' }]
+    }).then(function(k2){
+      if (k2 !== 'all'){ toast(tr('msg.impCancelled'), 'info'); return; }
+      res.impMode = 'everywhere';
+      finishImport(d, atts, res);
+    });
+  });
 }
 
 /* ==================================================================
@@ -20262,6 +21251,7 @@ function cfHeldRec(id){
   for (i = 0; i < l.length; i++){
     c = l[i];
     if (c.id === id) return true;
+    if (famHas(c, id)) return true;   /* ++++++ DISPUTE FAMILY ++++++ запись семьи ждёт того же решения */
     r = c.local || c.remote;
     if (c.collection === 'transactions' && r && r.handoutId === id) return true;
   }
@@ -20304,6 +21294,12 @@ function cfLedMark(e){
 function cfBarText(){
   var l = syncStatus.conflicts, i;
   for (i = 0; i < l.length; i++) if (l[i].kind !== 'edit-vs-delete') return tr('cf.bar', { n: l.length });
+  /* ++++++ DISPUTE FAMILY ++++++ полоса говорит, что было (слово владельца 07.10.2026): «изменили», если изменили;
+     «вернули», только если вернули; «добавили запись», если к удалённой записали новое */
+  var w = cfWhyAll(l);
+  if (w === 'edit') return l.length === 1 ? tr('cf.barEdit') : tr('cf.barEditN', { n: l.length });
+  if (w === 'child') return l.length === 1 ? tr('cf.barChild') : tr('cf.barChildN', { n: l.length });
+  if (w === 'mix') return tr('cf.barMixN', { n: l.length });
   return l.length === 1 ? tr('cf.barDel') : tr('cf.barDelN', { n: l.length });
 }
 
@@ -20349,6 +21345,490 @@ function attTombsDue(tombs){
   return out;
 }
 /* ++++++ DISPUTE HOLD END ++++++ */
+
+/* ================================ ++++++ DISPUTE FAMILY ++++++ ==
+ * СПОР «УДАЛИЛИ — ИЗМЕНИЛИ» ДЕРЖИТ ЗАПИСЬ ВМЕСТЕ С ЕЁ СЕМЬЁЙ
+ * (находки А17 и А18 аудита, слово владельца 07.10.2026).
+ *
+ * Удаление навсегда уносит не одну запись: долг уходит со своими возвратами,
+ * человек — с выдачами и оплатами, товар — с выдачами, выдача — с возвратами.
+ * Спор держал ОДНУ запись — ту, которую изменили. Остальные никто не правил,
+ * и их удаление проходило тихо, ещё до решения: «Оставить» возвращало долг
+ * 1 000 без его возврата 300 (А17). А запись, ДОБАВЛЕННАЯ к удалённой на
+ * другом устройстве (новый возврат, новая выдача), спора не давала вовсе:
+ * удалённую никто не менял, и новая запись гибла без слова (А18).
+ *
+ * Правило одно: ПОКА СПОР НЕ РЕШЁН, НЕ УЕЗЖАЕТ И НЕ ПРИМЕНЯЕТСЯ НИ ОДНО
+ * УДАЛЕНИЕ, СВЯЗАННОЕ СО СПОРНОЙ ЗАПИСЬЮ.
+ *   · СЕМЬЯ спора — записи под надгробием, которые ещё есть хотя бы на одной
+ *     стороне и связаны со спорной записью ссылками: те, без кого она не
+ *     живёт (вверх), и те, что удалили вместе с ней (вниз). Они остаются в
+ *     документе; на Диск уходят такими, какими там лежат; надгробие, которого
+ *     на Диске ещё нет, туда не едет;
+ *   · живая запись, чей родитель удалён надгробием, — это запись, которой
+ *     удаливший не видел. По родителю встаёт тот же спор (why: 'child');
+ *   · запись, чей родитель удержан здесь, а на Диске удалён, на Диск не едет:
+ *     висячая запись на Диске и есть то, о чём А18;
+ *   · «Оставить» отменяет удаление записи И её семьи — каждое по его времени;
+ *     «Удалить» снимает запись и всё, что на неё опирается;
+ *   · запись семьи, которую, пока спор ждал, удалили навсегда ОТДЕЛЬНО (на
+ *     любом устройстве), — это другое удаление и другое решение владельца:
+ *     спор её больше не держит, «Оставить» её не возвращает, окно её не
+ *     называет (слово владельца 07.10.2026: «возврат не должен вернуться
+ *     молча»). Узнаётся по времени надгробия: оно не то, с каким запись
+ *     вошла в семью.
+ * Движок слияния не тронут: всё делается после него, в окружении оборота —
+ * там же, где syncDelMine(). Ссылки записи на родителей — существующий
+ * trashParents(): второго ответа на «без кого запись не живёт» не заводится.
+ */
+
+/** Записи документа по id: id → { col, rec }. */
+function famIdx(doc){
+  var out = {}, i, j, list;
+  if (!doc) return out;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    list = doc[SYNC_COLS[i]] || [];
+    for (j = 0; j < list.length; j++)
+      if (list[j] && typeof list[j].id === 'string') out[list[j].id] = { col: SYNC_COLS[i], rec: list[j] };
+  }
+  return out;
+}
+
+/** Удалённое «в пути»: запись под надгробием, слияние её убрало, а на одной из
+ *  сторон она ещё есть. id → { col, L, R, t }. Надгробие записи, которой нет
+ *  нигде, сюда не попадает: вернуть её неоткуда. */
+function famCands(merged, L, R){
+  var out = {}, D = famIdx(merged.doc), t = merged.tombstones || {}, k;
+  for (k in L) if (ownKey(L, k) && ownKey(t, k) && !ownKey(D, k))
+    out[k] = { col: L[k].col, L: L[k].rec, R: null, t: String(t[k]) };
+  for (k in R) if (ownKey(R, k) && ownKey(t, k) && !ownKey(D, k)){
+    if (ownKey(out, k)) out[k].R = R[k].rec;
+    else out[k] = { col: R[k].col, L: null, R: R[k].rec, t: String(t[k]) };
+  }
+  return out;
+}
+
+/** Вернуть удержанную запись в итог слияния. Здесь — версия с Диска (её
+ *  видели все), а у поднятого спора — как кладёт слияние: своя, если есть.
+ *  На Диск — та, что там лежит; если её там нет, не уходит ничего. */
+function famPut(merged, x, id, metaL, metaR, local){
+  var rec = local ? (x.L || x.R) : (x.R || x.L), m;
+  if (x.put) return;
+  x.put = true;
+  if (!merged.doc[x.col]) merged.doc[x.col] = [];
+  merged.doc[x.col].push(rec);
+  m = modOf(id, rec === x.R ? metaR : metaL) || modOf(id, metaR) || modOf(id, metaL);
+  if (m) merged.meta[id] = m;
+  if (merged.send && x.R){
+    if (!merged.send[x.col]) merged.send[x.col] = [];
+    merged.send[x.col].push(x.R);
+    m = modOf(id, metaR);
+    if (m && merged.send.syncMeta) merged.send.syncMeta[id] = m;
+  }
+  if (merged.stats && merged.stats[x.col] && merged.stats[x.col].deleted > 0) merged.stats[x.col].deleted--;
+}
+
+/** Удалённый «в пути» родитель удалённой записи — первый из них. */
+function famUp(cand, id){
+  var x = cand[id], ps = trashParents(null, x.col, x.R || x.L), q;
+  for (q = 0; q < ps.length; q++) if (ps[q].id && ownKey(cand, ps[q].id)) return ps[q].id;
+  return '';
+}
+
+/** А18. Живая запись, чей родитель удалён надгробием: её записали, не видя
+ *  удаления (иначе удаление унесло бы и её). Спор поднимается по ВЕРХНЕМУ
+ *  удалённому предку — по тому, что удалили, а не по звену цепочки, — и
+ *  кладётся так, как его положило бы слияние. Сколько споров поднято. */
+function famRaise(merged, cand, metaL, metaR){
+  var cs = merged.conflicts, has = {}, n = 0, i, j, q, g, col, list, x, ps, top, up, c;
+  for (i = 0; i < cs.length; i++) has[cs[i].id] = 1;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    list = (merged.doc[col] || []).slice();
+    for (j = 0; j < list.length; j++){
+      x = list[j];
+      /* запись под надгробием в итоге слияния — спорная: её предков возьмёт семья */
+      if (!x || typeof x.id !== 'string' || ownKey(merged.tombstones, x.id)) continue;
+      ps = trashParents(null, col, x);
+      for (q = 0; q < ps.length; q++){
+        if (!ps[q].id || !ownKey(cand, ps[q].id)) continue;
+        top = ps[q].id;
+        for (g = 0; g < 8; g++){ up = famUp(cand, top); if (!up) break; top = up; }
+        if (ownKey(has, top)) continue;
+        c = cand[top];
+        famPut(merged, c, top, metaL, metaR, true);
+        cs.push({ id: top, kind: 'edit-vs-delete', collection: c.col, local: c.L, remote: c.R, deletedAt: c.t,
+                  localAt: modOf(top, metaL), hold: !!c.L, why: 'child' });
+        if (merged.stats && merged.stats[c.col]) merged.stats[c.col].conflicts++;
+        has[top] = 1;
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
+/** А17. Семья спора: удалённое «в пути», связанное со спорной записью, — вверх
+ *  и вниз, пока находится новое. Другие спорные записи в семью не входят и
+ *  цепочку не продолжают: у каждой свой вопрос. Список id. */
+function famOf(c, cand, skip, D){
+  var fam = {}, order = [], grew = true, here = ownKey(D, c.id) ? D[c.id].rec : (c.local || c.remote), k, q, ps, x, hit;
+  var inFam = function(id){ return id === c.id || ownKey(fam, id); };
+  var up = function(col, rec){
+    var p = trashParents(null, col, rec), z;
+    for (z = 0; z < p.length; z++)
+      if (p[z].id && ownKey(cand, p[z].id) && !ownKey(skip, p[z].id) && !inFam(p[z].id)){
+        fam[p[z].id] = 1; order.push(p[z].id); grew = true;
+      }
+  };
+  while (grew){
+    grew = false;
+    if (here) up(c.collection, here);
+    for (k = 0; k < order.length; k++) up(cand[order[k]].col, cand[order[k]].R || cand[order[k]].L);
+    for (k in cand) if (ownKey(cand, k) && !ownKey(skip, k) && !inFam(k)){
+      x = cand[k];
+      ps = trashParents(null, x.col, x.R || x.L);
+      hit = false;
+      for (q = 0; q < ps.length; q++) if (ps[q].id && inFam(ps[q].id)) hit = true;
+      if (hit){ fam[k] = 1; order.push(k); grew = true; }
+    }
+  }
+  return order;
+}
+
+/** Надгробие удержанной записи в файл обмена не идёт (как у спорной). */
+function famTombHold(merged, id){
+  var k;
+  if (!merged.sendTombs){
+    merged.sendTombs = {};
+    for (k in merged.tombstones) if (ownKey(merged.tombstones, k)) merged.sendTombs[k] = merged.tombstones[k];
+  }
+  delete merged.sendTombs[id];
+}
+
+/** Запись, которой на Диске ещё нет, а её родитель туда не уходит (он там
+ *  удалён, а здесь удержан спором), не уходит тоже — пока спор не решён.
+ *  off — id удержанных записей без версии на Диске; пополняется по цепочке. */
+function famSendTrim(merged, R, off){
+  var again = true, any = false, i, j, q, k, col, list, x, ps, drop;
+  for (k in off) if (ownKey(off, k)){ any = true; break; }
+  if (!any || !merged.send) return;
+  while (again){
+    again = false;
+    for (i = 0; i < SYNC_COLS.length; i++){
+      col = SYNC_COLS[i];
+      list = merged.send[col] || [];
+      for (j = list.length - 1; j >= 0; j--){
+        x = list[j];
+        if (!x || typeof x.id !== 'string' || ownKey(R, x.id)) continue;
+        ps = trashParents(null, col, x);
+        drop = false;
+        for (q = 0; q < ps.length; q++) if (ps[q].id && ownKey(off, ps[q].id)) drop = true;
+        if (!drop) continue;
+        list.splice(j, 1);
+        if (merged.send.syncMeta) delete merged.send.syncMeta[x.id];
+        off[x.id] = 1;
+        again = true;
+      }
+    }
+  }
+}
+
+/** Что случилось на другой стороне спора: 'back' — запись вернули из корзины
+ *  (на той стороне, где она жива, стоит отмена удаления, которой нет на
+ *  другой), 'edit' — изменили, 'child' — к ней добавили запись (ставит
+ *  famRaise). Отмены сторон сравниваются в миг первого обмена; дальше они
+ *  объединены, и «вернули» помнит запомненный спор. */
+function famWhy(cs, undelL, undelR){
+  var prev = syncStatus ? syncStatus.conflicts : null, i, j, c, a, b, live, other, back;
+  for (i = 0; i < cs.length; i++){
+    c = cs[i];
+    if (c.kind !== 'edit-vs-delete' || c.why === 'child') continue;
+    a = undelList(undelL && ownKey(undelL, c.id) ? undelL[c.id] : '');
+    b = undelList(undelR && ownKey(undelR, c.id) ? undelR[c.id] : '');
+    live = cfMine(c) ? b : a;
+    other = cfMine(c) ? a : b;
+    back = false;
+    for (j = 0; j < live.length; j++) if (other.indexOf(live[j]) < 0) back = true;
+    if (!back && prev) for (j = 0; j < prev.length; j++)
+      if (prev[j] && prev[j].id === c.id && prev[j].collection === c.collection && prev[j].why === 'back' &&
+          String(prev[j].deletedAt) === String(c.deletedAt)) back = true;
+    c.why = back ? 'back' : 'edit';
+  }
+}
+
+/** Запись удалили НА ОБОИХ устройствах. Спор стоял здесь — об удалении,
+ *  сделанном здесь (запись до решения лежала в списках версией с Диска), — а
+ *  теперь её удалили и там. Слияние видит в документе запись, не равную
+ *  отпечатку прошлого обмена (он у удержанного спора не сдвигается), и
+ *  читает это как «изменили здесь». Но здесь её не меняли: в списках лежит та
+ *  самая версия с Диска, которую удаливший там видел. Спора нет — удаление
+ *  проходит, как проходило до мерки А8. Тронули её здесь, пока спор ждал, —
+ *  отпечаток другой, и спор остаётся. Сколько споров снято. */
+function famBoth(merged, remoteTombs){
+  var prev = syncStatus ? syncStatus.conflicts : null, cs = merged.conflicts || [], n = 0, i, j, c, p, list;
+  if (!prev || !remoteTombs) return 0;
+  for (i = cs.length - 1; i >= 0; i--){
+    c = cs[i];
+    if (c.kind !== 'edit-vs-delete' || !c.local || c.remote || !ownKey(remoteTombs, c.id)) continue;
+    p = null;
+    for (j = 0; j < prev.length; j++)
+      if (prev[j] && prev[j].id === c.id && prev[j].collection === c.collection && cfMine(prev[j]) && prev[j].remote) p = prev[j];
+    if (!p || recHash(c.local) !== recHash(p.remote)) continue;
+    list = merged.doc[c.collection] || [];
+    for (j = list.length - 1; j >= 0; j--) if (list[j] && list[j].id === c.id) list.splice(j, 1);
+    list = (merged.send && merged.send[c.collection]) || [];
+    for (j = list.length - 1; j >= 0; j--) if (list[j] && list[j].id === c.id) list.splice(j, 1);
+    if (merged.meta) delete merged.meta[c.id];
+    if (merged.send && merged.send.syncMeta) delete merged.send.syncMeta[c.id];
+    if (merged.stats && merged.stats[c.collection]){ merged.stats[c.collection].conflicts--; merged.stats[c.collection].deleted++; }
+    cs.splice(i, 1);
+    n++;
+  }
+  return n;
+}
+
+/** Записи семьи, удалённые навсегда ОТДЕЛЬНО, пока спор ждал: в запомненном
+ *  споре запись названа семьёй со временем её надгробия, а сейчас надгробие
+ *  на одной из сторон несёт ДРУГОЕ время — её удалили ещё раз, сами (здесь
+ *  dropFrom() ставит «сейчас», с Диска приходит время другого устройства).
+ *  Такая запись в семью больше не берётся: её удаление едет своим чередом.
+ *  Время того же удаления совпадает всегда: устройство помнит надгробие
+ *  таким, каким его отдало слияние. id → 1. */
+function famApart(localTombs, remoteTombs){
+  var prev = syncStatus ? syncStatus.conflicts : null, out = {}, i, j, f, t, a, b;
+  if (!prev) return out;
+  for (i = 0; i < prev.length; i++){
+    f = (prev[i] && prev[i].kind === 'edit-vs-delete' && prev[i].family) || [];
+    /* спор был об удалении, сделанном ЗДЕСЬ, а теперь запись удалили и на другом
+       устройстве — целиком, вместе с её записями: это их семья, а не отдельные удаления */
+    if (f.length && cfMine(prev[i]) && remoteTombs && ownKey(remoteTombs, prev[i].id)) continue;
+    for (j = 0; j < f.length; j++){
+      t = String(f[j].t || '');
+      if (!t || typeof f[j].id !== 'string') continue;
+      a = localTombs && ownKey(localTombs, f[j].id) ? String(localTombs[f[j].id]) : '';
+      b = remoteTombs && ownKey(remoteTombs, f[j].id) ? String(remoteTombs[f[j].id]) : '';
+      if ((a && a !== t) || (b && b !== t)) out[f[j].id] = 1;
+    }
+  }
+  return out;
+}
+
+/** Сразу после слияния и syncDelMine(): поднять спор по удалённой записи, к
+ *  которой добавили новое; удержать семью каждого спора «удалили — изменили»;
+ *  не отправлять на Диск запись без родителя; назвать причину спора.
+ *  Когда слияние ничего не удалило и споров таких нет — не делает ничего. */
+function syncDelFamily(merged, localDoc, remoteDoc, remoteTombs, metaL, metaR, undelL, undelR, localTombs){
+  var cs = merged.conflicts || [], dead = 0, any = false, off = {}, skip = {}, i, k, c, L, R, cand, D, fam, x, list, apart;
+  famBoth(merged, remoteTombs);
+  for (i = 0; i < cs.length; i++) if (cs[i].kind === 'edit-vs-delete') any = true;
+  for (k in merged.stats) if (ownKey(merged.stats, k) && merged.stats[k] && merged.stats[k].deleted) dead += merged.stats[k].deleted;
+  if (!any && !dead) return;
+  metaL = metaL || (localDoc && localDoc.syncMeta) || {};
+  metaR = metaR || (remoteDoc && remoteDoc.syncMeta) || {};
+  L = famIdx(localDoc);
+  R = famIdx(remoteDoc);
+  cand = famCands(merged, L, R);
+  /* поднятый спор «удалили здесь» удерживается так же, как найденный слиянием */
+  if (dead && famRaise(merged, cand, metaL, metaR)) syncDelMine(merged, remoteDoc, remoteTombs);
+  for (i = 0; i < cs.length; i++) skip[cs[i].id] = 1;
+  /* удалённое отдельно, пока спор ждал, семьёй больше не считается */
+  apart = famApart(localTombs, remoteTombs);
+  for (k in apart) if (ownKey(apart, k)) skip[k] = 1;
+  D = famIdx(merged.doc);
+  for (i = 0; i < cs.length; i++){
+    c = cs[i];
+    if (c.kind !== 'edit-vs-delete') continue;
+    if (!ownKey(R, c.id)) off[c.id] = 1;
+    fam = famOf(c, cand, skip, D);
+    list = [];
+    for (k = 0; k < fam.length; k++){
+      x = cand[fam[k]];
+      famPut(merged, x, fam[k], metaL, metaR, false);
+      if (!(remoteTombs && ownKey(remoteTombs, fam[k]))) famTombHold(merged, fam[k]);
+      if (!x.R) off[fam[k]] = 1;
+      list.push({ collection: x.col, id: fam[k], t: x.t });
+    }
+    if (list.length) c.family = list;
+    famWasKeep(c);
+  }
+  famSendTrim(merged, R, off);
+  famWhy(cs, undelL, undelR);
+}
+
+/** Кто уже бывал семьёй этого спора — помнится от оборота к обороту (c.was).
+ *  Запись семьи, которую тронули здесь, пока спор ждал, надгробие теряет
+ *  (touch) и из семьи выходит, но НОВОЙ от этого не становится. */
+function famWasKeep(c){
+  var prev = syncStatus ? syncStatus.conflicts : null, was = [], i, j, f;
+  if (prev) for (i = 0; i < prev.length; i++)
+    if (prev[i] && prev[i].id === c.id && prev[i].collection === c.collection && prev[i].kind === 'edit-vs-delete' &&
+        String(prev[i].deletedAt) === String(c.deletedAt) && prev[i].was) was = prev[i].was.slice();
+  f = c.family || [];
+  for (j = 0; j < f.length; j++) if (was.indexOf(f[j].id) < 0) was.push(f[j].id);
+  if (was.length) c.was = was;
+}
+
+/** Входит ли запись в семью спора. */
+function famHas(c, id){
+  var f = (c && c.family) || [], i;
+  for (i = 0; i < f.length; i++) if (f[i].id === id) return true;
+  return false;
+}
+
+/** Запись семьи, которая есть в документе устройства. Удержанная спором —
+ *  есть всегда; нет её — значит, её удалили здесь отдельно, пока спор ждал. */
+function famRec(f){
+  var list = state[f.collection] || [], i;
+  for (i = 0; i < list.length; i++) if (list[i] && list[i].id === f.id) return list[i];
+  return null;
+}
+/** Семья спора, какая она сейчас: без записей, удалённых здесь отдельно. */
+function famLive(c){
+  var f = (c && c.family) || [], out = [], i;
+  for (i = 0; i < f.length; i++) if (famRec(f[i])) out.push(f[i]);
+  return out;
+}
+
+/** «Оставить»: вместе с записью возвращается её семья — отменяется каждое
+ *  удаление, по ТОМУ времени, с каким запись вошла в семью. Удаление с другим
+ *  временем — другое удаление: его отмена не трогает (правило UNDELETE), и
+ *  запись, которую удалили отдельно, пока спор ждал, не возвращается.
+ *  Сами надгробия не трогаются: отменённое отбросит слияние. */
+function famBack(c){
+  var f = famLive(c), i;
+  for (i = 0; i < f.length; i++) undelNote(f[i].id, String(f[i].t || ''));
+}
+
+/** «Удалить»: что уйдёт вместе с записью — всё, что на неё опирается: живое
+ *  (trashCascade) и лежащее в корзине (trashAddOrphans). Считается ДО снятия. */
+function famGonePlan(c){
+  var plan = trashCascade(state, c.collection, c.id);
+  trashAddOrphans(state, plan);
+  return plan;
+}
+function famGone(plan){
+  var k;
+  for (k in plan) if (own(plan, k) && plan[k].length) trashDropOne(k, plan[k]);
+}
+/** Два списка файлов — одним, без повторов. */
+function famFiles(a, b){
+  var out = a.slice(), i;
+  for (i = 0; i < b.length; i++) if (out.indexOf(b[i]) < 0) out.push(b[i]);
+  return out;
+}
+
+/** Записи по видам — числами: { коллекция: сколько }. Выдача из нескольких
+ *  товаров — одна выдача, как везде (impCount). */
+function famCounts(items){
+  var by = {}, out = {}, i, col, r;
+  for (i = 0; i < items.length; i++){
+    col = items[i].collection;
+    if (!own(by, col)) by[col] = [];
+    r = famRec(items[i]);
+    by[col].push(r || { id: items[i].id });
+  }
+  for (col in by) if (own(by, col)) out[col] = impCount(col, by[col]);
+  return out;
+}
+/** «возвратов долга — 2 (1 — новый), выдач — 1»: виды по порядку окна
+ *  импорта; в скобках — сколько из них НОВЫХ, то есть записанных на другом
+ *  устройстве, которых удаливший не видел (слово владельца 07.10.2026). */
+function famKindList(items){
+  var all = famCounts(items), fresh = [], out = [], i, col, n, s;
+  for (i = 0; i < items.length; i++) if (items[i].fresh) fresh.push(items[i]);
+  fresh = famCounts(fresh);
+  for (i = 0; i < IMP_KINDS.length; i++){
+    col = IMP_KINDS[i];
+    if (!(all[col] > 0)) continue;
+    n = fresh[col] > 0 ? fresh[col] : 0;
+    s = esc(tr('imp.g.' + col)) + ' — <b>' + all[col] + '</b>';
+    if (n) s += ' (' + esc(n === 1 ? (col === 'transactions' ? tr('cf.famNewOneF', { n: n }) : tr('cf.famNewOne', { n: n })) : tr('cf.famNewMany', { n: n })) + ')';
+    out.push(s);
+  }
+  return out.join(', ');
+}
+/** Записи, о которых спор, кроме самой спорной: её семья (удалённое вместе
+ *  с ней) и всё, что опирается на неё сейчас, — в том числе добавленное
+ *  позже. Оба варианта окна называют ОДНО множество: что останется вместе
+ *  с ней и что уйдёт вместе с ней. */
+function famItems(c){
+  var items = famLive(c), seen = {}, plan = famGonePlan(c), k, i;
+  seen[c.id] = 1;
+  for (i = 0; i < items.length; i++) seen[items[i].id] = 1;
+  /* fresh — новая запись: удаления у неё нет вовсе и семьёй спора она не бывала
+     (удаливший её не видел) */
+  for (k in plan) if (own(plan, k))
+    for (i = 0; i < plan[k].length; i++) if (!own(seen, plan[k][i])){
+      seen[plan[k][i]] = 1;
+      items.push({ collection: k, id: plan[k][i],
+                   fresh: !own(state.syncTombs, plan[k][i]) && (c.was || []).indexOf(plan[k][i]) < 0 });
+    }
+  return items;
+}
+/** Ответ по записи — это ответ и по вопросам «быть или не быть» о записях,
+ *  названных в её окне (items — famItems(), снятые ДО решения): у них тот же
+ *  ответ. Иначе нерешённый спор по выдаче вернул бы товар, который владелец
+ *  велел удалить, а «Оставить» товар оставляло бы по вопросу на каждую его
+ *  выдачу — так бывает, когда из корзины вернули товар вместе с выдачами.
+ *  Спор о ЗНАЧЕНИИ записи семьи (разные суммы на двух устройствах) — другой
+ *  вопрос (слово владельца 07.10.2026): «Оставить» его не трогает, он ждёт
+ *  своего ответа. «Удалить» его снимает: записи больше нет, спорить не о чем —
+ *  иначе он вернул бы и запись, и ту, которую владелец велел удалить. */
+function famSame(c, items, pick){
+  var l = syncStatus.conflicts, ids = {}, i, x;
+  for (i = 0; i < items.length; i++) ids[items[i].id] = 1;
+  for (i = l.length - 1; i >= 0; i--){
+    x = l[i];
+    if (!own(ids, x.id) || (x.id === c.id && x.collection === c.collection)) continue;
+    if (x.kind !== 'edit-vs-delete'){
+      if (pick !== 'gone') continue;
+      cfGoneBase(x);
+      l.splice(i, 1);
+      continue;
+    }
+    if (pick === 'back'){ undelNote(x.id, String(x.deletedAt || '')); famBack(x); }
+    else cfGoneBase(x);
+    l.splice(i, 1);
+  }
+}
+/** Окно спора, вариант «Оставить»: что останется вместе с записью. */
+function famKeepHTML(c){
+  var items = famItems(c);
+  return items.length ? '. ' + tr('cf.famKeep', { list: famKindList(items) }) : '';
+}
+/** Окно спора, вариант «Удалить»: что будет удалено вместе с записью. */
+function famGoneHTML(c){
+  var items = famItems(c);
+  return items.length ? '. ' + tr('cf.famGone', { list: famKindList(items) }) : '';
+}
+
+/** Что случилось на другой стороне — словами окна. Спор, запомненный до этой
+ *  задачи, причины не несёт: о нём говорится как прежде. */
+function cfWhat(c){
+  if (c.why === 'back') return tr('cf.whatBack');
+  if (c.why === 'child') return tr('cf.whatChild');
+  if (c.why === 'edit') return tr('cf.whatEdit');
+  return tr('cf.whatAny');
+}
+/** Заголовок окна на удалившем устройстве — по тому, что было. */
+function cfTitleHere(c){
+  if (c.why === 'back') return tr('cf.delTitleHereBack');
+  if (c.why === 'child') return tr('cf.delTitleHereChild');
+  return tr('cf.delTitleHere');
+}
+/** Одна причина на все споры списка — или 'mix'. Спор без причины читается
+ *  как прежде — «вернули». */
+function cfWhyAll(l){
+  var w = '', i, x;
+  for (i = 0; i < l.length; i++){
+    x = l[i].why || 'back';
+    if (w && w !== x) return 'mix';
+    w = x;
+  }
+  return w || 'back';
+}
+/* ++++++ DISPUTE FAMILY END ++++++ */
 
 function row(o){
   o = cfRowMark(o);   /* ++++++ DISPUTE HOLD ++++++ строка спорной записи — с пометкой */
@@ -25217,7 +26697,9 @@ function expHintText(){
     else if (er.kind === 'own' && f.cur === state.settings.baseCurrency)
       /* валюта ввода записи сама стала основной: «1 USD = 3.6725 USD» было бы
          бессмыслицей — сказано словами, откуда такое число */
-      out.push(tr('exp.editOwnBase', { cur: esc(f.cur), k: esc(trimNum(er.r)) }));
+      out.push(er.was   /* ++++++ EXP RATE WAS ++++++ те же слова, что у строки «курс:» в списке */
+        ? tr('exp.editOwnWas', { rate: '1 ' + esc(f.cur) + ' = ' + esc(trimNum(er.r)) + ' ' + esc(er.was) })
+        : tr('exp.editOwnBase', { cur: esc(f.cur), k: esc(trimNum(er.r)) }));
     else if (er.kind === 'own') out.push(tr('exp.editOwn', { rate: '1 ' + esc(f.cur) + ' = ' + esc(trimNum(er.r)) +
                                                             ' ' + esc(state.settings.baseCurrency) }));
     else if (er.kind === 'today') out.push(tr('exp.editToday', { cur: esc(f.cur) }));
@@ -30601,6 +32083,7 @@ function handleAct(act, arg, e, srcEl){
     var a = srcEl.closest('[data-banner]');
     if (a && a.getAttribute('data-banner') === 'sync-conf') cfFoldNow();   /* ++++++ OLD CORE ++++++ Г18 */
     if (a && a.getAttribute('data-banner') === 'sync-up') syncUpClose();   /* ++++++ OLD CORE ++++++ насовсем */
+    if (a && a.getAttribute('data-banner') === 'rate-both') rateBothClose();   /* ++++++ SETTINGS MERGE ++++++ прочитано */
     if (a) a.remove();
     return;
   }
@@ -31096,6 +32579,10 @@ document.addEventListener('change', function(e){
 }, false);
 $('importInput').addEventListener('change', function(){
   if (this.files && this.files[0]) importBackup(this.files[0]);
+  /* ++++++ IMPORT TRUTH ++++++ браузер сообщает о выборе, только когда значение поля изменилось:
+     без сброса повторный выбор ТОГО ЖЕ файла — «вернул недостающее», потом
+     «заменить» той же копией, или просто после «Отмены» — не делал ничего, молча */
+  this.value = '';
 });
 /* ++++++ DISPLAY CURRENCY ++++++ */
 document.addEventListener('keydown', function(e){
@@ -32094,8 +33581,17 @@ function cfDelDecide(c, pick){
      вернуться на Диск с устройства, где запись ещё жива. Снимается ДО удаления
      записи: потом спросить её файлы будет не у кого. */
   var files = pick === 'gone' ? attIdsOf(cfFind(c)) : [];
+  /* ++++++ DISPUTE FAMILY ++++++ «Удалить»: что уйдёт вместе с записью, считается ДО её снятия —
+     потом спросить, кто на неё опирался, будет не у кого. Запись без детей остаётся висячей
+     ссылкой, и validate() выбросил бы её молча. Записи, названные в окне, тоже снимаются
+     ДО решения: споры о них получают тот же ответ (famSame). */
+  var same = famItems(c);
+  var kin = pick === 'gone' ? famGonePlan(c) : null;
+  if (kin) files = famFiles(files, trashAttIds(state, kin));
   if (pick === 'back') undelNote(c.id, String(c.deletedAt || ''));
   else dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
+  if (pick === 'back') famBack(c); else famGone(kin);   /* ++++++ DISPUTE FAMILY ++++++ */
+  famSame(c, same, pick);
   if (pick === 'gone') cfGoneBase(c);   /* ++++++ DISPUTE HOLD ++++++ удаление уезжает, спор не возвращается */
   cfDone(c);
   /* файлы — прежним путём и после сохранения: ссылка уходит с диска раньше байтов */
@@ -32127,14 +33623,14 @@ function cfDelArm(names){
 function cfDeleteSheet(c){
   var here = cfMine(c);   /* ++++++ DISPUTE HOLD ++++++ удалили здесь, изменили на другом устройстве: запись до решения видна и здесь */
   var h = '<div class="note">' + tr(here ? 'cf.delAskHere' : 'cf.delAsk',
-            { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))) }) + '</div>' +
+            { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))), what: esc(cfWhat(c)) }) + '</div>' +   /* ++++++ DISPUTE FAMILY ++++++ */
     '<div class="cfrow">' +
       '<label class="cfopt"><input type="radio" name="cfdel" value="back"><span>' + esc(tr('cf.optKeep')) +
-        '<small>' + esc(tr('cf.optKeepNote')) + '</small></span></label>' +
+        '<small>' + esc(tr('cf.optKeepNote')) + famKeepHTML(c) + '</small></span></label>' +
       '<label class="cfopt"><input type="radio" name="cfdel" value="gone"><span>' + esc(tr('cf.optGone')) +
-        '<small>' + esc(tr('cf.optGoneNote')) + '</small></span></label></div>';
+        '<small>' + esc(tr('cf.optGoneNote')) + famGoneHTML(c) + '</small></span></label></div>';
   dialog({
-    title: tr(here ? 'cf.delTitleHere' : 'wipe.cDelTitle'),
+    title: here ? cfTitleHere(c) : tr('wipe.cDelTitle'),   /* ++++++ DISPUTE FAMILY ++++++ */
     sub: esc(cfTitle(c)),
     html: h,
     cancelLabel: tr('cf.later'),
@@ -33697,6 +35193,7 @@ function boot(){
   /* ++++++ CONFLICT KEEP ++++++ спор, оставшийся с прошлого раза, виден сразу, и без сети
      тоже — по той же причине, что и строки выше: banner() кладёт узел в #alerts. */
   syncBarPaint();
+  rateBothPaint();   /* ++++++ SETTINGS MERGE ++++++ курс поправили на двух устройствах — не прочитано с прошлого раза */
   /* ++++++ SYNC ++++++ по той же причине, что и две строки выше: сначала
      показать документ, потом идти в сеть. */
   syncBoot();
