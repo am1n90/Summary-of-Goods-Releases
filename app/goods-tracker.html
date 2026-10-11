@@ -2448,6 +2448,10 @@ var STR = {
                        ru:'Чтобы вернуть их, войдите той же учётной записью.' },
 'wipe.devicePending':{ en:'Unsent changes: <b>{n}</b>. They will be lost.',
                        ru:'Не отправлено изменений: <b>{n}</b>. Они будут потеряны.' },
+/* ++++++ VALUE DISPUTE ++++++ (слово владельца 10.10.2026) у спора версия этого устройства на Диск не уходила */
+'wipe.deviceDisputes':{ en:'Unresolved disputes: <b>{n}</b>. The values this device holds in them are recorded only here and will be lost. Choose what to keep first.',
+                       ru:'Нерешённых споров: <b>{n}</b>. Значения этого устройства в них записаны только здесь и пропадут. Сначала выберите, что оставить.' },
+'wipe.deviceDisputesGo':{ en:'Resolve disputes', ru:'Решить споры' },
 'wipe.deviceOk':     { en:'Clear', ru:'Очистить' },
 
 'wipe.allTitle':     { en:'Delete data everywhere?', ru:'Удалить данные везде?' },
@@ -3126,14 +3130,18 @@ var STR = {
                           'Если запись за это время вернут, они вернутся вместе с ней. Потом стираются и там.' },   /* ++++++ DISPUTE HOLD ++++++ шестой абзац — только там, где файлы ездят на Диск */
 'faq.a.wipe1gd':     { en:'«Clear this device» removes the records <b>from here only</b>. On Google ' +
                           'Drive and on your other devices they stay, and signing in with the same ' +
-                          'account brings them back.',
+                          'account brings them back. The exception is an unresolved dispute: the value this ' +
+                          'device holds in it is recorded only here and will be lost; the window says how many there are.',
                        ru:'«Очистить это устройство» убирает записи <b>только отсюда</b>. На Google ' +
                           'Диске и на других ваших устройствах они остаются, и вход той же учётной ' +
-                          'записью возвращает их обратно.' },
+                          'записью возвращает их обратно. Исключение — нерешённый спор: значение, которое ' +
+                          'записано в нём на этом устройстве, есть только здесь и пропадёт; окно очистки называет число таких споров.' },
 'faq.a.wipe1gh':     { en:'«Clear this device» removes the records <b>from here only</b>. In the ' +
-                          'repository and on your other devices they stay.',
+                          'repository and on your other devices they stay. The exception is an unresolved dispute: the value this ' +
+                          'device holds in it is recorded only here and will be lost; the window says how many there are.',
                        ru:'«Очистить это устройство» убирает записи <b>только отсюда</b>. В ' +
-                          'репозитории и на других ваших устройствах они остаются.' },
+                          'репозитории и на других ваших устройствах они остаются. Исключение — нерешённый спор: значение, которое ' +
+                          'записано в нём на этом устройстве, есть только здесь и пропадёт; окно очистки называет число таких споров.' },
 'faq.a.wipe2gd':     { en:'That is why clearing also signs you out: otherwise the records would come ' +
                           'back on the very first sync, and the button would look broken.',
                        ru:'Поэтому очистка ещё и отменяет вход: иначе записи вернулись бы при ' +
@@ -3630,6 +3638,16 @@ var STR = {
 'cf.famNewOne':  { en:'{n} new', ru:'{n} — новый' },
 'cf.famNewOneF': { en:'{n} new', ru:'{n} — новая' },
 'cf.famNewMany': { en:'{n} new', ru:'{n} — новые' },
+/* ++++++ VALUE DISPUTE ++++++ «Оставить»: спор о значении, стоявший до удаления, вернётся — окно называет его; «Сразу после этого»: окно спора о значении открывается следом (слова владельца 10.10.2026) */
+'cf.valSum':     { en:'Right after this we will ask which {of} amount is right: {a} or {b}.',
+                   ru:'Сразу после этого спросим, какая сумма {of} верна: {a} или {b}.' },
+'cf.valOne':     { en:'Right after this we will ask which is right — {label}: {a} or {b}.',
+                   ru:'Сразу после этого спросим, что верно — {label}: {a} или {b}.' },
+'cf.valMany':    { en:'Right after this we will ask about the values recorded differently on the two devices: records — {n}.',
+                   ru:'Сразу после этого спросим о значениях, которые на двух устройствах записаны по-разному: записей — {n}.' },
+'cf.of.payments':  { en:'payment',   ru:'оплаты' },
+'cf.of.expenses':  { en:'expense',   ru:'расхода' },
+'cf.of.loans':     { en:'loan',      ru:'долга' },
 'cf.optKeep':    { en:'Keep it',                     ru:'Оставить' },
 'cf.optKeepNote':{ en:'the record stays on every device', ru:'запись останется на всех устройствах' },
 'cf.optGone':    { en:'Delete',                      ru:'Удалить' },
@@ -7120,8 +7138,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.31.0';
-var APP_BUILD = '2026-10-07T17:24:23.378Z';
+var APP_VERSION = '1.31.1';
+var APP_BUILD = '2026-10-11T07:32:45.513Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -13241,6 +13259,7 @@ function syncCycle(env, cb, attempt){
     syncDelMine(merged, remoteDoc, remoteTombs);   /* ++++++ DISPUTE HOLD ++++++ удаление с этого устройства не едет, пока спор не решён */
     syncDelFamily(merged, localDoc, remoteDoc, remoteTombs, env.meta ? env.meta() && env.meta().map : null,
                   remoteDoc ? remoteDoc.syncMeta : null, env.undel ? env.undel() : null, remoteUndel, env.tombs());   /* ++++++ DISPUTE FAMILY ++++++ спор держит запись вместе с её семьёй (А17, А18) */
+    syncValKeep(merged, localDoc, remoteDoc, env.meta ? env.meta() && env.meta().map : null);   /* ++++++ VALUE DISPUTE ++++++ спор о значении не пропадает вместе с удалением (Г33) */
     /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
        проверка, что внутри mergeSettings(), и другой она быть не может —
        иначе конверт уедет с меткой от чужих настроек, а внутри будут
@@ -21830,6 +21849,309 @@ function cfWhyAll(l){
 }
 /* ++++++ DISPUTE FAMILY END ++++++ */
 
+/* ================================= ++++++ VALUE DISPUTE ++++++ ==
+ * СПОР О ЗНАЧЕНИИ НЕ ПРОПАДАЕТ, КОГДА ЗАПИСЬ УДАЛИЛИ И ОСТАВИЛИ
+ * (находка Г33 аудита, слова владельца 07.10 и 10.10.2026).
+ *
+ * Спор о значении — «здесь 250, на другом устройстве 200» — держится двумя
+ * версиями записи: своя лежит в документе, чужая — на Диске. Удаление
+ * навсегда уничтожает одну из них (ту, что на удалившей стороне), и спор о
+ * значении сменяется спором «быть или не быть». Список споров устройства —
+ * то, что вернуло слияние, поэтому вторая сумма стиралась в этот миг, ещё
+ * до всякого ответа; «Оставить» возвращало запись с одной суммой, не спросив.
+ *
+ * Правило одно: СПОР «БЫТЬ ИЛИ НЕ БЫТЬ» ПОМНИТ СПОР О ЗНАЧЕНИИ, КОТОРЫЙ ОН
+ * СМЕНИЛ, И ПОСЛЕ «ОСТАВИТЬ» ВОЗВРАЩАЕТ ЕГО — С ОБЕИМИ СУММАМИ.
+ *   · память — обе версии записи — живёт на самом споре (vals), в списке
+ *     споров устройства (sync-v1.disputes). В документ, в копию и в файл
+ *     обмена не попадает; формат обмена прежний;
+ *   · «Оставить» делает то, что было до удаления: здесь — своя версия, на
+ *     Диске — чужая, отпечаток прошлого обмена прежний. Дальше спор о
+ *     значении ведёт обычный обмен, как любой другой;
+ *       – своя версия удалена здесь (на экране лежала версия с Диска) —
+ *         в документ возвращается своя;
+ *       – чужая версия удалена там (на Диске её больше нет) — ближайший
+ *         обмен кладёт её на Диск (back): здесь своя, на Диск — чужая, как
+ *         у всякого удержанного спора;
+ *   · «Удалить» уносит спор о значении вместе с записью, как и прежде;
+ *   · поля корзины значением не считаются: «Оставить» возвращает запись
+ *     живой, какой бы стороне она ни лежала в корзине.
+ * Движок слияния не тронут: всё делается после него, в окружении оборота.
+ */
+
+/* Поля корзины — не предмет спора о значении. */
+var VAL_SKIP = ['trashedAt', 'trashGroup'];
+
+/* Вид записи в родительном падеже — «какая сумма оплаты верна». Ключи —
+   литералами: test-dead считает ключ живым, когда видит его строкой в коде.
+   Возврата долга здесь нет (слово владельца 10.10.2026): править его в
+   программе нельзя, и такая фраза на экране не появилась бы. */
+var VAL_OF = { payments: 'cf.of.payments', expenses: 'cf.of.expenses', loans: 'cf.of.loans' };
+
+/** Копия записи без полей корзины. */
+function valClean(rec){
+  var o = JSON.parse(JSON.stringify(rec)), i;
+  for (i = 0; i < VAL_SKIP.length; i++) delete o[VAL_SKIP[i]];
+  return o;
+}
+
+/** Запись уходит навсегда (trashDropIds): спор о значении по ней запоминает
+ *  её НЫНЕШНЮЮ версию. Иначе сумма, поправленная здесь после последнего
+ *  обмена, пропала бы вместе с записью: память спора обновляет только обмен.
+ *  ids — { коллекция: [id] }. */
+function valSnap(ids){
+  var l = syncStatus ? syncStatus.conflicts : null, hit = false, i, x, r;
+  if (!l || !l.length || !ids) return;
+  for (i = 0; i < l.length; i++){
+    x = l[i];
+    if (!x || x.kind === 'edit-vs-delete' || !x.local) continue;
+    if (!own(ids, x.collection) || ids[x.collection].indexOf(x.id) < 0) continue;
+    r = cfFind(x);
+    if (!r) continue;
+    x.local = JSON.parse(JSON.stringify(r));
+    hit = true;
+  }
+  if (hit) syncDisputesSave(l);
+}
+
+/** Что устройство помнит о споре о значении по этой записи: сам спор о
+ *  значении — или память, которую уже несёт спор «быть или не быть». */
+function valMemo(prev, col, id){
+  var i, p, v;
+  for (i = 0; i < prev.length; i++){
+    p = prev[i];
+    if (!p) continue;
+    if (p.kind !== 'edit-vs-delete'){
+      if (p.id === id && p.collection === col && p.local && p.remote)
+        return { collection: col, local: p.local, remote: p.remote, localAt: p.localAt || '', remoteAt: p.remoteAt || '' };
+      continue;
+    }
+    v = (p.vals && ownKey(p.vals, id)) ? p.vals[id] : null;
+    if (v && v.collection === col && v.local && v.remote) return v;
+  }
+  return null;
+}
+
+/** Сразу после слияния, syncDelMine() и syncDelFamily():
+ *    1) спор «удалили — изменили» уносит с собой спор о значении, который
+ *       стоял по самой записи или по записи её семьи (vals). own — цела ли
+ *       своя версия в документе: решается один раз, в миг смены спора
+ *       (потом на её месте может лежать версия с Диска), и дальше помнится;
+ *    2) спор о значении, возвращённый после «Оставить», чья чужая версия
+ *       на Диск ещё не вернулась (back): слияние видит запись только здесь
+ *       и отправило бы свою — на Диск уходит чужая, спор держится. */
+function syncValKeep(merged, localDoc, remoteDoc, metaL){
+  var prev = syncStatus ? syncStatus.conflicts : null, cs = merged.conflicts || [], has = {}, i, j, c, f, v, L, R, D, p, list, rec, diff;
+  if (!prev || !prev.length) return;
+  L = famIdx(localDoc);
+  for (i = 0; i < cs.length; i++){
+    c = cs[i];
+    has[c.collection + ':' + c.id] = 1;
+    if (c.kind !== 'edit-vs-delete') continue;
+    f = [{ collection: c.collection, id: c.id }].concat(c.family || []);
+    for (j = 0; j < f.length; j++){
+      v = valMemo(prev, f[j].collection, f[j].id);
+      if (!v) continue;
+      if (!c.vals) c.vals = {};
+      c.vals[f[j].id] = { collection: v.collection, local: v.local, remote: v.remote, localAt: v.localAt || '', remoteAt: v.remoteAt || '',
+                          own: v.own === undefined ? ownKey(L, f[j].id) : !!v.own };
+    }
+  }
+  R = famIdx(remoteDoc);
+  D = famIdx(merged.doc);
+  for (i = 0; i < prev.length; i++){
+    p = prev[i];
+    if (!p || p.kind === 'edit-vs-delete' || p.back !== true || !p.remote) continue;
+    /* слияние нашло спор само, запись на Диске уже есть или здесь её больше нет — возвращать нечего */
+    if (ownKey(has, p.collection + ':' + p.id) || ownKey(R, p.id) || !ownKey(D, p.id) || D[p.id].col !== p.collection) continue;
+    rec = D[p.id].rec;
+    diff = mergeFieldsDiff(rec, p.remote);
+    if (!diff.length) continue;
+    /* на Диск — чужая версия; запись, которую слияние туда не отправляет (её
+       родитель удержан спором), ждёт: спор остаётся, вернётся следующим обменом */
+    list = (merged.send && merged.send[p.collection]) || [];
+    for (j = 0; j < list.length; j++) if (list[j] && list[j].id === p.id){
+      list[j] = p.remote;
+      if (merged.send.syncMeta){
+        if (p.remoteAt) merged.send.syncMeta[p.id] = p.remoteAt;
+        else delete merged.send.syncMeta[p.id];
+      }
+    }
+    cs.push({ id: p.id, kind: 'edit-vs-edit', collection: p.collection, local: rec, remote: p.remote,
+              localAt: modOf(p.id, metaL), remoteAt: p.remoteAt || '', fields: diff, remoteHash: recHash(p.remote), hold: true, back: true });
+    has[p.collection + ':' + p.id] = 1;
+    if (merged.stats && merged.stats[p.collection]) merged.stats[p.collection].conflicts++;
+  }
+}
+
+/** Память спора по записям окна — снимается ДО решения: своя (c) и та, что
+ *  несут споры «быть или не быть» о записях окна (их закроет famSame).
+ *  [{ id, v }] без повторов. */
+function valPlan(c, items){
+  var l = syncStatus.conflicts, ids = {}, seen = {}, out = [], i, x;
+  var take = function(x){
+    var k;
+    if (!x || !x.vals) return;
+    for (k in x.vals) if (ownKey(x.vals, k) && !ownKey(seen, k)){ seen[k] = 1; out.push({ id: k, v: x.vals[k] }); }
+  };
+  take(c);
+  for (i = 0; i < items.length; i++) ids[items[i].id] = 1;
+  for (i = 0; i < l.length; i++){
+    x = l[i];
+    if (x === c || x.kind !== 'edit-vs-delete' || !ownKey(ids, x.id)) continue;
+    take(x);
+  }
+  return out;
+}
+
+/** Две стороны возвращаемого спора: mine — версия этого устройства, theirs —
+ *  другого; put — свою надо вернуть в документ (сейчас там версия с Диска).
+ *  null — возвращать нечего: записи нет; значения сошлись; или запись здесь
+ *  тронули, пока спор ждал (надгробия уже нет) — тогда в документе свежая
+ *  правка, и затирать её памятью нельзя: её и чужую сведёт обычный обмен. */
+function valSides(id, v){
+  var cur = cfFind({ collection: v.collection, id: id }), mine, theirs;
+  if (!cur || !v.local || !v.remote) return null;
+  if (v.own){ mine = cur; theirs = valClean(v.remote); }
+  else {
+    if (!own(state.syncTombs, id)) return null;
+    mine = valClean(v.local);
+    theirs = cur;
+  }
+  if (!mergeFieldsDiff(mine, theirs).length) return null;
+  return { mine: mine, theirs: theirs, put: !v.own };
+}
+
+/** «Оставить»: спор о значении возвращается таким, каким стоял. Свою версию
+ *  в документ — тем же входом, что «Взять с другого» (validate); версия,
+ *  которую проверка не примет, не кладётся, и спор не возвращается. Чужую
+ *  версию, которой на Диске больше нет, вернёт ближайший обмен (back). */
+function valBackOne(id, v){
+  var s = valSides(id, v), col = v.collection, mine, x;
+  if (!s) return null;
+  mine = s.mine;
+  if (s.put){
+    if (syncTheirsTake({ collection: col, id: id, remote: mine })) return null;
+    touch(id);
+    mine = cfFind({ collection: col, id: id });
+  }
+  x = { id: id, kind: 'edit-vs-edit', collection: col, local: mine, remote: s.theirs,
+        localAt: modOf(id, state.syncMeta), remoteAt: v.remoteAt || '',
+        fields: mergeFieldsDiff(mine, s.theirs), remoteHash: recHash(s.theirs), hold: true };
+  if (!s.put) x.back = true;
+  return x;
+}
+/** Вернуть споры о значении в список — после того, как споры «быть или не
+ *  быть» по этим записям закрыты (famSame). Спор о значении, который стоит
+ *  по записи и сейчас, свежее памяти: он остаётся как есть. */
+function valBack(plan){
+  var l = syncStatus.conflicts, i, j, x, live;
+  for (i = 0; i < plan.length; i++){
+    live = false;
+    for (j = 0; j < l.length; j++)
+      if (l[j].id === plan[i].id && l[j].collection === plan[i].v.collection && l[j].kind !== 'edit-vs-delete') live = true;
+    if (live) continue;
+    x = valBackOne(plan[i].id, plan[i].v);
+    if (x) l.push(x);
+  }
+}
+
+/** О каких значениях спросим после «Оставить»: споры о значении, которые
+ *  вернутся, и те, что стоят по записям окна уже сейчас («Оставить» их не
+ *  трогает). [{ collection, mine, theirs }]. */
+function valAsks(c){
+  var items = famItems(c), plan = valPlan(c, items), l = syncStatus.conflicts, ids = {}, seen = {}, out = [], i, x, s;
+  ids[c.id] = 1;
+  for (i = 0; i < items.length; i++) ids[items[i].id] = 1;
+  for (i = 0; i < l.length; i++){
+    x = l[i];
+    if (x.kind === 'edit-vs-delete' || !ownKey(ids, x.id) || ownKey(seen, x.id) || !x.remote) continue;
+    seen[x.id] = 1;
+    out.push({ collection: x.collection, mine: cfHere(x), theirs: x.remote });
+  }
+  for (i = 0; i < plan.length; i++){
+    if (ownKey(seen, plan[i].id)) continue;
+    s = valSides(plan[i].id, plan[i].v);
+    if (!s) continue;
+    seen[plan[i].id] = 1;
+    out.push({ collection: plan[i].v.collection, mine: s.mine, theirs: s.theirs });
+  }
+  return out;
+}
+
+/** Окно спора, вариант «Оставить»: о чём спросим потом. Одна запись и одна
+ *  строка — с обоими значениями (слово владельца 10.10.2026: «Сразу после этого спросим,
+ *  какая сумма возврата верна: 250 или 200»; тем же днём — «Сразу после этого
+ *  спросим», раз окно открывается следом); больше — числом записей. */
+function valKeepHTML(c){
+  var asks = valAsks(c), lead, a, rows, of;
+  if (!asks.length) return '';
+  lead = famItems(c).length ? ' ' : '. ';
+  if (asks.length === 1){
+    a = asks[0];
+    rows = cfRows(mergeFieldsDiff(a.mine || {}, a.theirs || {}));
+    if (rows.length === 1){
+      of = (ownKey(VAL_OF, a.collection) && ownKey(CF_LABEL, rows[0][0]) && CF_LABEL[rows[0][0]] === 'cf.f.amount') ? VAL_OF[a.collection] : '';
+      if (of) return lead + tr('cf.valSum', { of: esc(tr(of)), a: cfValue(rows[0], a.mine), b: cfValue(rows[0], a.theirs) });
+      return lead + tr('cf.valOne', { label: esc(cfLabel(rows[0])), a: cfValue(rows[0], a.mine), b: cfValue(rows[0], a.theirs) });
+    }
+  }
+  return lead + tr('cf.valMany', { n: asks.length });
+}
+
+/** Окно «Очистить это устройство»: нерешённые споры названы числом (слово
+ *  владельца 10.10.2026: «молча терять сумму нельзя»). У удержанного спора
+ *  версия этого устройства на Диск не уходила — после очистки её нет нигде. */
+function valWipeHTML(){
+  var n = syncStatus.conflicts.length;
+  /* Очистку окно не запрещает (слово владельца 10.10.2026): рядом — кнопка
+     «Решить споры». Ключ у неё свой, `disputes`: лист закрывается и отдаёт его
+     вызывающему, а тот открывает окно спора. */
+  return n ? '<div class="note warn" data-val="wipe">' + tr('wipe.deviceDisputes', { n: n }) +
+    '<button type="button" class="btn sec block" data-key="disputes">' + esc(tr('wipe.deviceDisputesGo')) + '</button></div>' : '';
+}
+
+/* Полоса «Удалено навсегда: N» помнит, о каких записях говорит (слово
+   владельца 10.10.2026): после «Оставить» вернувшиеся записи из числа уходят,
+   а если их не осталось — уходит и полоса. Живёт она те же шесть секунд, что
+   и прежде; память — модульная переменная, не документ и не хранилище. */
+var valPurged = null;
+var VAL_PURGED_MS = 6000;
+
+function valPurgedPaint(){
+  banner('purged', 'ok', esc(tr('msg.purged', { n: nq(valPurged.n, 'record') })));
+}
+
+/** Сказать «Удалено навсегда: N» и запомнить, о каких записях речь.
+ *  ids — { коллекция: [id] }, то же, что получил trashDropIds(). */
+function valPurgedSay(ids, n){
+  var mark = { ids: JSON.parse(JSON.stringify(ids || {})), n: n };
+  valPurged = mark;
+  valPurgedPaint();
+  setTimeout(function(){
+    if (valPurged !== mark) return;        /* полоса уже о другом удалении */
+    valPurged = null; removeBanner('purged');
+  }, VAL_PURGED_MS);
+}
+
+/** «Оставить»: записи, которые снова есть в документе, из числа уходят. */
+function valPurgedBack(){
+  var p = valPurged, back = 0, k, i, keep;
+  if (!p) return;
+  for (k in p.ids) if (own(p.ids, k)){
+    keep = [];
+    for (i = 0; i < p.ids[k].length; i++){
+      if (cfFind({ collection: k, id: p.ids[k][i] })) back++; else keep.push(p.ids[k][i]);
+    }
+    p.ids[k] = keep;
+  }
+  if (!back) return;
+  p.n -= back;
+  if (p.n <= 0){ valPurged = null; removeBanner('purged'); return; }
+  valPurgedPaint();
+}
+/* ++++++ VALUE DISPUTE END ++++++ */
+
 function row(o){
   o = cfRowMark(o);   /* ++++++ DISPUTE HOLD ++++++ строка спорной записи — с пометкой */
   var tag = o.act ? 'button' : 'div';
@@ -28563,6 +28885,7 @@ function trashPurgeSynced(){
  *  раньше, чем гибнут байты (хрупкое место 12). */
 function trashDropIds(ids, aged){
   var att = trashAttIds(state, ids), k;
+  valSnap(ids);   /* ++++++ VALUE DISPUTE ++++++ ДО снятия: потом спросить её сумму будет не у кого */
   for (k in ids) if (own(ids, k)) trashDropOne(k, ids[k]);
   /* ++++++ UNDELETE ++++++ уборка по сроку: удаление помечено временем, когда запись
      ушла в корзину. До save(): он — в commitThenDrop() ниже. */
@@ -28659,7 +28982,7 @@ function trashForeverConfirm(title, ids, n, orph){
     tr('dlg.foreverOk'), true).then(function(okd){
       if (!okd) return;
       trashDropIds(ids);
-      toast(tr('msg.purged', { n: nq(n, 'record') }), 'ok');
+      valPurgedSay(ids, n);   /* ++++++ VALUE DISPUTE ++++++ после «Оставить» вернувшиеся записи из числа уходят */
     });
 }
 
@@ -31790,7 +32113,8 @@ function wipeNumsHTML(files){
  *  потеря: её называют числом ДО нажатия, а не обнаруживают потом
  *  соседом. Пусто — строки нет вовсе (область 44). */
 function wipeLossHTML(){
-  var n = wipeDeviceLoss(syncCfgFull() ? syncPending() : 0);
+  /* ++++++ VALUE DISPUTE ++++++ без спорных записей, как на «Аккаунте»: их число стоит наверху окна своей строкой */
+  var n = wipeDeviceLoss(syncCfgFull() ? syncPendingPlain() : 0);
   return n ? '<p>' + tr('wipe.devicePending', { n: nq(n, 'change') }) + '</p>' : '';
 }
 
@@ -31817,6 +32141,7 @@ function wipeDevice(){
      по той же причине: выход из Google бывает только в продуктовой. */
   var body = '<div class="note info">' +
       tr(modeIsProduct() ? 'wipe.deviceKeep' : 'wipe.deviceKeepGh') + '</div>' +
+    valWipeHTML() +   /* ++++++ VALUE DISPUTE ++++++ версия этого устройства в споре живёт только здесь; наверху — окно длиннее экрана */
     wipeNumsHTML('') +
     '<p>' + esc(tr(modeIsProduct() ? 'wipe.deviceSignout' : 'wipe.deviceSignoutGh')) +
       (modeIsProduct() ? ' ' + esc(tr('wipe.deviceBack')) : '') + '</p>' +
@@ -31837,6 +32162,7 @@ function wipeDevice(){
   dialog({ title: tr('wipe.deviceTitle'), html: body,
            buttons: [{ key: 'ok', label: tr('wipe.deviceOk'), variant: 'primary' }]
          }).then(function(okd){
+    if (okd === 'disputes'){ syncConflictSheet(); return; }   /* ++++++ VALUE DISPUTE ++++++ «Решить споры»: окно очистки закрыто, открыто окно спора */
     if (okd !== 'ok') return;
     /* Отложенный обмен отменяется ПЕРВЫМ: он мог бы уехать с
        промежуточным состоянием документа. */
@@ -33549,7 +33875,8 @@ function cfApply(c, rows, picks){
  *  споры остались — показать следующий. */
 function cfDone(c){
   var i, l = syncStatus.conflicts;
-  for (i = l.length - 1; i >= 0; i--) if (l[i].id === c.id && l[i].collection === c.collection) l.splice(i, 1);
+  /* ++++++ VALUE DISPUTE ++++++ по виду спора: после «Оставить» по той же записи остаётся спор о значении */
+  for (i = l.length - 1; i >= 0; i--) if (l[i].id === c.id && l[i].collection === c.collection && l[i].kind === c.kind) l.splice(i, 1);
   syncDisputesSave(l);
   syncBarPaint();
   commit();
@@ -33586,13 +33913,16 @@ function cfDelDecide(c, pick){
      ссылкой, и validate() выбросил бы её молча. Записи, названные в окне, тоже снимаются
      ДО решения: споры о них получают тот же ответ (famSame). */
   var same = famItems(c);
+  var vals = pick === 'back' ? valPlan(c, same) : [];   /* ++++++ VALUE DISPUTE ++++++ «Оставить»: какие споры о значении вернуть — считается ДО решения */
   var kin = pick === 'gone' ? famGonePlan(c) : null;
   if (kin) files = famFiles(files, trashAttIds(state, kin));
   if (pick === 'back') undelNote(c.id, String(c.deletedAt || ''));
   else dropFrom(c.collection, function(x){ return !x || x.id !== c.id; });
   if (pick === 'back') famBack(c); else famGone(kin);   /* ++++++ DISPUTE FAMILY ++++++ */
   famSame(c, same, pick);
+  valBack(vals);   /* ++++++ VALUE DISPUTE ++++++ после famSame: споры «быть или не быть» по этим записям уже закрыты */
   if (pick === 'gone') cfGoneBase(c);   /* ++++++ DISPUTE HOLD ++++++ удаление уезжает, спор не возвращается */
+  if (pick === 'back') valPurgedBack();   /* ++++++ VALUE DISPUTE ++++++ полоса «Удалено навсегда» не называет удалённым то, что осталось */
   cfDone(c);
   /* файлы — прежним путём и после сохранения: ссылка уходит с диска раньше байтов */
   if (files.length){ commitThenDrop(files); attTombLater(files); }   /* ++++++ DISPUTE HOLD ++++++ */
@@ -33626,7 +33956,7 @@ function cfDeleteSheet(c){
             { when: esc(fmtDateLong(String(c.deletedAt || '').slice(0, 10))), what: esc(cfWhat(c)) }) + '</div>' +   /* ++++++ DISPUTE FAMILY ++++++ */
     '<div class="cfrow">' +
       '<label class="cfopt"><input type="radio" name="cfdel" value="back"><span>' + esc(tr('cf.optKeep')) +
-        '<small>' + esc(tr('cf.optKeepNote')) + famKeepHTML(c) + '</small></span></label>' +
+        '<small>' + esc(tr('cf.optKeepNote')) + famKeepHTML(c) + valKeepHTML(c) + '</small></span></label>' +
       '<label class="cfopt"><input type="radio" name="cfdel" value="gone"><span>' + esc(tr('cf.optGone')) +
         '<small>' + esc(tr('cf.optGoneNote')) + famGoneHTML(c) + '</small></span></label></div>';
   dialog({
