@@ -7138,8 +7138,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.31.1';
-var APP_BUILD = '2026-10-11T07:32:45.513Z';
+var APP_VERSION = '1.31.2';
+var APP_BUILD = '2026-10-11T11:32:08.143Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -10952,6 +10952,8 @@ function raceTransport(raw, cfg, st, withFile){
              споре сохраняется целиком и стёрла бы отметку. */
           syncOldSeen(S, '');
           fix = raceMerge(S, N, A);
+          /* ++++++ ANSWER RACE ++++++ в затёртой ревизии нет ничего, чего нет в голове файла: долг снят без записи — иначе два устройства чинили бы друг друга одинаковыми файлами */
+          if (!fix.conflicts.length && arIdle(fix.text, head.text)){ dropFirst(false); repair(access, cb); return; }
           o = syncRead();
           if (fix.conflicts.length){
             /* Спор одного поля. Голова — не то, что это устройство знает
@@ -13197,6 +13199,7 @@ function syncBaseCheck(localDoc, remoteDoc, merged, localAt, remoteAt){
 /* ++++++ BASE SYNC CORE END ++++++ */
 function syncCycle(env, cb, attempt){
   attempt = attempt || 1;
+  if (!env.arOn) cb = arWrap(env, cb);   /* ++++++ ANSWER RACE ++++++ холостой обмен не пишет, взятое с Диска — взято, затёртая копия — не правка соседа, ответ на спор не затирается (А19) */
   var cfg = env.cfg();
   if (!cfg){ cb({ err: 'off' }); return; }
 
@@ -13260,6 +13263,7 @@ function syncCycle(env, cb, attempt){
     syncDelFamily(merged, localDoc, remoteDoc, remoteTombs, env.meta ? env.meta() && env.meta().map : null,
                   remoteDoc ? remoteDoc.syncMeta : null, env.undel ? env.undel() : null, remoteUndel, env.tombs());   /* ++++++ DISPUTE FAMILY ++++++ спор держит запись вместе с её семьёй (А17, А18) */
     syncValKeep(merged, localDoc, remoteDoc, env.meta ? env.meta() && env.meta().map : null);   /* ++++++ VALUE DISPUTE ++++++ спор о значении не пропадает вместе с удалением (Г33) */
+    if (env.arSeen) env.arSeen(merged);   /* ++++++ ANSWER RACE ++++++ что удержано и что уйдёт на Диск — знает слияние */
     /* Какая метка описывает НАСТРОЙКИ, победившие в слиянии: та же
        проверка, что внутри mergeSettings(), и другой она быть не может —
        иначе конверт уедет с меткой от чужих настроек, а внутри будут
@@ -13436,6 +13440,409 @@ function countsOf(doc){
     payments: (doc.payments || []).length
   };
 }
+
+/* ============================================ ++++++ ANSWER RACE ++++++ ==
+ * ОТВЕТ НА СПОР НЕ ПРОПАДАЕТ, КОГДА ВТОРОЕ УСТРОЙСТВО ОБМЕНИВАЕТСЯ В ТУ ЖЕ
+ * МИНУТУ (находка А19 аудита; слова владельца 10.10 и 11.10.2026).
+ *
+ * Что было (замер на двух устройствах, 20 прогонов на выложенной 1.31.0:
+ * ответ потерян 12 раз). Владелец ответил на телефоне «Здесь» (570 против
+ * 560). Компьютер, который эту оплату не правил, в те же секунды обменялся:
+ *   К1  обмен пишет файл ВСЕГДА, и когда отправлять нечего, — холостая
+ *       запись компьютера легла поверх ответа, со старой суммой;
+ *   К2  между затиранием и починкой окна записи (А15) Диск несколько секунд
+ *       показывает прежнюю сумму; телефон, читающий в этот миг, не отличал
+ *       её от правки соседа и принимал;
+ *   К3  после отказа «метка другая» оборот повторяется, и значения, принятые
+ *       с Диска в первом заходе, второй заход читал как правки этого
+ *       устройства — и отправлял поверх починенного;
+ *   К4  починка окна записи принимала такую отправку принятого за правку
+ *       соседа — два устройства гоняли две суммы до минуты.
+ * И второй вид: ответ, данный, пока идёт отправка обмена, начатого раньше,
+ * затирался итогом этого обмена — спор возвращался.
+ *
+ * Пять мер (план одобрен владельцем 11.10.2026):
+ *   1. обмен, которому НЕЧЕГО ОТПРАВИТЬ, файл не пишет (arIdle). «Нечего» —
+ *      это когда ушедший файл по существу равен лежащему: записи, удаления,
+ *      отмены, ездящие настройки и их отметка, следы старой версии — те же,
+ *      формат тот же, и это устройство уже значится среди писавших нынешним
+ *      форматом. Устройство, которого среди писавших нет, пишет и без правок:
+ *      на этом держатся полосы «обновите и там» (А13) и Г29;
+ *   2. что оборот ВЗЯЛ с Диска, он запоминает взятым сразу (arTook): повтор
+ *      оборота и следующий обмен после сорванной отправки не выдают принятое
+ *      за свою правку;
+ *   3. устройство НЕ ПРИНИМАЕТ ВОЗВРАТ к значению, которое само заменило
+ *      (arKeptBase). Отправив свою версию записи, оно помнит, что лежало на
+ *      Диске до неё: отпечаток и отметку правки. Снова лежит РОВНО та версия
+ *      с ТОЙ ЖЕ отметкой — это затёртая копия, а не правка соседа: своё
+ *      остаётся и отправляется снова. Сосед вернул прежнее значение НАРОЧНО —
+ *      у его правки новая отметка, и она принимается как всякая правка. Часы
+ *      двух устройств не сравниваются: только точное равенство;
+ *   4. ответ на спор, данный ПОКА ИДЁТ ОТПРАВКА, итог оборота не затирает
+ *      (arBaseNow, arAnswered): отпечаток решённой записи остаётся тем, что
+ *      поставил ответ, спор в список не возвращается; следом идёт обычный
+ *      обмен после правки — он и отправляет ответ;
+ *   5. починка окна записи (А15) остаётся; починка, которой НЕЧЕГО ВЕРНУТЬ,
+ *      файл не пишет — иначе два устройства чинили бы друг друга одинаковыми
+ *      записями.
+ *
+ * Буквально «никогда не отправлять прежнее значение записи, которую не
+ * правил» нельзя, пока обмен пишет один файл целиком: устройство с настоящей
+ * правкой ДРУГОЙ записи отправляет файл со всеми записями и в окне А15
+ * затирает чужую свежую. Мера 1 убирает холостые записи, мера 3 делает
+ * затёртое неопасным для того, кто его заменил, починка возвращает значение
+ * на Диск.
+ *
+ * Всё живёт в ОКРУЖЕНИИ оборота: arWrap() оборачивает env и ответ оборота.
+ * Движок слияния, обе копии core/merge.js, syncEnv(), syncRun() не тронуты;
+ * формат файла обмена и схема не менялись. Память меры 3 — в записи обмена
+ * ЭТОГО устройства (sync-v1.kept), не в документе.
+ * ====================================================================== */
+var AR_KEEP_MS = 24 * 60 * 60 * 1000;   /* сколько устройство помнит, что оно заменило на Диске */
+var AR_KEEP_MAX = 300;                  /* и о скольких записях сразу */
+var AR_KEEP_PAIRS = 3;                  /* сколько прежних версий одной записи */
+
+function arIsList(v){ return Object.prototype.toString.call(v) === '[object Array]'; }
+function arIsMap(v){ return !!v && typeof v === 'object' && !arIsList(v); }
+
+/** Записи коллекции по id. */
+function arIndex(list){
+  var m = {}, i;
+  if (!arIsList(list)) return m;
+  for (i = 0; i < list.length; i++) if (list[i] && typeof list[i].id === 'string') m[list[i].id] = list[i];
+  return m;
+}
+/** Отпечатки коллекции: { id: отпечаток }. */
+function arHashes(list){
+  var m = {}, i;
+  if (!arIsList(list)) return m;
+  for (i = 0; i < list.length; i++) if (list[i] && typeof list[i].id === 'string') m[list[i].id] = recHash(list[i]);
+  return m;
+}
+function arSameMap(a, b){
+  var k;
+  for (k in a) if (ownKey(a, k) && !(ownKey(b, k) && b[k] === a[k])) return false;
+  for (k in b) if (ownKey(b, k) && !ownKey(a, k)) return false;
+  return true;
+}
+/** Файл обмена как есть, без проверок формата: что лежит на Диске. */
+function arOpen(text){
+  var e;
+  try{ e = JSON.parse(text); }catch(x){ return null; }
+  if (!arIsMap(e) || typeof e.syncSchema !== 'number') return null;
+  return { e: e, cols: arIsMap(e.collections) ? e.collections : {},
+           meta: arIsMap(e.meta) ? e.meta : {}, tombs: arIsMap(e.tombstones) ? e.tombstones : {} };
+}
+
+/** НЕЧЕГО ОТПРАВИТЬ (мера 1). a — файл, который ушёл бы на Диск; b — файл,
+ *  который там лежит (оба — разобранные конверты). «То же» — по существу:
+ *  порядок записей в списке и время записи файла не считаются. Метки правок
+ *  не считаются тоже: у записи с тем же содержимым метка ничего не решает
+ *  (слияние зовёт её, только когда содержимое разное), а «сохранил, ничего не
+ *  изменив» двигает метку — и два устройства писали бы файл по очереди
+ *  вечно. Формат и писавшие — считаются: устройство, которого среди
+ *  писавших нынешним форматом нет, обязано вписать себя. */
+function arIdleEnv(a, b){
+  var i, col, wa, wb;
+  if (!arIsMap(a) || !arIsMap(b)) return false;
+  if (a.syncSchema !== b.syncSchema || a.appSchema !== b.appSchema) return false;
+  wa = arIsList(a.writers) ? a.writers : [];
+  wb = arIsList(b.writers) ? b.writers : [];
+  for (i = 0; i < wa.length; i++) if (wb.indexOf(wa[i]) < 0) return false;
+  if ((a.settingsAt || '') !== (b.settingsAt || '')) return false;
+  if (canonJSON(arIsMap(a.settings) ? a.settings : {}) !== canonJSON(arIsMap(b.settings) ? b.settings : {})) return false;
+  if (canonJSON(arIsMap(a.tombstones) ? a.tombstones : {}) !== canonJSON(arIsMap(b.tombstones) ? b.tombstones : {})) return false;
+  if (canonJSON(undelMapOf(a.undeleted)) !== canonJSON(undelMapOf(b.undeleted))) return false;
+  if (canonJSON(arIsMap(a.oldRecs) ? a.oldRecs : {}) !== canonJSON(arIsMap(b.oldRecs) ? b.oldRecs : {})) return false;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    if (!arSameMap(arHashes(arIsMap(a.collections) ? a.collections[col] : null),
+                   arHashes(arIsMap(b.collections) ? b.collections[col] : null))) return false;
+  }
+  return true;
+}
+/** То же по двум текстам файла. Не разобралось — «есть что отправить». */
+function arIdle(text, was){
+  var a, b;
+  if (typeof text !== 'string' || typeof was !== 'string' || !was) return false;
+  try{ a = JSON.parse(text); b = JSON.parse(was); }catch(x){ return false; }
+  return arIdleEnv(a, b);
+}
+
+/* ---- мера 3: память «что это устройство заменило на Диске» ----------- */
+
+/** Строка памяти в порядке — или null. { c: коллекция, h: отпечаток своей
+ *  версии, p: [[отпечаток прежней, её отметка правки], …], t: когда } */
+function arKeptOk(k, now){
+  var i;
+  if (!arIsMap(k) || typeof k.c !== 'string' || SYNC_COLS.indexOf(k.c) < 0) return null;
+  if (typeof k.h !== 'string' || !k.h || typeof k.t !== 'number' || !arIsList(k.p) || !k.p.length) return null;
+  if (now - k.t >= AR_KEEP_MS) return null;
+  for (i = 0; i < k.p.length; i++)
+    if (!arIsList(k.p[i]) || typeof k.p[i][0] !== 'string' || !k.p[i][0] || typeof k.p[i][1] !== 'string') return null;
+  return k;
+}
+/** Память устройства: только годные строки. */
+function arKeptRead(){
+  var o = syncRead(), m = o && o.kept, out = {}, id, now = Date.now();
+  if (!arIsMap(m)) return out;
+  for (id in m) if (ownKey(m, id) && arKeptOk(m[id], now)) out[id] = m[id];
+  return out;
+}
+function arKeptWrite(m){
+  var o = syncRead(), ids = [], id, i;
+  if (!o) return;
+  for (id in m) if (ownKey(m, id)) ids.push(id);
+  if (ids.length > AR_KEEP_MAX){
+    /* лишнее — самое давнее */
+    ids.sort(function(a, b){ return m[b].t - m[a].t; });
+    for (i = AR_KEEP_MAX; i < ids.length; i++) delete m[ids[i]];
+    ids.length = AR_KEEP_MAX;
+  }
+  if (ids.length) o.kept = m; else delete o.kept;
+  syncWrite(o);
+}
+/** Версия с Диска — затёртая копия: ровно та, что устройство заменило, с
+ *  той же отметкой правки. */
+function arIsCopy(k, hash, at){
+  var i;
+  for (i = 0; i < k.p.length; i++) if (k.p[i][0] === hash && k.p[i][1] === (at || '')) return true;
+  return false;
+}
+/** Что запись файла заменит на Диске: записи, у которых там лежит ДРУГАЯ
+ *  версия. send — документ к отправке, rem — прочитанное (arOpen). */
+function arKeepPlan(send, rem){
+  var out = [], i, j, col, list, idx, r, R, hL, hR;
+  if (!send || !rem) return out;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    list = send[col] || [];
+    idx = null;
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (!r || typeof r.id !== 'string') continue;
+      if (!idx) idx = arIndex(rem.cols[col]);
+      if (!ownKey(idx, r.id)) continue;
+      R = idx[r.id]; hL = recHash(r); hR = recHash(R);
+      if (hL !== hR) out.push({ id: r.id, c: col, h: hL, w: hR, m: modOf(r.id, rem.meta) });
+    }
+  }
+  return out;
+}
+/** Запись легла: запомнить, что она заменила. Прежние пары той же записи
+ *  остаются (до AR_KEEP_PAIRS): затёртая копия может быть и позапрошлой. */
+function arKeepSave(plan){
+  var m, i, x, old, p, j, now;
+  if (!plan || !plan.length) return;
+  m = arKeptRead(); now = Date.now();
+  for (i = 0; i < plan.length; i++){
+    x = plan[i];
+    p = [[x.w, x.m]];
+    old = ownKey(m, x.id) ? m[x.id] : null;
+    if (old && old.c === x.c){
+      for (j = 0; j < old.p.length && p.length < AR_KEEP_PAIRS; j++)
+        if (!(old.p[j][0] === x.w && old.p[j][1] === x.m) && old.p[j][0] !== x.h) p.push(old.p[j]);
+    }
+    m[x.id] = { c: x.c, h: x.h, p: p, t: now };
+  }
+  arKeptWrite(m);
+}
+/** Память, которая больше ни о чём: записи нет, она под надгробием, или на
+ *  Диске лежит версия, которая не своя и не затёртая копия — её правил сосед. */
+function arKeptClean(local, rem, tombs){
+  var m, id, k, R, hR, ch = false, drop, idxL = {}, idxR = {};
+  if (!rem) return;
+  m = arKeptRead();
+  for (id in m) if (ownKey(m, id)){
+    k = m[id];
+    if (!ownKey(idxL, k.c)){ idxL[k.c] = arIndex(local[k.c]); idxR[k.c] = arIndex(rem.cols[k.c]); }
+    drop = false;
+    if (!ownKey(idxL[k.c], id) || ownKey(rem.tombs, id) || (tombs && ownKey(tombs, id))) drop = true;
+    else if (ownKey(idxR[k.c], id)){
+      R = idxR[k.c][id]; hR = recHash(R);
+      if (hR !== k.h && !arIsCopy(k, hR, modOf(id, rem.meta))) drop = true;
+    }
+    if (drop){ delete m[id]; ch = true; }
+  }
+  if (ch) arKeptWrite(m);
+}
+/** База для слияния (мера 3). У записи, на месте которой на Диске лежит
+ *  затёртая копия, «отпечаток прошлого обмена» — отпечаток этой копии:
+ *  слияние видит «изменилась только эта сторона», оставляет своё и
+ *  отправляет его. Прежняя база не трогается: возвращается копия. Запись
+ *  под надгробием, запись, которую это устройство с тех пор не знает своей
+ *  версией на Диске (база другая), — обычным порядком. */
+function arKeptBase(local, rem, base, tombs){
+  var m, out = base, hit = false, id, k, b, R, hR, c, j, idxL = {}, idxR = {};
+  if (!rem || !arIsMap(base)) return base;
+  m = arKeptRead();
+  for (id in m) if (ownKey(m, id)){
+    k = m[id];
+    b = base[k.c];
+    if (!arIsMap(b) || !ownKey(b, id) || b[id] !== k.h) continue;
+    if (ownKey(rem.tombs, id) || (tombs && ownKey(tombs, id))) continue;
+    if (!ownKey(idxL, k.c)){ idxL[k.c] = arIndex(local[k.c]); idxR[k.c] = arIndex(rem.cols[k.c]); }
+    if (!ownKey(idxL[k.c], id) || !ownKey(idxR[k.c], id)) continue;
+    R = idxR[k.c][id]; hR = recHash(R);
+    if (hR === k.h || !arIsCopy(k, hR, modOf(id, rem.meta))) continue;
+    if (!hit){
+      out = {};
+      for (c in base) if (ownKey(base, c)) out[c] = base[c];
+      hit = true;
+    }
+    if (out[k.c] === base[k.c]){
+      out[k.c] = {};
+      for (j in base[k.c]) if (ownKey(base[k.c], j)) out[k.c][j] = base[k.c][j];
+    }
+    out[k.c][id] = hR;
+  }
+  return out;
+}
+
+/* ---- мера 2: что оборот взял с Диска, то взято ----------------------- */
+
+/** После применения слияния: отпечаток «прошлого обмена» у каждой записи,
+ *  лежащей на Диске, — отпечаток версии с Диска. Тогда принятое равно
+ *  своей базе и за правку этого устройства не сойдёт; своя неотправленная
+ *  правка от базы отличается и уйдёт, как шла. Удержанный спор не трогается
+ *  (его база держит спор — А6, А16). Базы ещё нет (первый обмен) — нечего. */
+function arTook(rem, merged){
+  var o, held = {}, i, c, col, list, j, r, b, h, ch = false;
+  if (!rem || !merged) return;
+  o = syncRead();
+  if (!o || !arIsMap(o.base)) return;
+  for (i = 0; i < (merged.conflicts || []).length; i++){
+    c = merged.conflicts[i];
+    if (c && c.hold) held[c.collection + ':' + c.id] = 1;
+  }
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    list = arIsList(rem.cols[col]) ? rem.cols[col] : [];
+    if (!list.length) continue;
+    b = arIsMap(o.base[col]) ? o.base[col] : null;
+    for (j = 0; j < list.length; j++){
+      r = list[j];
+      if (!r || typeof r.id !== 'string' || ownKey(held, col + ':' + r.id)) continue;
+      h = recHash(r);
+      if (b && ownKey(b, r.id) && b[r.id] === h) continue;
+      if (!b){ b = {}; o.base[col] = b; }
+      b[r.id] = h; ch = true;
+    }
+  }
+  if (ch) syncWrite(o);
+}
+
+/* ---- мера 4: ответ на спор, данный, пока шла отправка ---------------- */
+
+function arBaseCopy(base){
+  var out = {}, i, col, k;
+  if (!arIsMap(base)) return out;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    out[col] = {};
+    if (arIsMap(base[col])) for (k in base[col]) if (ownKey(base[col], k)) out[col][k] = base[col][k];
+  }
+  return out;
+}
+/** Отпечатки, которые поменялись на устройстве, пока шла отправка (их
+ *  ставит ответ на спор), итог оборота не перезаписывает: в nb кладётся
+ *  нынешнее значение. was — снимок перед отправкой, now — сейчас. */
+function arBaseNow(nb, was, now){
+  var i, col, a, b, k;
+  if (!arIsMap(nb) || !was || !arIsMap(now)) return nb;
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    a = was[col] || {}; b = arIsMap(now[col]) ? now[col] : {};
+    for (k in b) if (ownKey(b, k) && !(ownKey(a, k) && a[k] === b[k])){
+      if (!arIsMap(nb[col])) nb[col] = {};
+      nb[col][k] = b[k];
+    }
+    for (k in a) if (ownKey(a, k) && !ownKey(b, k) && arIsMap(nb[col])) delete nb[col][k];
+  }
+  return nb;
+}
+function arKey(c){ return c ? c.collection + ':' + c.id + ':' + c.kind : ''; }
+function arKeys(list){
+  var m = {}, i;
+  for (i = 0; i < (list || []).length; i++) if (list[i]) m[arKey(list[i])] = 1;
+  return m;
+}
+/** Список споров после оборота. Спор, который был перед отправкой и
+ *  которого сейчас в списке устройства нет, — отвечен, пока шла отправка:
+ *  итог оборота его не возвращает. Спор, появившийся в списке за это время
+ *  (его вернул ответ «Оставить» — Г33), итог оборота не стирает. Ответов не
+ *  было — список оборота как есть. */
+function arAnswered(list, snap){
+  var now = syncDisputesRead(), nowK = arKeys(now), inList = arKeys(list), out = [], i, k, ch = false;
+  for (i = 0; i < list.length; i++){
+    k = arKey(list[i]);
+    if (ownKey(snap, k) && !ownKey(nowK, k)){ ch = true; continue; }
+    out.push(list[i]);
+  }
+  for (i = 0; i < now.length; i++){
+    k = arKey(now[i]);
+    if (!ownKey(inList, k) && !ownKey(snap, k)){ out.push(now[i]); ch = true; }
+  }
+  return ch ? out : list;
+}
+
+/* ---- окружение оборота ---------------------------------------------- */
+
+/** Обернуть окружение оборота и его ответ. Зовётся один раз на обмен, из
+ *  syncCycle(); повтор оборота идёт через то же окружение. Возвращает
+ *  обёрнутый ответ. */
+function arWrap(env, cb){
+  var st = { text: '', rem: null, merged: null, snapBase: null, snapKeys: null };
+  var tGet = env.tGet, tPut = env.tPut, apply = env.apply, remember = env.remember, baseHashes = env.baseHashes;
+  env.arOn = true;
+
+  env.tGet = function(done){
+    st.text = ''; st.rem = null; st.merged = null; st.snapBase = null; st.snapKeys = null;
+    tGet(function(err, res){
+      if (!err && res && !res.empty && typeof res.text === 'string'){
+        st.text = res.text;
+        st.rem = arOpen(res.text);
+        arKeptClean(env.localDoc(), st.rem, env.tombs ? env.tombs() : null);
+      }
+      done(err, res);
+    });
+  };
+  /* мера 3: затёртая копия на Диске — не правка соседа */
+  env.baseHashes = function(){
+    return arKeptBase(env.localDoc(), st.rem, baseHashes(), env.tombs ? env.tombs() : null);
+  };
+  /* итог слияния этого захода — его зовёт syncCycle() */
+  env.arSeen = function(merged){ st.merged = merged; };
+  /* мера 2: взятое с Диска — взято, ещё до отправки */
+  env.apply = function(doc, done){
+    apply(doc, function(err){
+      if (!err) arTook(st.rem, st.merged);
+      done(err);
+    });
+  };
+  env.tPut = function(text, version, counts, done){
+    var plan;
+    /* мера 1: нечего отправить — файл не пишется, обмен кончается как удачный */
+    if (st.text && version && arIdle(text, st.text)){ done(null, { version: version }); return; }
+    /* мера 4: что было перед отправкой */
+    st.snapBase = arBaseCopy(baseHashes());
+    st.snapKeys = arKeys(syncDisputesRead());
+    plan = arKeepPlan(st.merged ? (st.merged.send || st.merged.doc) : null, st.rem);
+    tPut(text, version, counts, function(pErr, pRes){
+      if (!pErr) arKeepSave(plan);   /* мера 3: запись легла — помнить, что она заменила */
+      done(pErr, pRes);
+    });
+  };
+  env.remember = function(o){
+    if (o && st.snapBase) arBaseNow(o.base, st.snapBase, baseHashes());
+    remember(o);
+  };
+  return function(r){
+    if (r && r.conflicts && st.snapKeys) r.conflicts = arAnswered(r.conflicts, st.snapKeys);
+    cb(r);
+  };
+}
+/* ++++++ ANSWER RACE END ++++++ */
 
 /* nowISO() живёт рядом с touch() и dropFrom(): метка обмена и метка
    записи обязаны быть одной функцией, иначе они разойдутся. */
