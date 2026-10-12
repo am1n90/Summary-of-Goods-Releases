@@ -2918,6 +2918,16 @@ var STR = {
                           'решает только то, как сумму <b>показать</b>. У записи, сделанной ещё до ' +
                           'того, как программа научилась запоминать курсы, сохранённого курса нет, ' +
                           'и читается она по нынешнему.' },
+/* ++++++ ENTRY OWN RATE ++++++ */
+'faq.a.moneyFrozen4':{ en:'The same rate works when you correct a record: change the amount of an old ' +
+                          'payment, the price of a handout or an expense, and the new amount is ' +
+                          'counted at the rate of the day the record was made, not at today’s. A ' +
+                          'record with no saved rate is counted at today’s rate, and the form says ' +
+                          'so before you save.',
+                       ru:'Тот же курс работает и при правке записи: изменили сумму старой оплаты, ' +
+                          'цену выдачи или расход — новая сумма считается по курсу дня записи, а не ' +
+                          'по сегодняшнему. У записи без сохранённого курса — по сегодняшнему, и ' +
+                          'форма говорит об этом до сохранения.' },
 'faq.a.moneyBase1':  { en:'The main currency is the one the app <b>keeps</b> every amount in. ' +
                           'Changing it asks you one question: what to do with what is already ' +
                           'written down.',
@@ -4779,15 +4789,17 @@ var STR = {
 'exp.totalSub':  { en:'{n} &middot; all time',              ru:'{n} &middot; за всё время' },
 'exp.rateAt':    { en:'rate: {rate}',                       ru:'курс: {rate}' },
 'exp.sheetLine': { en:'{cat} &mdash; {sum}<br>{date}',      ru:'{cat} — {sum}<br>{date}' },
-'exp.editRate':  { en:'The amount is recalculated at this record’s own rate, not today’s.',
-                   ru:'Сумма пересчитывается курсом самой записи, а не сегодняшним.' },
+/* ++++++ ENTRY OWN RATE ++++++ курс назван цифрами, как после переименования (Г28), — слово владельца 12.10.2026 */
+'exp.editRate':  { en:'Record’s rate: {rate}. The new amount is calculated at it, not at today’s.',
+                   ru:'Курс записи: {rate}. Новая сумма считается по нему, а не по сегодняшнему.' },
 /* ++++++ EXP EDIT RATE ++++++ */
 'exp.editOwn':   { en:'The main currency has been re-labelled since, so that day’s rate no longer fits: the amount follows the record itself — {rate}.',
                    ru:'Основную валюту с тех пор переименовали, и курс того дня к ней не подходит: сумма считается по самой записи — {rate}.' },
 'exp.editOwnBase': { en:'This expense was recorded before the main currency was re-labelled: 1 {cur} in it is stored as {k}. The new amount is calculated the same way — as it would have been before the re-labelling.',
                    ru:'Расход записан до того, как основную валюту переименовали: 1 {cur} в нём хранится как {k}. Новая сумма считается так же — как считалась бы до переименования.' },
-'exp.editToday': { en:'This record has no rate of its own for {cur}: today’s rate is used.',
-                   ru:'У записи нет своего курса для {cur}: сумма считается по сегодняшнему.' },
+/* ++++++ ENTRY OWN RATE ++++++ курс назван — слово владельца 12.10.2026 */
+'exp.editToday': { en:'This record has no rate of its own for {cur}: today’s rate is used — {rate}.',
+                   ru:'У записи нет своего курса для {cur}: взят сегодняшний — {rate}.' },
 'exp.rateKept':  { en:'rate: 1 {cur} is stored as {k} {cur}',
                    ru:'курс: 1 {cur} хранится как {k} {cur}' },
 /* ++++++ EXP RATE WAS ++++++ */
@@ -4800,6 +4812,9 @@ var STR = {
                    ru:'Запись сделана до того, как основную валюту переименовали: 1 {cur} в ней хранится как {k}. Новая сумма считается так же — как считалась бы до переименования.' },
 'tx.keepStore':  { en:'{q} &times; {v} {cur} = {sum} — as recorded on the day of the entry, not recalculated at today’s rate',
                    ru:'{q} &times; {v} {cur} = {sum} — как записано в день записи, по сегодняшнему курсу не пересчитывается' },
+/* ++++++ ENTRY OWN RATE ++++++ запись с копейкой: названа записанная цена за штуку, набранная — в скобках */
+'tx.keepOwn':    { en:'{q} &times; {price} {cur} = {sum} (as stored; typed {v})',
+                   ru:'{q} &times; {price} {cur} = {sum} (записано; набрано {v})' },
 'entry.unit':    { en:'(entered {v} {cur} per unit)', ru:'(введено {v} {cur} за штуку)' },
 'exp.hint':      { en:'Expenses are not tied to a product: they change neither stock, nor debts, nor the cost of goods.',
                    ru:'Расходы не привязаны к товару: они не меняют ни склад, ни долги, ни себестоимость.' },
@@ -7144,8 +7159,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.31.3';
-var APP_BUILD = '2026-10-12T06:31:01.368Z';
+var APP_VERSION = '1.32.0';
+var APP_BUILD = '2026-10-12T18:08:54.273Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -16984,6 +16999,13 @@ function expToBase(minor, code, snap){
  *           подсказка говорит об этом, а не «курсом записи».
  * base — правят в основной валюте: число как есть, перевода нет.
  *
+ * ++++++ ENTRY OWN RATE ++++++ (12.10.2026) РОД own — ТОЛЬКО ПОСЛЕ «ТОЛЬКО
+ * ПЕРЕИМЕНОВАТЬ». Снимок в другой основной валюте оставляет и «пересчитать
+ * и вернуть», а переименования при этом не было. Событие называет история
+ * курсов (recRelabeledAfter), а не след: без переименования снимок читается
+ * в нынешней основной курсом ТОГО ЖЕ дня — делителем из самого снимка, — и
+ * дальше род обычный: base, snap или today.
+ *
  * РОД own СПРАШИВАЕТСЯ ПЕРВЫМ, ВЫШЕ «ПРАВЯТ В ОСНОВНОЙ» (решение владельца
  * 05.10.2026). Валюта ввода записи могла сама СТАТЬ основной: расход
  * «100 USD» записан при основной AED (хранится 367.25), основную
@@ -16995,6 +17017,14 @@ function expToBase(minor, code, snap){
 function expEditRate(x, code){
   var b = state.settings.baseCurrency, s = x && x.rateSnap, now = rateOf(code), e, r;
   if (now === null) return { r: null, kind: 'none' };
+  /* ++++++ ENTRY OWN RATE ++++++ снимок записи в ДРУГОЙ валюте, а «только переименовать» после
+     неё не было — это след «пересчитать и вернуть», а не переименования. Снимок
+     читается в нынешней основной делителем из самого снимка (приём долгов
+     наличными): «1 TJS = 0.10752688 USD» при основной TJS — это «1 USD = 9.3 TJS».
+     Отношение записанного к набранному здесь не берётся: оно несёт копейку
+     округления туда и обратно (2000.00 записывалось как 1999.99). Нет в снимке
+     курса нынешней основной — снимка для этой правки нет: дальше base или today. */
+  if (s && s.base !== b && !recRelabeledAfter(x)) s = loanSnapNow(s);
   if (s && s.base !== b){
     e = recEntry(x);
     if (e && e.cur === code && e.minor > 0 && x.amountCents > 0){
@@ -17058,6 +17088,8 @@ function expKeptOwn(x){
  * переименования и после «Пересчитать» оплата и выдача считают изменённую
  * сумму СЕГОДНЯШНИМ курсом, как считали. Привести их к расходу (курс
  * записи заморожен всегда) — отдельная задача.
+ * ++++++ ENTRY OWN RATE ++++++ Сделано 12.10.2026 (блок ниже): оплата и выдача спрашивают
+ * курс самой записи всегда, как расход; эта граница больше не действует.
  *
  * Здесь только читают: ни записи, ни хранилища, ни render().
  * ================================================================== */
@@ -17075,22 +17107,19 @@ function recRelabeledAfter(rec){
   }
   return false;
 }
-/** Курс самой записи для суммы в валюте code — или null.
+/** Курс самой записи РОДА own для суммы в валюте code — или null: после
+ *  записи было «только переименовать», и правят в валюте её ввода.
  *  stored — хранимое число, с которым соотносится «введено»: amountCents
- *  оплаты, unitPriceCents выдачи (у неё «введено» — цена за штуку). */
+ *  оплаты, unitPriceCents выдачи (у неё «введено» — цена за штуку).
+ *  Его читают показ (две суммы в списке, «введено» и курс на листе) и слова
+ *  подсказки; сколько запишется, отвечает recRate(). */
 function recOwnRate(rec, stored, code){
-  if (!rec) return null;
-  /* Запись набрана в НЫНЕШНЕЙ основной валюте, а «только переименовать» после
-     неё не было: её снимок курсов в другой валюте — след «пересчитать и
-     вернуть», а не переименования. Своего курса у неё нет: новая сумма равна
-     набранной, как и до задачи (слово владельца 12.10.2026 — запись с
-     «введено» 1958.50 и записанным 1958.49 при правке на 2000.00 обязана
-     дать 2000.00, а не 1999.99). */
-  if (rec.entryCur === state.settings.baseCurrency && !recRelabeledAfter(rec)) return null;
-  var er = expEditRate({ amountCents: stored, entryCur: rec.entryCur, entryMinor: rec.entryMinor,
-                         rateSnap: rec.rateSnap }, code);
-  if (er.kind !== 'own') return null;
-  return er;
+  /* ++++++ ENTRY OWN RATE ++++++ ответ один на оплату, выдачу и расход — recRate(). Было ли
+     переименование после записи, спрашивает он сам (expEditRate): без него
+     рода own нет — и запись с «введено» 1958.50 и записанным 1958.49 при
+     правке на 2000.00 даёт 2000.00, а не 1999.99 (слово владельца 12.10.2026). */
+  var er = recRate(rec, stored, code);
+  return (er && er.kind === 'own') ? er : null;
 }
 /** Валюта ввода записи сама стала основной, а хранится запись другим
  *  числом: набрано «100.00 USD», записано «367.25 USD». ЕДИНСТВЕННЫЙ ответ
@@ -17151,22 +17180,24 @@ function recOwnHint(er, cur){
 }
 /** ЕДИНСТВЕННЫЙ ответ «сколько копеек основной валюты ЗА ШТУКУ запишет строка
  *  выдачи». was — запись строки (null у новой), m — цена из поля в минорных
- *  единицах валюты cur. Не тронутая цена — хранимая; изменённая у строки,
- *  записанной до переименования, — курсом самой записи; иначе сегодняшний
- *  курс, как было. null — курса нет. */
+ *  единицах валюты cur. Не тронутая цена — хранимая; изменённая — курсом
+ *  самой записи (recRate), как у расхода; у новой строки — сегодняшний
+ *  курс. null — курса нет. */
 function txLineCents(was, cur, m){
   if (was && cur === was.entryCur && m === was.entryMinor) return was.unitPriceCents;
-  var er = was ? recOwnRate(was, was.unitPriceCents, cur) : null;
-  return er ? Math.round(m * er.r) : toBaseCents(m, cur);
+  /* ++++++ ENTRY OWN RATE ++++++ курс самой записи спрашивается ВСЕГДА, а не только после
+     переименования: цена 30 → 36 USD у выдачи, записанной при 3.6725, даёт
+     132.21 за штуку, а не 136.80 по сегодняшним 3.80 */
+  var er = was ? recRate(was, was.unitPriceCents, cur) : null;
+  return er ? (er.r === null ? null : Math.round(m * er.r)) : toBaseCents(m, cur);
 }
-/** Запись строки ФОРМЫ выдачи и её курс для валюты поля — или null, когда
- *  своего курса у строки нет. Подсказки формы спрашивают именно это: у
- *  прочих строк они считают как считали (находка Г8 этой задачей не
- *  тронута). */
+/** Запись строки ФОРМЫ выдачи и её курс для валюты поля — или null у новой
+ *  строки. Подсказка, пара «цена ↔ скидка %» и итог спрашивают именно это:
+ *  они называют то число, которое запишется (++++++ ENTRY OWN RATE ++++++ находка Г8 —
+ *  подсказка считала по сегодняшнему курсу то, что сохранится как записано). */
 function txLineOwn(l){
   var was = (l && l.txId) ? txById(l.txId) : null;
-  var er = was ? recOwnRate(was, was.unitPriceCents, l.cur) : null;
-  return er ? { was: was, er: er } : null;
+  return was ? { was: was, er: recRate(was, was.unitPriceCents, l.cur) } : null;
 }
 /** Цена из поля в копейках основной валюты — для подсказки, пары «цена ↔ скидка %»
  *  и итога под формой: то же число, что запишет handoutSave(). */
@@ -17175,6 +17206,101 @@ function txHintCents(l, m){
   return lo ? txLineCents(lo.was, l.cur, m) : toBaseCents(m, l.cur);
 }
 /* ========================================== ++++++ ENTRY RELABEL ++++++ END == */
+
+/* ========================================== ++++++ ENTRY OWN RATE ++++++ ==
+ * КУРС САМОЙ ЗАПИСИ — ОДИН ОТВЕТ НА ОПЛАТУ, ВЫДАЧУ И РАСХОД.
+ *
+ * ЧТО БЫЛО. Оплата «100 USD» записана при 1 USD = 3.6725 AED — хранится
+ * 367.25. Курс вырос до 3.80. Сумму поправили на 120 — записывалось 456.00,
+ * по сегодняшнему курсу. Та же правка расхода записывала 440.70 — курсом
+ * своей записи (А9). Цена выдачи 30 → 36 записывала 136.80 вместо 132.21.
+ * Правка старой оплаты или выдачи тихо переоценивала её по сегодняшнему
+ * курсу — ровно то, от чего снимок курсов и заведён.
+ *
+ * ПРАВИЛО (слова владельца 11 и 12.10.2026): «привести оплату и выдачу к
+ * расходу — курс записи замораживается»; «правка старой оплаты и цены
+ * выдачи берёт курс дня записи». Ответ один — recRate(), то есть
+ * expEditRate() расхода, — и три случая в нём различает СОБЫТИЕ, а не след:
+ *   1. снимок курсов записи в нынешней основной валюте — курс её дня из
+ *      снимка (род snap);
+ *   2. после записи было «только переименовать» (его называет история
+ *      курсов) — курс её дня в прежней основной, как после А9 и Г28 (own);
+ *   3. снимок в другой валюте, а переименования не было (след «пересчитать
+ *      и вернуть») — снимок читается в нынешней основной делителем из
+ *      самого снимка, и дальше как в случае 1.
+ * Своего курса для валюты поля у записи нет (она старше снимков, или
+ * валюты в снимке нет) — сегодняшний, и подсказка ДО сохранения называет
+ * его и говорит, что курса записи нет (слово владельца 12.10.2026).
+ *
+ * ЧЕГО ЭТО НЕ ТРОГАЕТ. Новая запись — сегодняшний курс. Не тронутая сумма —
+ * как записана (А4). Правка даты курс не меняет: снимок пишется один раз,
+ * при создании. Сохранённые записи не пересчитываются (слово владельца
+ * 12.10.2026). Здесь только читают: ни записи, ни хранилища, ни render().
+ * ================================================================== */
+
+/** ЕДИНСТВЕННЫЙ ответ «каким курсом запись переводит НОВУЮ сумму в валюте
+ *  code» для оплаты и выдачи — тот же, что у расхода: { r, kind, was }.
+ *  stored — хранимое число (amountCents оплаты, unitPriceCents выдачи).
+ *  null — записи нет: у новой записи сегодняшний курс, toBaseCents(). */
+function recRate(rec, stored, code){
+  if (!rec) return null;
+  return expEditRate({ amountCents: stored, entryCur: rec.entryCur, entryMinor: rec.entryMinor,
+                       rateSnap: rec.rateSnap, createdAt: rec.createdAt }, code);
+}
+/** Есть ли у записи СВОЙ курс для этой валюты — а не сегодняшний и не единица. */
+function recRateFixed(er){
+  return !!er && (er.kind === 'own' || er.kind === 'snap');
+}
+/** «У записи нет своего курса для USD: взят сегодняшний — 1 USD = 3.8 AED.» */
+function recTodayHint(er, cur){
+  return tr('exp.editToday', { cur: esc(cur), rate: '1 ' + esc(cur) + ' = ' + esc(trimNum(er.r)) +
+                                                    ' ' + esc(state.settings.baseCurrency) });
+}
+/** «Курс записи: 1 USD = 3.6725 AED. Новая сумма считается по нему, а не по
+ *  сегодняшнему.» Курс назван цифрами (слово владельца 12.10.2026) — теми же
+ *  словами, что после переименования (Г28); ими же говорит подсказка расхода. */
+function recSnapHint(er, cur){
+  return tr('exp.editRate', { rate: '1 ' + esc(cur) + ' = ' + esc(trimNum(er.r)) +
+                                    ' ' + esc(state.settings.baseCurrency) });
+}
+/** Фраза подсказки формы оплаты и выдачи: каким курсом посчитана ИЗМЕНЁННАЯ
+ *  сумма. Слова — те же, что под суммой расхода. Пусто, когда сказать нечего:
+ *  правят в основной валюте (перевода нет) или записи нет. */
+function recRateHint(er, cur){
+  if (!er) return '';
+  if (er.kind === 'own') return recOwnHint(er, cur);
+  if (er.kind === 'snap') return recSnapHint(er, cur);
+  if (er.kind === 'today') return recTodayHint(er, cur);
+  return '';
+}
+/** Сколько ДОБАВИТЬ в поле оплаты кнопкой «Внести весь остаток» — в минорных
+ *  единицах валюты формы. У новой оплаты и у записи без своего курса —
+ *  прежний payFillMinor(): сегодняшний курс. У правки записи со СВОИМ курсом
+ *  изменённая сумма запишется этим курсом, и кнопка обязана считать им же:
+ *  посчитанное по сегодняшнему оставило бы остаток (курс вырос) или переплату
+ *  (курс упал; после «только переименовать» — в разы). Правило R30 то же:
+ *  наименьшая сумма поля, при которой остатка хватает, — и доводится она
+ *  самим payCentsOf(), тем, что запишет сохранение. */
+function payFillAdd(gapCents){
+  var f = ui.form.pay, y = f.editId ? payById(f.editId) : null;
+  var er = y ? recRate(y, y.amountCents, f.cur) : null;
+  if (!recRateFixed(er)) return payFillMinor(gapCents, f.cur);
+  if (gapCents <= 0) return 0;
+  var have = parseMoneyToCents(f.amount), due = payDueCents(), total;
+  if (have === null) have = 0;
+  var at = function(m){
+    var g = {}, k;
+    for (k in f) if (own(f, k)) g[k] = f[k];
+    g.amount = (m / 100).toFixed(2);
+    return payCentsOf(g);
+  };
+  total = Math.ceil((due - 0.5) / er.r);
+  if (total <= have) total = have + 1;
+  while (total - 1 > have && at(total - 1) >= due) total--;
+  while (at(total) < due) total++;
+  return total - have;
+}
+/* ========================================== ++++++ ENTRY OWN RATE ++++++ END == */
 
 /* ---- «каким курсом посчитано» ------------------------------------------ */
 
@@ -17189,7 +17315,10 @@ function expRateOf(x){
      одной строке не сходились. Род own — тот же, которым считает правка. */
   if (c){ var er = expEditRate(x, c); if (er.kind === 'own') return er.r; }
   if (!c || c === state.settings.baseCurrency) return null;
-  return dcRateOf(x.rateSnap, c);
+  /* ++++++ ENTRY OWN RATE ++++++ тот же курс, которым считает правка: у расхода со следом
+     «пересчитать и вернуть» это курс дня записи (1 USD = 9.3 TJS), а не
+     сегодняшний; у обычной записи — прежний ответ dcRateOf() */
+  return er.r;
 }
 /** «курс: 1 USD = 3.67 AED». Пусто, когда курса нет или он ничего не
  *  добавляет. Формат тот же, что у ratesLine(): «1 <код> = <курс> <база>». */
@@ -18714,7 +18843,7 @@ var FAQ = [
   key: 'money.frozen', topic: 'money', icon: false,
   q: function(){ return tr('faq.q.moneyFrozen'); },
   html: function(){ return infoP(tr('faq.a.moneyFrozen1')) + infoP(tr('faq.a.moneyFrozen2')) +
-                           infoP(tr('faq.a.moneyFrozen3')); },
+                           infoP(tr('faq.a.moneyFrozen3')) + infoP(tr('faq.a.moneyFrozen4')); },
   see: ['cur', 'money.base', 'money.sections']
 },
 
@@ -21561,7 +21690,8 @@ function discSyncPair(source, i){
       else {
         /* ++++++ ENTRY RELABEL ++++++ у строки, записанной до «только переименовать», цена в
            поле стоит в масштабе своей записи — обычная цена приводится к нему же */
-        var loP = txLineOwn(l), um = loP ? u / loP.er.r / 100 : convertFor(u, l.cur);
+        /* ++++++ ENTRY OWN RATE ++++++ своим курсом считается всякая строка, у которой он есть */
+        var loP = txLineOwn(l), um = (loP && recRateFixed(loP.er)) ? u / loP.er.r / 100 : convertFor(u, l.cur);
         var v = um === null ? null : discPriceValue(um, pct);
         if (v === null) discErrs[i] = tr('disc.errNeg');
         else {
@@ -26946,11 +27076,26 @@ function txHintText(i){
        называет то, что запишется: не тронутая цена — «как записано»,
        изменённая — курсом самой записи, и курс назван */
     var lo = txLineOwn(l), cents = txHintCents(l, m);
-    var keptL = !!lo && l.cur === lo.was.entryCur && m === lo.was.entryMinor;
+    /* ++++++ ENTRY OWN RATE ++++++ не тронутая цена ЛЮБОЙ строки правки называет записанное
+       число: «как записано» — когда оно не то, что дал бы набор (валюта не
+       основная или хранится другим числом), как у оплаты и расхода.
+       Изменённая — курсом самой записи, и фраза говорит, каким */
+    var keepsL = !!lo && l.cur === lo.was.entryCur && m === lo.was.entryMinor;
+    var keptL = keepsL && (l.cur !== state.settings.baseCurrency || cents !== m);
+    /* не тронутая цена в ОСНОВНОЙ валюте, которая хранится другим числом: запись
+       с копейкой (след «пересчитать и вернуть») и запись после «только
+       переименовать» (30.00 USD хранится как 110.18 USD). «2 × 1,958.50 TJS =
+       3,916.98 TJS» и «2 × 30.00 USD = 220.36 USD» читались бы как неверное
+       равенство — названа ЗАПИСАННАЯ цена за штуку, набранная стоит в скобках
+       (слова владельца 12.10.2026, оба случая) */
+    var ownL = keptL && cents !== null && l.cur === state.settings.baseCurrency;
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(l.cur)}));
+    else if (ownL) out.push(tr('tx.keepOwn', {q: units(q), price: fmtMinor(cents), v: fmtMinor(m), cur: esc(l.cur),
+      sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
     else out.push(tr(keptL ? 'tx.keepStore' : 'tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(l.cur),
       sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
-    if (lo && !keptL && cents !== null) out.push(recOwnHint(lo.er, l.cur));
+    var hintL = (lo && !keepsL && cents !== null) ? recRateHint(lo.er, l.cur) : '';
+    if (hintL) out.push(hintL);
   }
   /* ++++++ DISCOUNT ++++++ третья часть, через тот же « · ». Негодный
      процент вытесняет рассказ о скидке: пока в поле стоит то, чего не
@@ -27168,7 +27313,8 @@ function payFillOverCents(){
  *
  * ВОПРОС «СКОЛЬКО ЗАПИШЕТСЯ» — ОДИН на сохранение и обе подсказки под
  * полем: payCentsOf() / expCentsOf(). Иначе подсказка обещала бы 380.00,
- * а сохранилось бы 367.25 — так сегодня ошибается форма выдачи (Г8).
+ * а сохранилось бы 367.25 — так ошибалась форма выдачи (Г8; закрыта
+ * 12.10.2026, ++++++ ENTRY OWN RATE ++++++: её подсказка читает txLineCents()).
  * ================================================================== */
 
 /** Не тронута ли сумма записи: та же валюта и то же число, что набирали
@@ -27183,8 +27329,9 @@ function recEditKeeps(rec, cur, m){
   return cur === state.settings.baseCurrency && m === rec.amountCents;
 }
 /** ЕДИНСТВЕННЫЙ ответ «сколько базовых копеек запишет форма оплаты»:
- *  не тронутая сумма правки — хранимая, иначе перевод по сегодняшнему
- *  курсу. null — числа нет или курса нет. */
+ *  не тронутая сумма правки — хранимая; изменённая — курсом самой записи
+ *  (++++++ ENTRY OWN RATE ++++++ recRate(), как у расхода); у новой оплаты —
+ *  сегодняшний курс. null — числа нет или курса нет. */
 function payCentsOf(f){
   var m = parseMoneyToCents(f.amount);
   if (m === null) return null;
@@ -27193,8 +27340,11 @@ function payCentsOf(f){
     if (recEditKeeps(y, f.cur, m)) return y.amountCents;
     /* ++++++ ENTRY RELABEL ++++++ оплата записана до «только переименовать» — изменённая
        сумма считается курсом самой записи (120 USD → 440.70, а не 120.00) */
-    var er = y ? recOwnRate(y, y.amountCents, f.cur) : null;
-    if (er) return Math.round(m * er.r);
+    /* ++++++ ENTRY OWN RATE ++++++ курс самой записи спрашивается ВСЕГДА, как у расхода: оплата
+       «100 USD», записанная при 3.6725, после правки на 120 — 440.70, а не
+       456.00 по сегодняшним 3.80. Своего курса нет — сегодняшний (род today) */
+    var er = y ? recRate(y, y.amountCents, f.cur) : null;
+    if (er) return er.r === null ? null : Math.round(m * er.r);
   }
   return toBaseCents(m, f.cur);
 }
@@ -27266,8 +27416,10 @@ function payHintText(){
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
     /* ++++++ ENTRY RELABEL ++++++ изменённая сумма посчитана курсом самой записи — подсказка
        называет его теми же словами, что под суммой расхода */
-    var erP = (yEd && !keeps && cents !== null) ? recOwnRate(yEd, yEd.amountCents, f.cur) : null;
-    if (erP) out.push(recOwnHint(erP, f.cur));
+    /* ++++++ ENTRY OWN RATE ++++++ фраза — на всякую изменённую сумму, у которой есть что сказать:
+       курсом самой записи — или что своего курса нет и взят сегодняшний */
+    var hintP = (yEd && !keeps && cents !== null) ? recRateHint(recRate(yEd, yEd.amountCents, f.cur), f.cur) : '';
+    if (hintP) out.push(hintP);
   }
   /* ++++++ PAY FILL ++++++ переплата называется — и только там, где она
      есть и где её сделала кнопка. Сообщение, печатающееся при любом
@@ -27588,7 +27740,7 @@ function expHintText(){
      (правят в основной, число как есть) фразы не имеет: перевода нет. */
   if (x && !(m !== null && recEditKeeps(x, f.cur, m))){
     var er = expEditRate(x, f.cur);
-    if (er.kind === 'snap') out.push(tr('exp.editRate'));
+    if (er.kind === 'snap') out.push(recSnapHint(er, f.cur));   /* ++++++ ENTRY OWN RATE ++++++ курс назван цифрами */
     else if (er.kind === 'own' && f.cur === state.settings.baseCurrency)
       /* валюта ввода записи сама стала основной: «1 USD = 3.6725 USD» было бы
          бессмыслицей — сказано словами, откуда такое число */
@@ -27597,7 +27749,7 @@ function expHintText(){
         : tr('exp.editOwnBase', { cur: esc(f.cur), k: esc(trimNum(er.r)) }));
     else if (er.kind === 'own') out.push(tr('exp.editOwn', { rate: '1 ' + esc(f.cur) + ' = ' + esc(trimNum(er.r)) +
                                                             ' ' + esc(state.settings.baseCurrency) }));
-    else if (er.kind === 'today') out.push(tr('exp.editToday', { cur: esc(f.cur) }));
+    else if (er.kind === 'today') out.push(recTodayHint(er, f.cur));   /* ++++++ ENTRY OWN RATE ++++++ курс назван */
   }
   return out.join(' · ');
 }
@@ -31478,8 +31630,8 @@ function handoutSave(o){
        открывает правку в валюте ввода, и пересчёт по сегодняшнему курсу
        сдвинул бы уже проданное (домен-правило 6). */
     /* ++++++ ENTRY RELABEL ++++++ ответ один — txLineCents(): не тронутая цена хранимая,
-       изменённая у строки, записанной до «только переименовать», — курсом
-       самой записи, иначе сегодняшний курс, как было */
+       изменённая — курсом самой записи (++++++ ENTRY OWN RATE ++++++ всегда, как у
+       расхода), у новой строки — сегодняшний курс */
     var cents = txLineCents(was, l.cur, m);
     if (cents === null) return no(tag(i, noRateText(l.cur)), i);
     /* ++++++ GOODS RETURN ++++++ строку ниже возвращённого не урезать —
@@ -33292,7 +33444,8 @@ function handleAct(act, arg, e, srcEl){
        минимальных единицах валюты формы, поэтому 39.97 + 0.03 это ровно
        40.00. Нечего добавлять — не делаем ничего. */
     if (payFillCan()){
-      var add = payFillMinor(payGapCents(), ui.form.pay.cur);
+      /* ++++++ ENTRY OWN RATE ++++++ у правки записи со своим курсом добавка считается им же */
+      var add = payFillAdd(payGapCents());
       var have = parseMoneyToCents(ui.form.pay.amount);
       if (add !== null){
         ui.form.pay.amount = ((have === null ? 0 : have) + add) / 100;
