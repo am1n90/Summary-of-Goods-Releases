@@ -4795,6 +4795,12 @@ var STR = {
                    ru:'курс записи: {rate} (до переименования)' },
 'exp.editOwnWas': { en:'Record’s rate: {rate} (before the re-labelling). The new amount is calculated at it.',
                    ru:'Курс записи: {rate} (до переименования). Новая сумма считается по нему.' },
+/* ++++++ ENTRY RELABEL ++++++ */
+'rec.editOwnBase': { en:'This record was made before the main currency was re-labelled: 1 {cur} in it is stored as {k}. The new amount is calculated the same way — as it would have been before the re-labelling.',
+                   ru:'Запись сделана до того, как основную валюту переименовали: 1 {cur} в ней хранится как {k}. Новая сумма считается так же — как считалась бы до переименования.' },
+'tx.keepStore':  { en:'{q} &times; {v} {cur} = {sum} — as recorded on the day of the entry, not recalculated at today’s rate',
+                   ru:'{q} &times; {v} {cur} = {sum} — как записано в день записи, по сегодняшнему курсу не пересчитывается' },
+'entry.unit':    { en:'(entered {v} {cur} per unit)', ru:'(введено {v} {cur} за штуку)' },
 'exp.hint':      { en:'Expenses are not tied to a product: they change neither stock, nor debts, nor the cost of goods.',
                    ru:'Расходы не привязаны к товару: они не меняют ни склад, ни долги, ни себестоимость.' },
 
@@ -7138,8 +7144,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.31.2';
-var APP_BUILD = '2026-10-11T11:32:08.143Z';
+var APP_VERSION = '1.31.3';
+var APP_BUILD = '2026-10-12T06:31:01.368Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -17031,6 +17037,145 @@ function expKeptOwn(x){
 }
 /* ============================================ ++++++ EXP EDIT RATE ++++++ END == */
 
+/* ========================================== ++++++ ENTRY RELABEL ++++++ ==
+ * ОПЛАТА И ВЫДАЧА, ЗАПИСАННЫЕ ДО «ТОЛЬКО ПЕРЕИМЕНОВАТЬ» (находки Г28, Г27).
+ *
+ * ЧТО БЫЛО. Оплата «100 USD» записана при основной AED — хранится 367.25.
+ * Основную переименовали в USD: числа те же, читаются как USD. Форма правки
+ * открывалась с набранным «100.00 USD»; сумму подняли до 120 — записывалось
+ * 120.00 вместо 440.70: toBaseCents() переводит по СЕГОДНЯШНЕМУ курсу в
+ * НЫНЕШНЮЮ основную, а у валюты, ставшей основной, он единица. Запись
+ * падала в 3,67 раза, долг человека вырос. У цены выдачи — то же. Это
+ * находка А9, оставшаяся у оплат и выдач.
+ *
+ * ПРАВИЛО — ТО ЖЕ, ЧТО У РАСХОДА (слова владельца 11.10.2026): правка после
+ * «только переименовать» идёт КУРСОМ САМОЙ ЗАПИСИ. Ответ один на все три
+ * вида записей — expEditRate(); оплата и выдача берут у него только род
+ * own: снимок курсов записи снят в ДРУГОЙ основной валюте, а правят в
+ * валюте ввода записи.
+ *
+ * ГРАНИЦА (слово владельца 11.10.2026: «в Г28 это не смешивай»). Без
+ * переименования и после «Пересчитать» оплата и выдача считают изменённую
+ * сумму СЕГОДНЯШНИМ курсом, как считали. Привести их к расходу (курс
+ * записи заморожен всегда) — отдельная задача.
+ *
+ * Здесь только читают: ни записи, ни хранилища, ни render().
+ * ================================================================== */
+
+/** Было ли «только переименовать» ПОСЛЕ того, как запись создали, — по
+ *  истории курсов (settings.rateLog хранит каждую смену основной валюты и не
+ *  укорачивается). Равное время считается «после»: запись, созданная уже в
+ *  новой основной, несёт снимок в ней и сюда не доходит. У записи без времени
+ *  создания ответ «да» — прежнее поведение задачи. */
+function recRelabeledAfter(rec){
+  var log = state.settings.rateLog || [], made = String(rec.createdAt || '');
+  for (var i = 0; i < log.length; i++){
+    var e = log[i];
+    if (e && e.k === 'base' && e.mode === 'relabel' && String(e.at || '') >= made) return true;
+  }
+  return false;
+}
+/** Курс самой записи для суммы в валюте code — или null.
+ *  stored — хранимое число, с которым соотносится «введено»: amountCents
+ *  оплаты, unitPriceCents выдачи (у неё «введено» — цена за штуку). */
+function recOwnRate(rec, stored, code){
+  if (!rec) return null;
+  /* Запись набрана в НЫНЕШНЕЙ основной валюте, а «только переименовать» после
+     неё не было: её снимок курсов в другой валюте — след «пересчитать и
+     вернуть», а не переименования. Своего курса у неё нет: новая сумма равна
+     набранной, как и до задачи (слово владельца 12.10.2026 — запись с
+     «введено» 1958.50 и записанным 1958.49 при правке на 2000.00 обязана
+     дать 2000.00, а не 1999.99). */
+  if (rec.entryCur === state.settings.baseCurrency && !recRelabeledAfter(rec)) return null;
+  var er = expEditRate({ amountCents: stored, entryCur: rec.entryCur, entryMinor: rec.entryMinor,
+                         rateSnap: rec.rateSnap }, code);
+  if (er.kind !== 'own') return null;
+  return er;
+}
+/** Валюта ввода записи сама стала основной, а хранится запись другим
+ *  числом: набрано «100.00 USD», записано «367.25 USD». ЕДИНСТВЕННЫЙ ответ
+ *  «такая ли это оплата или выдача» — его читают списки, листы и окно
+ *  «Истории». Двойник expKeptOwn() расхода: род курса — тот же вопрос. */
+function recKeptOwn(rec, stored){
+  var e = recEntry(rec);
+  if (!e || e.cur !== state.settings.baseCurrency || e.minor === stored) return false;
+  return !!recOwnRate(rec, stored, e.cur);
+}
+/** «курс записи: 1 USD = 3.6725 AED (до переименования)» — теми же словами
+ *  и ключами, что строка «курс:» расхода. Пусто, когда запись не такая. */
+function recOwnRateText(rec, stored){
+  var e = recEntry(rec);
+  if (!e || !recKeptOwn(rec, stored)) return '';
+  var er = recOwnRate(rec, stored, e.cur);
+  return er.was
+    ? tr('exp.rateWas', { rate: '1 ' + esc(e.cur) + ' = ' + esc(trimNum(er.r)) + ' ' + esc(er.was) })
+    : tr('exp.rateKept', { cur: esc(e.cur), k: esc(trimNum(er.r)) });
+}
+/** Хвост листа записи: «(введено 100.00 USD)» и курс записи. hasEntry() у
+ *  такой записи молчит — валюта ввода и есть основная, — а набранное число
+ *  у неё другое, и без него записанная сумма осталась бы без объяснения. */
+function recOwnSheetHTML(rec, stored){
+  if (!recKeptOwn(rec, stored)) return '';
+  return '<br>' + tr('entry.inline', { v: fmtMinor(rec.entryMinor), cur: esc(rec.entryCur) }) +
+         '<br>' + recOwnRateText(rec, stored);
+}
+/** «(введено 30.00 USD за штуку)» — набранная ЦЕНА строки выдачи. У выдачи
+ *  «введено» — цена за штуку, и лист говорит это: рядом стоит записанная
+ *  цена за штуку, и обе обязаны быть на одной основе (слово владельца
+ *  11.10.2026). Печатается там же, где сумма строки несёт набранное: валюта
+ *  ввода не основная — или стала основной, а хранится запись другим числом. */
+function txEntryUnitHTML(t){
+  if (!(hasEntry(t) || recKeptOwn(t, t.unitPriceCents))) return '';
+  return tr('entry.unit', { v: fmtMinor(t.entryMinor), cur: esc(t.entryCur) });
+}
+/** Курс записи — один на выдачу, когда он один у всех её строк; иначе
+ *  пусто: без него «45.00 USD / 165.26 USD» читалось бы как ошибка. */
+function handoutOwnRateText(ls){
+  var rts = (ls || []).map(function(t){ return recOwnRateText(t, t.unitPriceCents); });
+  return (rts.length && rts.every(function(x){ return !!x && x === rts[0]; })) ? rts[0] : '';
+}
+/** Вторая подпись строки выдачи в листе и в окне «Истории»: набранная цена
+ *  за штуку и метка скидки. Без «введено» — одна метка, как печаталась. */
+function txLineSub2(t, discHTML){
+  var u = txEntryUnitHTML(t);
+  return u && discHTML ? u + ' ' + discHTML : (u || discHTML);
+}
+/** Фраза подсказки формы: каким курсом посчитана ИЗМЕНЁННАЯ сумма. Слова —
+ *  те же, что под суммой расхода. */
+function recOwnHint(er, cur){
+  var b = state.settings.baseCurrency;
+  if (cur !== b) return tr('exp.editOwn', { rate: '1 ' + esc(cur) + ' = ' + esc(trimNum(er.r)) + ' ' + esc(b) });
+  return er.was
+    ? tr('exp.editOwnWas', { rate: '1 ' + esc(cur) + ' = ' + esc(trimNum(er.r)) + ' ' + esc(er.was) })
+    : tr('rec.editOwnBase', { cur: esc(cur), k: esc(trimNum(er.r)) });
+}
+/** ЕДИНСТВЕННЫЙ ответ «сколько копеек основной валюты ЗА ШТУКУ запишет строка
+ *  выдачи». was — запись строки (null у новой), m — цена из поля в минорных
+ *  единицах валюты cur. Не тронутая цена — хранимая; изменённая у строки,
+ *  записанной до переименования, — курсом самой записи; иначе сегодняшний
+ *  курс, как было. null — курса нет. */
+function txLineCents(was, cur, m){
+  if (was && cur === was.entryCur && m === was.entryMinor) return was.unitPriceCents;
+  var er = was ? recOwnRate(was, was.unitPriceCents, cur) : null;
+  return er ? Math.round(m * er.r) : toBaseCents(m, cur);
+}
+/** Запись строки ФОРМЫ выдачи и её курс для валюты поля — или null, когда
+ *  своего курса у строки нет. Подсказки формы спрашивают именно это: у
+ *  прочих строк они считают как считали (находка Г8 этой задачей не
+ *  тронута). */
+function txLineOwn(l){
+  var was = (l && l.txId) ? txById(l.txId) : null;
+  var er = was ? recOwnRate(was, was.unitPriceCents, l.cur) : null;
+  return er ? { was: was, er: er } : null;
+}
+/** Цена из поля в копейках основной валюты — для подсказки, пары «цена ↔ скидка %»
+ *  и итога под формой: то же число, что запишет handoutSave(). */
+function txHintCents(l, m){
+  var lo = txLineOwn(l);
+  return lo ? txLineCents(lo.was, l.cur, m) : toBaseCents(m, l.cur);
+}
+/* ========================================== ++++++ ENTRY RELABEL ++++++ END == */
+
 /* ---- «каким курсом посчитано» ------------------------------------------ */
 
 /** Курс, которым посчитана ЭТА запись, — или null, когда называть нечего
@@ -21384,7 +21529,7 @@ function txPriceCents(i){
   var l = txLine(i || 0);
   if (!l) return null;
   var m = parseMoneyToCents(l.price);
-  return m === null ? null : toBaseCents(m, l.cur);
+  return m === null ? null : txHintCents(l, m);     /* ++++++ ENTRY RELABEL ++++++ то же число, что запишется */
 }
 /** Текст поля «скидка %» — ПРОИЗВОДНОЕ от цены, нигде не хранимое.
  *  Пустая строка честнее нуля: ноль здесь значит «цена ровно обычная», а
@@ -21414,7 +21559,9 @@ function discSyncPair(source, i){
       if (u === null) discErrs[i] = tr('disc.noPrice');
       else if (pct === null) discErrs[i] = tr('disc.errRange');
       else {
-        var um = convertFor(u, l.cur);
+        /* ++++++ ENTRY RELABEL ++++++ у строки, записанной до «только переименовать», цена в
+           поле стоит в масштабе своей записи — обычная цена приводится к нему же */
+        var loP = txLineOwn(l), um = loP ? u / loP.er.r / 100 : convertFor(u, l.cur);
         var v = um === null ? null : discPriceValue(um, pct);
         if (v === null) discErrs[i] = tr('disc.errNeg');
         else {
@@ -24868,7 +25015,7 @@ function viewProductCard(){
     var per = personById(t.personId);
     who += row({ lead: av(per ? per.name : '?'), k: esc(per ? per.name : '—'),
       sub: fmtDateLong(t.date) + ' · ' + nq(t.qty, 'unit'),
-      v: recV(t.qty * t.unitPriceCents, t, t.qty) });
+      v: recV(t.qty * t.unitPriceCents, t, t.qty, recKeptOwn(t, t.unitPriceCents)) });   /* ++++++ ENTRY RELABEL ++++++ */
   });
   h += listCard(tr('prod.card.whoTook') + ' · ' + tr('sum.inCur', {note: secNote('transactions') || '—'}), who);
   h += '<div class="btns">' + btn(tr('prod.editProduct'), 'product-edit', 'ghost', p.id) +
@@ -26247,8 +26394,11 @@ function ledSheetHTML(d){
                sub: d.retN > 0 ? tr('led.retNote', {n: units(d.retN)}) : '' });
     h += row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
     h += row({ cls:'wrap', k: tr('w.unitPrice'), v: baseOne(d.unitCents),
-               sub2: discMarkHTML(d.disc, baseOne) });
-    h += row({ cls:'wrap', k: tr('led.d.sum'), v: recV(d.totalCents, d.rec, d.qty) });
+               /* ++++++ ENTRY RELABEL ++++++ под записанной ценой за штуку — набранная, тоже за штуку;
+                  под суммой — курс записи (слово владельца 11.10.2026) */
+               sub2: txLineSub2(d.rec, discMarkHTML(d.disc, baseOne)) });
+    h += row({ cls:'wrap', k: tr('led.d.sum'), v: recV(d.totalCents, d.rec, d.qty, recKeptOwn(d.rec, d.unitCents)),
+               sub2: recOwnRateText(d.rec, d.unitCents) });
     h += d.costCents === null
       ? row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: '—', sub2: tr('led.d.noCost') })
       : row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: baseOne(d.costCents),
@@ -26258,7 +26408,8 @@ function ledSheetHTML(d){
       : row({ cls:'wrap', k: tr('earn.earned'), v: baseOne(d.earnCents),
               vcls: d.earnCents < 0 ? 'neg' : '' });
   } else if (d.kind === 'pay'){
-    h += row({ cls:'wrap', k: tr('pay.amount'), v: recV(d.amountCents, d.rec) });
+    h += row({ cls:'wrap', k: tr('pay.amount'), v: recV(d.amountCents, d.rec, null, recKeptOwn(d.rec, d.amountCents)),
+               sub2: recOwnRateText(d.rec, d.amountCents) });   /* ++++++ ENTRY RELABEL ++++++ */
     h += row({ cls:'wrap', k: tr('w.date'), v: fmtDateLong(d.date) });
     h += row({ cls:'wrap', k: tr('led.d.cur'),
                v: d.entry ? esc(d.entry.cur) : '<span class="muted">' + tr('led.d.curNone') + '</span>' });
@@ -26753,7 +26904,7 @@ function txListHTML(){
     rows += row({ lead: avsq(units(t.qty)), k: esc(p ? p.name : '—'),
       sub: esc(per ? per.name : '—') + ' · ' + fmtDateLong(t.date),
       sub2: discMarkHTML(discTx(t), function(c){ return secBare(sec, c); }),
-      v: recV(t.qty * t.unitPriceCents, t, t.qty), act:'tx-open', arg:t.id });
+      v: recV(t.qty * t.unitPriceCents, t, t.qty, recKeptOwn(t, t.unitPriceCents)), act:'tx-open', arg:t.id });   /* ++++++ ENTRY RELABEL ++++++ */
   });
   return listCard('', rows);
 }
@@ -26791,10 +26942,15 @@ function txHintText(i){
   }
   var q = parseIntStrict(l.qty), m = parseMoneyToCents(l.price);
   if (q && m !== null){
-    var cents = toBaseCents(m, l.cur);
+    /* ++++++ ENTRY RELABEL ++++++ у строки, записанной до «только переименовать», подсказка
+       называет то, что запишется: не тронутая цена — «как записано»,
+       изменённая — курсом самой записи, и курс назван */
+    var lo = txLineOwn(l), cents = txHintCents(l, m);
+    var keptL = !!lo && l.cur === lo.was.entryCur && m === lo.was.entryMinor;
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(l.cur)}));
-    else out.push(tr('tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(l.cur),
+    else out.push(tr(keptL ? 'tx.keepStore' : 'tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(l.cur),
       sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
+    if (lo && !keptL && cents !== null) out.push(recOwnHint(lo.er, l.cur));
   }
   /* ++++++ DISCOUNT ++++++ третья часть, через тот же « · ». Негодный
      процент вытесняет рассказ о скидке: пока в поле стоит то, чего не
@@ -26846,7 +27002,7 @@ function payListHTML(){
        поэтому «· 50.00 USD» в подписи стало бы вторым тем же числом на
        той же строке. Провенанс печатается один раз и крупно. */
     rows += row({ lead: av(per ? per.name : '?'), k: esc(per ? per.name : '—'), sub: sub,
-      v: recV(y.amountCents, y), act:'pay-open', arg:y.id });
+      v: recV(y.amountCents, y, null, recKeptOwn(y, y.amountCents)), act:'pay-open', arg:y.id });   /* ++++++ ENTRY RELABEL ++++++ */
   });
   return listCard('', rows);
 }
@@ -27035,6 +27191,10 @@ function payCentsOf(f){
   if (f.editId){
     var y = payById(f.editId);
     if (recEditKeeps(y, f.cur, m)) return y.amountCents;
+    /* ++++++ ENTRY RELABEL ++++++ оплата записана до «только переименовать» — изменённая
+       сумма считается курсом самой записи (120 USD → 440.70, а не 120.00) */
+    var er = y ? recOwnRate(y, y.amountCents, f.cur) : null;
+    if (er) return Math.round(m * er.r);
   }
   return toBaseCents(m, f.cur);
 }
@@ -27097,11 +27257,17 @@ function payHintText(){
     /* не тронутая сумма в неосновной валюте — отдельная фраза: стрелка
        «100.00 USD → 367.25 AED» по сегодняшнему курсу 3.80 читалась бы
        как ошибка пересчёта */
-    var kept = !!f.editId && f.cur !== state.settings.baseCurrency &&
-               recEditKeeps(payById(f.editId), f.cur, m);
+    /* ++++++ ENTRY RELABEL ++++++ не тронутая сумма, набранная в НЫНЕШНЕЙ основной валюте, а
+       хранимая другим числом, — тоже «как записано», а не «будет записано» */
+    var yEd = f.editId ? payById(f.editId) : null, keeps = !!yEd && recEditKeeps(yEd, f.cur, m);
+    var kept = keeps && (f.cur !== state.settings.baseCurrency || cents !== m);
     if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
     else out.push(tr(kept ? 'pay.keepStore' : 'pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
+    /* ++++++ ENTRY RELABEL ++++++ изменённая сумма посчитана курсом самой записи — подсказка
+       называет его теми же словами, что под суммой расхода */
+    var erP = (yEd && !keeps && cents !== null) ? recOwnRate(yEd, yEd.amountCents, f.cur) : null;
+    if (erP) out.push(recOwnHint(erP, f.cur));
   }
   /* ++++++ PAY FILL ++++++ переплата называется — и только там, где она
      есть и где её сделала кнопка. Сообщение, печатающееся при любом
@@ -27780,8 +27946,13 @@ function startExpEdit(id){
  *  место, где его видно полностью. */
 function expSheet(x){
   var body = '<div class="body">' +
+    /* ++++++ ENTRY RELABEL ++++++ Г27: первая строка — ЗАПИСАННОЕ число в основной валюте, как у
+       листов оплаты и выдачи. Здесь стоял пересчёт в валюту «Сводки»: при
+       «Сводке» не в основной на листе не было записанного числа, и строке
+       «курс:» ниже не с чем было сойтись (слово владельца 11.10.2026: «лист
+       показывает записанное число, „введено" и курс») */
     tr('exp.sheetLine', { cat: esc(tr('exp.cat.' + x.cat)),
-      sum: dcMoney(dcCents(x.amountCents, x.rateSnap)), date: fmtDateLong(x.date) }) +
+      sum: baseOne(x.amountCents), date: fmtDateLong(x.date) }) +
     (x.note ? '<br>' + esc(x.note) : '') +
     (hasEntry(x) ? '<br>' + entryInline(x) : '') +
     /* ++++++ EXP EDIT RATE ++++++ hasEntry() молчит, когда валюта ввода и есть основная; у расхода,
@@ -27808,8 +27979,10 @@ function deleteExp(id){
   var x = expById(id);
   if (!x) return;
   confirmBox(tr('dlg.delExpTitle'),
+    /* ++++++ ENTRY RELABEL ++++++ то же число, что на листе, с которого окно открыли (Г27): записанное,
+       а не пересчёт в валюту «Сводки» (слово владельца 11.10.2026) */
     tr('dlg.delExpBody', { cat: esc(tr('exp.cat.' + x.cat)),
-      sum: dcMoney(dcCents(x.amountCents, x.rateSnap)), date: fmtDateLong(x.date) }) +
+      sum: baseOne(x.amountCents), date: fmtDateLong(x.date) }) +
       trashNoteHTML(),
     tr('dlg.trashOk'), true).then(function(okd){
       if (!okd) return;
@@ -31304,8 +31477,10 @@ function handoutSave(o){
        валюте, что записано, — значит и хранимая сумма та же. Форма
        открывает правку в валюте ввода, и пересчёт по сегодняшнему курсу
        сдвинул бы уже проданное (домен-правило 6). */
-    var cents = (was && l.cur === was.entryCur && m === was.entryMinor)
-      ? was.unitPriceCents : toBaseCents(m, l.cur);
+    /* ++++++ ENTRY RELABEL ++++++ ответ один — txLineCents(): не тронутая цена хранимая,
+       изменённая у строки, записанной до «только переименовать», — курсом
+       самой записи, иначе сегодняшний курс, как было */
+    var cents = txLineCents(was, l.cur, m);
     if (cents === null) return no(tag(i, noRateText(l.cur)), i);
     /* ++++++ GOODS RETURN ++++++ строку ниже возвращённого не урезать —
        тот же отказ и те же слова, что у одиночной выдачи в saveTx().
@@ -31571,7 +31746,7 @@ function txTotalHTML(){
     l = txLine(i);
     q = parseIntStrict(l.qty); m = parseMoneyToCents(l.price);
     if (!l.productId || !q || m === null) continue;
-    c = toBaseCents(m, l.cur);
+    c = txHintCents(l, m);                           /* ++++++ ENTRY RELABEL ++++++ */
     if (c === null){ noRate = true; continue; }
     filled++; qSum += q; cSum += q * c;
   }
@@ -31672,7 +31847,10 @@ function handoutV(lines){
     minor += e.minor * t.qty;
   }
   if (!same || cur === null) return baseOne(cents);
-  return recV(cents, { entryCur: cur, entryMinor: minor }, 1);
+  /* ++++++ ENTRY RELABEL ++++++ набранное и записанное — только когда ТАКОВЫ ВСЕ строки:
+     сумма набранного у строк разного масштаба не значила бы ничего */
+  var both = lines.every(function(t){ return recKeptOwn(t, t.unitPriceCents); });
+  return recV(cents, { entryCur: cur, entryMinor: minor }, 1, both);
 }
 /** Строки выдачи словами: «2 × Чайник, 1 × Ложка». */
 function handoutLinesText(lines){
@@ -31743,9 +31921,9 @@ function ledHandSheetHTML(d){
     h += row({ cls:'wrap', k: units(x.qty) + ' × ' + esc(x.name || '—'),
       sub: tr('led.perUnit', {v: baseOne(x.unitCents)}) +
            (x.retN > 0 ? ' · ' + tr('led.retNote', {n: units(x.retN)}) : ''),
-      sub2: discMarkHTML(x.disc, baseOne), v: recV(x.totalCents, x.rec, x.qty) });
+      sub2: txLineSub2(x.rec, discMarkHTML(x.disc, baseOne)), v: recV(x.totalCents, x.rec, x.qty, recKeptOwn(x.rec, x.unitCents)) });   /* ++++++ ENTRY RELABEL ++++++ */
   });
-  h += row({ cls:'wrap', k: tr('led.d.sum'), v: handoutV(d.recs) });
+  h += row({ cls:'wrap', k: tr('led.d.sum'), v: handoutV(d.recs), sub2: handoutOwnRateText(d.recs) });   /* ++++++ ENTRY RELABEL ++++++ */
   h += d.costCents === null
     ? row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: '—', sub2: tr('led.d.noCost') })
     : row({ cls:'wrap', k: tr('sum.costOfHandedOut'), v: baseOne(d.costCents),
@@ -31803,12 +31981,14 @@ function txHandSheet(ls){
     var p = productById(t.productId);
     rows += row({ cls:'wrap', k: units(t.qty) + ' × ' + esc(p ? p.name : '—'),
       sub: tr('led.perUnit', {v: secOne(sec, t.unitPriceCents)}),
-      sub2: discMarkHTML(discTx(t), function(c){ return secBare(sec, c); }),
-      v: recV(t.qty * t.unitPriceCents, t, t.qty) });
+      /* ++++++ ENTRY RELABEL ++++++ под записанной ценой за штуку — набранная, тоже за штуку */
+      sub2: txLineSub2(t, discMarkHTML(discTx(t), function(c){ return secBare(sec, c); })),
+      v: recV(t.qty * t.unitPriceCents, t, t.qty, recKeptOwn(t, t.unitPriceCents)) });
   });
   rows += row({ cls:'wrap', k: '<b>' + tr('w.total') + '</b>', v: '<b>' + handoutV(ls) + '</b>' });
+  var rt1 = handoutOwnRateText(ls);          /* ++++++ ENTRY RELABEL ++++++ курс записи — одной строкой на выдачу */
   var body = '<div class="body">' + esc(per ? per.name : '—') + ' · ' + fmtDateLong(t0.date) +
-    ' · ' + nq(ls.length, 'product') + '</div><div class="rows">' + rows + '</div>';
+    ' · ' + nq(ls.length, 'product') + (rt1 ? '<br>' + rt1 : '') + '</div><div class="rows">' + rows + '</div>';
   dialog({ title: tr('tab.transactions'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
@@ -31849,7 +32029,7 @@ function savePay(){
   var m = parseMoneyToCents(f.amount);
   if (m === null){ ui.err = tr('err.payAmount'); render(); return; }
   if (!payAllows(f.cur)){ ui.err = noRateText(f.cur); render(); return; }
-  var cents = toBaseCents(m, f.cur);
+  var cents = payCentsOf(f);                 /* ++++++ ENTRY RELABEL ++++++ то же число, что назвала подсказка */
   if (cents === null){ ui.err = noRateText(f.cur); render(); return; }
   if (f.editId){
     var y = payById(f.editId);
@@ -31951,8 +32131,13 @@ function txSheet(t){
     tr('tx.sheetLine', {person: esc(per ? per.name : '—'), q: units(t.qty),
       name: esc(p ? p.name : '—'), date: fmtDateLong(t.date),
       price: secOne('transactions', t.unitPriceCents)}) +
+    /* ++++++ ENTRY RELABEL ++++++ «введено» у выдачи — цена ЗА ШТУКУ: она стоит сразу за
+       записанной ценой за штуку и названа теми же словами. Здесь стояло
+       «(введено 30.00 USD)» после итога за всё — две суммы на разной основе
+       (слово владельца 11.10.2026). Ниже — курс записи. */
+    (txEntryUnitHTML(t) ? ' ' + txEntryUnitHTML(t) : '') +
     '<br><b>' + tr('w.total') + ': ' + secOne('transactions', t.qty * t.unitPriceCents) + '</b>' +
-    (hasEntry(t) ? '<br>' + entryInline(t) : '') + '</div>';
+    (recOwnRateText(t, t.unitPriceCents) ? '<br>' + recOwnRateText(t, t.unitPriceCents) : '') + '</div>';
   dialog({ title: tr('tab.transactions'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
@@ -31966,7 +32151,8 @@ function paySheet(y){
     tr('pay.sheetLine', {person: esc(per ? per.name : '—'),
       sum: secOne('payments', y.amountCents), date: fmtDateLong(y.date)}) +
     (y.note ? ' · ' + esc(y.note) : '') +
-    (hasEntry(y) ? '<br>' + entryInline(y) : '') + '</div>';
+    (hasEntry(y) ? '<br>' + entryInline(y) : '') +
+    recOwnSheetHTML(y, y.amountCents) + '</div>';   /* ++++++ ENTRY RELABEL ++++++ */
   dialog({ title: tr('tab.payments'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
