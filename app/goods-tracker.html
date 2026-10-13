@@ -475,6 +475,7 @@
   .f .two.wrap{flex-wrap:wrap}
   .f .two.wrap > *{min-width:168px}
   .f small.hint{display:block;font-size:12.5px;color:var(--muted);margin-top:6px}
+  .f small.hint .hint2{display:block;font-size:11.5px;margin:1px 0 3px}   /* ++++++ STOCK WORDS ++++++ */
 
   /* ++++++ BUTTONS ++++++ ОДНА база и три варианта. Общими остаются
      радиус, отступы, высота и шрифт — именно их несовпадение было видно
@@ -2006,8 +2007,10 @@ var STR = {
                      ru:'Количество должно быть целым положительным числом.' },
 'err.txPrice':     { en:'Unit price must be a non-negative number.',
                      ru:'Цена за штуку должна быть неотрицательным числом.' },
-'err.txStock':     { en:'Not enough stock: only {n} unit(s) of "{name}" remain, but {q} were entered. Nothing was saved.',
-                     ru:'Недостаточно товара: «{name}» осталось {n} шт., а введено {q}. Ничего не сохранено.' },
+'err.txStock':     { en:'Not enough "{name}": this handout can take up to {n}, but {q} were entered. Nothing was saved.',
+                     ru:'Недостаточно товара «{name}»: в этой выдаче можно указать до {n} шт., а введено {q}. Ничего не сохранено.' },
+'err.txStockNone': { en:'Not enough "{name}": nothing to hand out (in stock: {s}), but {q} were entered. Nothing was saved.',
+                     ru:'Недостаточно товара «{name}»: выдать нечего (на складе: {s} шт), а введено {q}. Ничего не сохранено.' },
 'err.txGone':      { en:'That transaction no longer exists.', ru:'Этой выдачи больше нет.' },
 'msg.txUpdated':   { en:'Transaction updated.', ru:'Выдача обновлена.' },
 'msg.txSaved':     { en:'Transaction saved — stock reduced by {n}{entry}.',
@@ -2207,7 +2210,7 @@ var STR = {
                     ru:'Товаров без цены: {n} — их штуки и себестоимость посчитаны, а в выручку ' +
                        'и прибыль они не вошли.' },
 
-'sel.available':      { en:'{name}  ({n} available)', ru:'{name}  (доступно: {n})' },
+'sel.available':      { en:'{name}  (in stock: {n})', ru:'{name}  (на складе: {n})' },
 
 /* ---------------- Currency & Backup tab ---------------- */
 'cur.code':       { en:'Code',        ru:'Код' },
@@ -2747,10 +2750,10 @@ var STR = {
                           'полоса: какой товар и на сколько. У лишних штук нет закупки, поэтому прибыль по ним завышена. ' +
                           'Уберите лишнюю выдачу или оформите приход — и полоса уйдёт сама.' },
 'faq.a.goodsStock3': { en:'The app will not let you hand out more than there is. Try to give 20 out ' +
-                          'of 18 and it refuses and says how many are left. Goods that come back go ' +
+                          'of 18 and it refuses and says how many you can enter. Goods that come back go ' +
                           'onto the shelf again and can be handed out a second time.',
                        ru:'Больше, чем есть, программа выдать не даст: попробуете выдать 20 из 18 — ' +
-                          'откажет и скажет, сколько осталось. Возвращённый товар снова ложится на ' +
+                          'откажет и скажет, сколько можно указать. Возвращённый товар снова ложится на ' +
                           'склад, и его можно выдать ещё раз.' },
 
 /* ---- ЛЮДИ И ДОЛГИ ---- */
@@ -3909,7 +3912,7 @@ var STR = {
 'prod.handedOutOf':{ en:'{a} of {b} handed out &middot; {sum} profit',
                      ru:'выдано {a} из {b} &middot; прибыль {sum}' },
 'prod.costToSell':{ en:'cost {a} &rarr; sells at {b}',      ru:'закупка {a} &rarr; продажа {b}' },
-'prod.leftOf':   { en:'{n} left in stock',                  ru:'{n} шт в остатке' },
+'prod.leftOf':   { en:'in stock: {n}',                      ru:'на складе: {n} шт' },
 'prod.card.left':{ en:'Left',                               ru:'Осталось' },
 'prod.card.figures':{ en:'Figures for this product',        ru:'Цифры по товару' },
 'prod.card.batches':{ en:'Shipments',                       ru:'Партии' },
@@ -3934,8 +3937,8 @@ var STR = {
 'prod.mergeIdle':{ en:'If this product already exists, the shipment is added to it.',
                    ru:'Если такой товар уже есть, новая партия прибавится к нему.' },
 'prod.mergeNew': { en:'A new product.',                     ru:'Новый товар.' },
-'prod.mergeExisting':{ en:'This product already exists: {left} left. The shipment joins the same line.',
-                       ru:'Такой товар уже есть: {left} шт в остатке. Партия прибавится к той же строке.' },
+'prod.mergeExisting':{ en:'This product already exists, in stock: {left}. The shipment joins the same line.',
+                       ru:'Такой товар уже есть, на складе: {left} шт. Партия прибавится к той же строке.' },
 
 /* ---------------- инвойс из нескольких позиций ---------------- */
 'inv.whole':     { en:'The invoice as a whole',             ru:'Инвойс целиком' },
@@ -4112,7 +4115,28 @@ var STR = {
                        ru:'В одну выдачу можно записать несколько товаров: под товаром нажмите <b>«+ Добавить товар»</b>. ' +
                           'Выдача сохраняется целиком, а в списке и в «Истории» человека стоит одной строкой с общей ' +
                           'суммой. Возврат делается по каждому товару отдельно, удаление уносит всю выдачу.' },
-'tx.inStock':    { en:'{n} in stock',                       ru:'на складе {n} шт' },
+'tx.inStock':    { en:'in stock: {n}',                      ru:'на складе: {n} шт' },
+'tx.stockOver':    { en:'in stock: {n} — more handed out than bought', ru:'на складе: {n} шт — выдано больше, чем куплено' },
+'tx.canAll':       { en:'This handout can take up to {n} ({why})', ru:'В этой выдаче можно указать до {n} ({why})' },
+'tx.canLine':      { en:'This line can take up to {n} ({why})', ru:'В этой строке можно указать до {n} ({why})' },
+'tx.none':         { en:'Nothing to hand out', ru:'Выдать нечего' },
+'tx.noneWhy':      { en:'Nothing to hand out ({why})', ru:'Выдать нечего ({why})' },
+'tx.whyStock':     { en:'in stock {s}', ru:'на складе {s}' },
+'tx.whyOwnAdd':    { en:' + {h} of this line', ru:' + {h} этой строки' },
+'tx.whyHeldAdd':   { en:' + {h} already in the handout', ru:' + {h} уже в выдаче' },
+'tx.whyTotal':     { en:'{t} for the whole handout', ru:'на всю выдачу {t}' },
+'tx.whyOther1':    { en:', {o} in another line', ru:', в другой строке {o}' },
+'tx.whyOtherN':    { en:', {o} in other lines', ru:', в других строках {o}' },
+'tx.whyHeld':      { en:'that is what it already holds', ru:'столько в ней уже есть' },
+'tx.whyHeldN':     { en:'the handout already holds {h}', ru:'в выдаче уже {h}' },
+'tx.totalIs':      { en:'For the whole handout {t}: in stock {s}{add}', ru:'На всю выдачу {t}: на складе {s}{add}' },
+'tx.heldIs':       { en:'Already in the handout {h}: {parts}', ru:'Уже в выдаче {h}: {parts}' },
+'tx.partOwn':      { en:'{n} of this line', ru:'{n} этой строки' },
+'tx.partElse':     { en:'{n} in other lines', ru:'{n} в других строках' },
+'tx.partGone1':    { en:'{n} from the removed line', ru:'{n} из убранной строки' },
+'tx.partGoneN':    { en:'{n} from the removed lines', ru:'{n} из убранных строк' },
+'tx.goneNote1':    { en:'. The removed line had {raw}, {r} already returned — {n} left.', ru:'. В убранной строке было {raw} шт, {r} уже вернули — остаётся {n}.' },
+'tx.goneNoteN':    { en:'. The removed lines had {raw}, {r} already returned — {n} left.', ru:'. В убранных строках было {raw} шт, {r} уже вернули — остаётся {n}.' },
 'tx.willStore':  { en:'{q} &times; {v} {cur} = {sum} will be stored',
                    ru:'{q} &times; {v} {cur} = {sum} будет записано' },
 'tx.sheetLine':  { en:'{person} took {q} &times; {name}<br>{date} &middot; at {price} per unit',
@@ -5465,8 +5489,10 @@ var STR = {
 /* Отказы восстановления. Заголовок один на все три: владельцу важно, что
    вернуть не вышло, а причина — в теле, с цифрами. */
 'trash.noTitle':   { en:'This cannot be restored', ru:'Вернуть не получится' },
-'trash.noStock':   { en:'There is not enough of «{name}» in stock.<br><br>Needed: <b>{need}</b><br>Available: <b>{have}</b><br><br>Nothing was restored. Restore the product from the trash, or reduce other handouts, and try again.',
-                     ru:'На складе не хватает товара «{name}».<br><br>Нужно: <b>{need}</b><br>Свободно: <b>{have}</b><br><br>Ничего не восстановлено. Верните товар из корзины или уменьшите другие выдачи — и повторите.' },
+'trash.noStock':   { en:'There is not enough of «{name}» in stock.<br><br>Needed: <b>{need}</b><br>In stock: <b>{have}</b><br><br>Nothing was restored. Restore the product from the trash, or reduce other handouts, and try again.',
+                     ru:'На складе не хватает товара «{name}».<br><br>Нужно: <b>{need}</b><br>На складе: <b>{have}</b><br><br>Ничего не восстановлено. Верните товар из корзины или уменьшите другие выдачи — и повторите.' },
+'trash.noStockOwn':{ en:'There is not enough of «{name}» in stock.<br><br>Needed: <b>{need}</b><br>Available: <b>{have}</b> — that is how much of this product was bought; the product itself is in the trash too.<br><br>Nothing was restored: more of this product was handed out than was bought, and the app does not bring such records back from the trash for now.',
+                     ru:'На складе не хватает товара «{name}».<br><br>Нужно: <b>{need}</b><br>Свободно: <b>{have}</b> — столько этого товара куплено; сам товар тоже лежит в корзине.<br><br>Ничего не восстановлено: выдач по этому товару записано больше, чем его куплено, и вернуть такие записи из корзины программа сейчас не даёт.' },
 'trash.noName':    { en:'A product called «{name}» is already in the list.<br><br>Two products with one name are one product entered twice — that is how this program reads them. Rename the existing one, or delete it, and try again.',
                      ru:'Товар с именем «{name}» уже есть в списке.<br><br>Два товара с одним именем — это один товар, введённый дважды: программа их не различает. Переименуйте существующий товар или удалите его — и повторите.' },
 'trash.noPhone':   { en:'The number {phone} already belongs to «{other}».<br><br>One number for two people is an error, not a coincidence. Change the number on the existing record, or delete that record, and try again.',
@@ -7185,8 +7211,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.32.1';
-var APP_BUILD = '2026-10-13T10:16:52.971Z';
+var APP_VERSION = '1.33.0';
+var APP_BUILD = '2026-10-13T18:51:44.538Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -25121,7 +25147,7 @@ function viewProductCard(){
   /* ++++++ ATTACHMENTS ++++++ the picture rides in the page header — name on
      the left, photo on the right — so the figures start one screen higher.
      Replacing and removing it live in the enlarge sheet, not here. */
-  var h = backHead(esc(p.name), cfMarkHTML(p.id) + tr('prod.leftOf', {n: units(st.remaining)}), cardShotHTML(p));   /* ++++++ DISPUTE HOLD ++++++ */
+  var h = backHead(esc(p.name), cfMarkHTML(p.id) + tr('prod.leftOf', {n: stockN(st.remaining)}), cardShotHTML(p));   /* ++++++ DISPUTE HOLD ++++++ */
   h += attErrNote();
   h += cardPhotoNoteHTML(p);
   h += hero({ k: tr('prod.card.left'), v: units(st.remaining) + ' <span class="cur">' + tr('w.pcs') + '</span>',
@@ -25280,7 +25306,7 @@ function mergeNoteText(i){
   if (f.editId || !l.name) return tr('prod.mergeIdle');
   var exist = findProductByName(l.name, f.editId);
   if (!exist) return tr('prod.mergeNew');
-  return tr('prod.mergeExisting', {left: units(productStats()[exist.id].remaining)});
+  return tr('prod.mergeExisting', {left: stockN(productStats()[exist.id].remaining)});   /* ++++++ STOCK WORDS ++++++ */
 }
 /* ++++++ CURRENCY VAT ++++++ ФОРМА ПРИХОДА: ставка приходит из валюты.
  *
@@ -27069,7 +27095,7 @@ function formTx(){
      байт в байт прежняя. */
   var f = ui.form.tx, hItems = newBuyerItems(), pItems = [], ps = productStats();
   actProducts().forEach(function(p){
-    pItems.push([p.id, tr('sel.available', {name: p.name, n: units(ps[p.id].remaining)})]);
+    pItems.push([p.id, tr('sel.available', {name: p.name, n: stockN(ps[p.id].remaining)})]);   /* ++++++ STOCK WORDS ++++++ */
   });
   var h = '<form id="fTx" novalidate>' + errNote();
   h += field({ label: tr('tx.toWhom'),
@@ -27094,7 +27120,8 @@ function txHintText(i){
   var l = txLine(i), out = [];
   if (!l) return '';
   if (l.productId){
-    out.push(tr('tx.inStock', {n: units(txAvailFor(l.productId, i))}));
+    var sw = txStockWords(l.productId, i);   /* ++++++ STOCK WORDS ++++++ */
+    sw.main.forEach(function(s){ out.push(s); });
   }
   var q = parseIntStrict(l.qty), m = parseMoneyToCents(l.price);
   if (q && m !== null){
@@ -27138,6 +27165,10 @@ function txHintText(i){
       else out.push(tr('disc.none'));
     } else if (u === null && l.productId) out.push(tr('disc.noPrice'));
   }
+  /* ++++++ STOCK WORDS ++++++ вторая мелкая строка о складе — своим блоком сразу за фразами о складе;
+     сумма и скидка идут после неё с новой строки */
+  if (sw && sw.small) return out.slice(0, sw.main.length).join(' · ') +
+    '<span class="hint2">' + sw.small + '</span>' + out.slice(sw.main.length).join(' · ');
   return out.join(' · ');
 }
 
@@ -29692,8 +29723,11 @@ function trashRestoreAct(group){
     return;
   }
   if (res.reason === 'stock'){
-    trashNoDialog(tr('trash.noStock', { name: esc(res.product),
-      need: units(res.need), have: units(res.have) }));
+    /* ++++++ STOCK WORDS ++++++ товар лежит среди живых — число есть остаток склада, тот же, что везде
+       зовётся «на складе». Товар сам возвращается из корзины этим же нажатием — число другое:
+       сколько его куплено (живых выдач у него нет); там слово прежнее и стоит пояснение */
+    var stockArgs = { name: esc(res.product), need: units(res.need), have: stockN(res.have) };
+    trashNoDialog(res.product && !findProductByName(res.product) ? tr('trash.noStockOwn', stockArgs) : tr('trash.noStock', stockArgs));
   } else if (res.reason === 'name'){
     trashNoDialog(tr('trash.noName', { name: esc(res.name) }));
   } else if (res.reason === 'phone'){
@@ -31701,7 +31735,11 @@ function handoutSave(o){
        условие прежнее: had ≤ avail. */
     if (need[p] > avail && need[p] > had){
       var pr = productById(p);
-      return no(tr('err.txStock', {n: avail, name: pr ? pr.name : '', q: need[p]}));
+      /* ++++++ STOCK WORDS ++++++ отказ называет то же число, что подсказка под ценой, — сколько проверка
+         выше пропускает; нечего выдать — сказано этими словами и назван остаток */
+      var cap = Math.max(avail, had);
+      return no(cap > 0 ? tr('err.txStock', {n: units(cap), name: pr ? pr.name : '', q: need[p]})
+                        : tr('err.txStockNone', {s: stockN(remainingFor(p)), name: pr ? pr.name : '', q: need[p]}));
     }
   }
 
@@ -31903,7 +31941,7 @@ function txLineDel(i){
 function txAvailFor(productId, i){
   var f = ui.form.tx, avail = remainingFor(productId), j, l, q;
   var old = f.editId ? handoutLinesOf(f.editId) : [];
-  for (j = 0; j < old.length; j++) if (old[j].productId === productId) avail += old[j].qty;
+  for (j = 0; j < old.length; j++) if (old[j].productId === productId) avail += txHeldOf(old[j]);   /* ++++++ STOCK WORDS ++++++ Г37 */
   for (j = 0; j < txLineN(); j++){
     if (j === i) continue;
     l = txLine(j);
@@ -31913,6 +31951,106 @@ function txAvailFor(productId, i){
   }
   return avail;
 }
+
+/* ++++++ STOCK WORDS ++++++ слова программы о складе и предел строки выдачи (находки Г35 и Г37, слова
+ * владельца 13.10.2026).
+ *
+ * Чисел у формы ДВА, и считают они разное: ОСТАТОК СКЛАДА (remainingFor) и ПРЕДЕЛ СТРОКИ — сколько
+ * в ней можно указать (txAvailFor: остаток, плюс то, что правимая выдача уже держит, минус набранное
+ * в других строках с тем же товаром). Остаток назывался «доступно», предел — «на складе».
+ *
+ * Остаток — всегда «на складе». Предел — отдельной фразой и только когда он от остатка отличается,
+ * с расшифровкой в скобке: в ней НЕ БОЛЬШЕ ДВУХ СЛАГАЕМЫХ, остальное — второй мелкой строкой, и
+ * числа в обеих сходятся.
+ *
+ * Предел называется ТЕМ ЧИСЛОМ, КОТОРОЕ ПРОПУСКАЕТ handoutSave():
+ *   · при перебранном складе (остаток отрицательный) проверка пропускает правку, которая берёт не
+ *     больше, чем выдача уже держала, — предел там «сколько выдача держит», а не «остаток плюс
+ *     держит»: иначе под ценой стояло бы «до 3», а сохранялось бы 6;
+ *   · строка правимой выдачи, УБРАННАЯ из формы, уйдёт в корзину вместе со своими возвратами — она
+ *     отдаёт пределу количество МИНУС возвращённое (Г37: прежде отдавала всё количество, и под ценой
+ *     стояло 22 там, где сохраняется 20). Ответ один — txHeldOf(), его читают и txAvailFor(), и
+ *     слова. */
+/** Количество со знаком: минус — настоящий «−», а не дефис. */
+function stockN(n){ return n < 0 ? '−' + units(-n) : units(n); }
+/** Строка i формы — это запись id правимой выдачи. Правка, заданная без номера строки (только
+ *  editId, одна строка), — та же запись: так её читает saveTx(). */
+function txLineIs(i, id){
+  var x = txLine(i);
+  if (!x) return false;
+  if (x.txId) return x.txId === id;
+  return i === 0 && txLineN() === 1 && handoutLinesOf(ui.form.tx.editId).length === 1;
+}
+/** Сколько строка t правимой выдачи отдаёт пределу — РОВНО как считает проверка склада в
+ *  handoutSave(): оставленная в форме — всё количество (её возвраты остаются при ней), убранная —
+ *  количество минус возвращённое. */
+function txHeldOf(t){
+  var j;
+  for (j = 0; j < txLineN(); j++) if (txLineIs(j, t.id)) return t.qty;
+  return t.qty - retQtyOf(t.id);
+}
+/** Слова подсказки о складе для строки формы: { main: фразы через « · », small: вторая мелкая
+ *  строка или '' }. Остаток и, если отличается, предел с расшифровкой. */
+function txStockWords(productId, i){
+  var f = ui.form.tx, stock = remainingFor(productId), avail = txAvailFor(productId, i);
+  var old = f.editId ? handoutLinesOf(f.editId) : [], j, x, q, h, k;
+  var held = 0, mine = 0, kept = 0, gone = 0, goneN = 0, goneRet = 0, other = 0, otherN = 0;
+  for (j = 0; j < old.length; j++){
+    if (old[j].productId !== productId) continue;
+    h = txHeldOf(old[j]);
+    held += h;
+    if (txLineIs(i, old[j].id)){ mine += h; continue; }
+    for (k = 0; k < txLineN(); k++) if (txLineIs(k, old[j].id)) break;
+    if (k < txLineN()) kept += h;
+    else { gone += h; goneN++; goneRet += old[j].qty - h; }
+  }
+  for (j = 0; j < txLineN(); j++){
+    if (j === i) continue;
+    x = txLine(j);
+    if (x.productId !== productId) continue;
+    q = parseIntStrict(x.qty);
+    if (q){ other += q; otherN++; }
+  }
+  var over = stock < 0, one = txLineN() === 1, rest = held - mine;
+  var cap = over && held > 0 ? held - other : avail;
+  var res = { main: [over ? tr('tx.stockOver', {n: stockN(stock)}) : tr('tx.inStock', {n: stockN(stock)})], small: '' };
+  if (cap === stock && cap > 0) return res;
+  var tail = other ? (otherN === 1 ? tr('tx.whyOther1', {o: units(other)}) : tr('tx.whyOtherN', {o: units(other)})) : '';
+  var parts = [];
+  if (mine) parts.push(tr('tx.partOwn', {n: units(mine)}));
+  if (kept) parts.push(tr('tx.partElse', {n: units(kept)}));
+  if (goneN) parts.push(goneN === 1 ? tr('tx.partGone1', {n: units(gone)}) : tr('tx.partGoneN', {n: units(gone)}));
+  /* из убранных строк часть уже вернули — сказано отдельным предложением, тремя числами: было, вернули, остаётся */
+  var noteArgs = {raw: units(gone + goneRet), r: units(goneRet), n: units(gone)};
+  var goneNote = !goneRet ? '' : goneN === 1 ? tr('tx.goneNote1', noteArgs) : tr('tx.goneNoteN', noteArgs);
+  var heldIs = parts.length > 1 || goneRet ? tr('tx.heldIs', {h: units(held), parts: parts.join(' + ')}) + goneNote : '';
+  var why = '';
+  if (over && held > 0){
+    /* склад перебран: предел — сколько выдача уже держит */
+    why = other || !one ? tr('tx.whyHeldN', {h: units(held)}) + tail : tr('tx.whyHeld');
+    if (rest) res.small = heldIs;
+  } else if (!held){
+    /* новая выдача или товар, которого в правимой выдаче не было */
+    why = other ? tr('tx.whyStock', {s: stockN(stock)}) + tail : '';
+  } else if (rest === other){
+    /* остальное выдачи стоит на своих местах: на эту строку оно не влияет */
+    why = mine ? tr('tx.whyStock', {s: stockN(stock)}) + tr('tx.whyOwnAdd', {h: units(mine)}) : '';
+  } else if (!other){
+    why = tr('tx.whyStock', {s: stockN(stock)}) + tr('tx.whyHeldAdd', {h: units(held)});
+    res.small = heldIs;
+  } else {
+    why = tr('tx.whyTotal', {t: units(stock + held)}) + tail;
+    res.small = tr('tx.totalIs', {t: units(stock + held), s: stockN(stock),
+      add: rest ? tr('tx.whyHeldAdd', {h: units(held)}) : tr('tx.whyOwnAdd', {h: units(mine)})});
+  }
+  if (cap <= 0) res.main.push(why ? tr('tx.noneWhy', {why: why}) : tr('tx.none'));
+  else {
+    if (!why) why = tr('tx.whyStock', {s: stockN(stock)});
+    res.main.push(one ? tr('tx.canAll', {n: units(cap), why: why}) : tr('tx.canLine', {n: units(cap), why: why}));
+  }
+  return res;
+}
+/* ++++++ STOCK WORDS END ++++++ */
 
 /** Итог под блоками — только когда строк две и больше. Считается в
  *  основной валюте тем же toBaseCents(), каким сохранит handoutSave();
