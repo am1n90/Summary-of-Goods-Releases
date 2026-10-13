@@ -809,6 +809,32 @@
   .rb button.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
   .rb button.danger{background:var(--surface);color:var(--bad);border-color:var(--bad)}
   .rb button[disabled]{opacity:.45;cursor:default;filter:none}
+  /* ++++++ DISABLED DARK ++++++ неактивное в ТЁМНОЙ теме — свои цвета вместо общей прозрачности.
+     Прозрачность .45 смешивает кнопку с тем, что под ней. На белом листе выходит
+     «белые буквы по голубому» — читается; на тёмном — тёмные буквы по тускло-синему,
+     оба цвета внизу шкалы яркости. Контраст по формуле WCAG при этом одинаков (2.0 и
+     2.4), а воспринимаемый (APCA) — 43 против 16: жалоба владельца 11.10.
+     Светлая тема НЕ ТРОНУТА: её правила выше остаются как были. Здесь у каждого вида
+     подпись подобрана замером под то же число, что в светлой теме (допуск 3):
+     заливные 43, вторая 39, красная 39, плашка 42.
+     Поле ставки (.vatpct input:disabled) не тронуто: неактивным программа его не делает.
+     Неактивная остаётся непохожей на активную не яркостью, а видом: заливка тусклая
+     (к листу 2.0 против 6.1) со светлой подписью вместо яркой с тёмной; у контурных —
+     приглушённый цвет вместо акцента и тусклая рамка у красной.
+     Цвета литералами, а не токенами: правила живут только под тёмной темой, а токен,
+     объявленный в одной теме, — это R35 наоборот. */
+  [data-theme="dark"] .btn[disabled],[data-theme="dark"] .chipf.on[disabled],[data-theme="dark"] .rb button.go[disabled]{
+    opacity:1;background:#384b7a;border-color:#384b7a;color:#a2acc3}
+  [data-theme="dark"] .btn.sec[disabled],[data-theme="dark"] .btn.ghost[disabled],[data-theme="dark"] .rb button[disabled]{
+    opacity:1;background:var(--surface);border-color:var(--line);color:#7b8bab}
+  [data-theme="dark"] .btn.danger[disabled],[data-theme="dark"] .rb button.danger[disabled]{
+    opacity:1;background:var(--surface);border-color:#7b421d;color:#a9846e}
+  /* Плашке отличиться цветом нечем: её подпись серая и в активном виде (60 против 42 —
+     на снимке почти одно и то же). Поэтому у неактивной рамка ПУНКТИРОМ: признак, который
+     не зависит от яркости. Ширина рамки та же — кнопка не сдвигается ни на пиксель. */
+  [data-theme="dark"] .chipf[disabled]{opacity:1;color:#8792a0;border-style:dashed;border-color:#3a4553}
+  [data-theme="dark"] .chipf.on[disabled]{border-style:solid}
+  /* ++++++ DISABLED DARK END ++++++ */
   .rb button svg{width:17px;height:17px;flex:0 0 auto}
   @media (max-width:520px){ .rb button{min-height:44px} }
   .alert .rb{margin-top:9px}
@@ -7159,8 +7185,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.32.0';
-var APP_BUILD = '2026-10-12T18:08:54.273Z';
+var APP_VERSION = '1.32.1';
+var APP_BUILD = '2026-10-13T10:16:52.971Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
