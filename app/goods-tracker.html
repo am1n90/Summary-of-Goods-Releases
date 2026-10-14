@@ -3149,6 +3149,9 @@ var STR = {
                           'Удалите товар навсегда — или дайте выйти его сроку — и выдача уйдёт ' +
                           'вместе с ним, потому что без товара это уже не запись. Сколько таких ' +
                           'записей уйдёт, окно говорит до нажатия.' },
+/* ++++++ TRASH KEEP ++++++ седьмой абзац: «уходит навсегда сама» верно не для всякой записи */
+'faq.a.trashWhat7':  { en:'The trash does not clear a record on its own if it cannot be restored right now — for example, the product name is already taken by another product, or restoring it would leave less than zero in stock. Such a record is marked in the trash with the words «Not cleared on its own» and waits until you restore it or delete it yourself.',
+                       ru:'Сама корзина не убирает запись, которую сейчас нельзя вернуть: например, название товара уже занято другим товаром или после возврата на складе стало бы меньше нуля. Такая запись помечена в корзине словами «Не убирается сама» и ждёт, пока вы её вернёте или удалите сами.' },
 'faq.a.trashWhat4':  { en:'Photos and invoices are not touched while the record is in the trash — ' +
                           'they are still there when it comes back. Only a record leaving for good — ' +
                           '«Delete for good» or the end of its time in the trash — destroys them, and ' +
@@ -5017,8 +5020,7 @@ var STR = {
 /* ---- корзина ---- */
 'trash.tLoan':     { en:'Cash loan',              ru:'Долг' },
 'trash.tRepay':    { en:'Loan repayment',         ru:'Возврат долга' },
-'trash.noLoan':    { en:'Only <b>{have}</b> is still outstanding on the loan «{name}», and the trash holds repayments of <b>{need}</b>.<br><br>Nothing was restored: the loan would be repaid more than it was. Delete the extra repayment on that loan and try again.',
-                     ru:'По долгу «{name}» осталось вернуть <b>{have}</b>, а в корзине лежат возвраты на <b>{need}</b>.<br><br>Ничего не восстановлено: долг оказался бы возвращён больше, чем был. Удалите лишний возврат по этому долгу — и повторите.' },
+/* ++++++ TRASH KEEP ++++++ окно отказа по долгу говорит словами пометки: trash.keepLoan */
 
 /* ---- окно «Удалить данные везде» ---- */
 'wipe.nLoans':    { en:'cash loans',       ru:'долги' },
@@ -5489,18 +5491,49 @@ var STR = {
 /* Отказы восстановления. Заголовок один на все три: владельцу важно, что
    вернуть не вышло, а причина — в теле, с цифрами. */
 'trash.noTitle':   { en:'This cannot be restored', ru:'Вернуть не получится' },
-'trash.noStock':   { en:'There is not enough of «{name}» in stock.<br><br>Needed: <b>{need}</b><br>In stock: <b>{have}</b><br><br>Nothing was restored. Restore the product from the trash, or reduce other handouts, and try again.',
-                     ru:'На складе не хватает товара «{name}».<br><br>Нужно: <b>{need}</b><br>На складе: <b>{have}</b><br><br>Ничего не восстановлено. Верните товар из корзины или уменьшите другие выдачи — и повторите.' },
-'trash.noStockOwn':{ en:'There is not enough of «{name}» in stock.<br><br>Needed: <b>{need}</b><br>Available: <b>{have}</b> — that is how much of this product was bought; the product itself is in the trash too.<br><br>Nothing was restored: more of this product was handed out than was bought, and the app does not bring such records back from the trash for now.',
-                     ru:'На складе не хватает товара «{name}».<br><br>Нужно: <b>{need}</b><br>Свободно: <b>{have}</b> — столько этого товара куплено; сам товар тоже лежит в корзине.<br><br>Ничего не восстановлено: выдач по этому товару записано больше, чем его куплено, и вернуть такие записи из корзины программа сейчас не даёт.' },
-'trash.noName':    { en:'A product called «{name}» is already in the list.<br><br>Two products with one name are one product entered twice — that is how this program reads them. Rename the existing one, or delete it, and try again.',
-                     ru:'Товар с именем «{name}» уже есть в списке.<br><br>Два товара с одним именем — это один товар, введённый дважды: программа их не различает. Переименуйте существующий товар или удалите его — и повторите.' },
-'trash.noPhone':   { en:'The number {phone} already belongs to «{other}».<br><br>One number for two people is an error, not a coincidence. Change the number on the existing record, or delete that record, and try again.',
-                     ru:'Номер {phone} уже записан за человеком «{other}».<br><br>Один номер на двоих — ошибка, а не совпадение. Измените номер у существующей записи или удалите её — и повторите.' },
+/* ++++++ TRASH KEEP ++++++ слова корзины: что не убирается само, вопрос о складе, окно очистки */
+'trash.keep': { en:'Not cleared on its own.',
+    ru:'Не убирается сама.' },
+'trash.keepStock': { en:'Restoring it would leave {n} of «{name}» in stock — the app will ask first.',
+    ru:'Если вернуть, товара «{name}» на складе будет {n} шт — программа спросит перед возвратом.' },
+'trash.keepName': { en:'It cannot be restored now: the name «{name}» is taken by another product.',
+    ru:'Вернуть сейчас нельзя: название «{name}» занято другим товаром.' },
+'trash.keepPhone': { en:'It cannot be restored now: the number {phone} belongs to «{other}».',
+    ru:'Вернуть сейчас нельзя: номер {phone} записан за «{other}».' },
+'trash.keepLoan': { en:'It cannot be restored now: the repayment is larger than what is left of the loan «{name}».',
+    ru:'Вернуть сейчас нельзя: возврат больше остатка долга «{name}».' },
+'trash.keepChild': { en:'A record in the trash that is not cleared on its own depends on it.',
+    ru:'На неё опирается запись корзины, которая сама не убирается.' },
+'trash.keepChildOf': { en:'The record «{what}» depends on it.',
+    ru:'На неё опирается запись «{what}».' },
+'trash.keepChildOfN': { en:'The record «{what}» and {n} more depend on it.',
+    ru:'На неё опирается запись «{what}» и ещё {n}.' },
+'trash.tipName': { en:'Two products with one name are one product entered twice — that is how this program reads them. Rename the existing one, or delete it, and try again.',
+    ru:'Два товара с одним именем — это один товар, введённый дважды: программа их не различает. Переименуйте существующий товар или удалите его — и повторите.' },
+'trash.tipPhone': { en:'One number for two people is an error, not a coincidence. Change the number on the existing record, or delete that record, and try again.',
+    ru:'Один номер на двоих — ошибка, а не совпадение. Измените номер у существующей записи или удалите её — и повторите.' },
+'trash.tipLoan': { en:'Only <b>{have}</b> is still outstanding on the loan «{name}», and the trash holds repayments of <b>{need}</b>. Delete the extra repayment on that loan and try again.',
+    ru:'По долгу «{name}» осталось вернуть <b>{have}</b>, а в корзине лежат возвраты на <b>{need}</b>. Удалите лишний возврат по этому долгу — и повторите.' },
+'trash.askTitle': { en:'Stock will go below zero',
+    ru:'Склад уйдёт в минус' },
+'trash.askBody': { en:'<p>If you restore it, the stock will be:</p><p>{list}</p><p>More will be handed out than was bought — the app will show this in a bar. Restore?</p>',
+    ru:'<p>Если вернуть, на складе будет:</p><p>{list}</p><p>Выдано станет больше, чем куплено — программа покажет это полосой. Вернуть?</p>' },
+'trash.askItem': { en:'«{name}» — <b>{n}</b> (now {have}, coming back {need})',
+    ru:'«{name}» — <b>{n} шт</b> (сейчас {have}, возвращается {need})' },
+'trash.askOk': { en:'Restore',
+    ru:'Вернуть' },
+'trash.overNow': { en:'More handed out than bought: {list}',
+    ru:'Выдано больше, чем куплено: {list}' },
+'trash.overItem': { en:'«{name}» — {n} in stock',
+    ru:'«{name}» — на складе {n} шт' },
+'dlg.clearLost': { en:'<p>Of these, cannot be restored now: <b>{n}</b>.</p>',
+    ru:'<p>Из них вернуть сейчас нельзя: <b>{n}</b>.</p>' },
+/* ++++++ TRASH KEEP ++++++ окна отказа по названию и номеру говорят словами пометки: trash.keepName, trash.keepPhone */
 'trash.gone':      { en:'That record is no longer here.', ru:'Этой записи уже нет.' },
 /* Хвост к КАЖДОМУ подтверждению удаления. Прежние тела не тронуты. */
-'dlg.trashNote':   { en:'<p>The record goes to «More → Trash» and can be brought back from there. After {n} the trash removes it on its own.</p>',
-                     ru:'<p>Запись отправится в «Ещё → Корзина» — оттуда её можно вернуть. Через {n} корзина уберёт её сама.</p>' },
+/* ++++++ TRASH KEEP ++++++ вторая фраза — слово владельца 14.10 */
+'dlg.trashNote': { en:'<p>The record goes to «More → Trash» and can be brought back from there. After {n} the trash removes it on its own if it can be restored then; if not, it stays in the trash and says why.</p>',
+                     ru:'<p>Запись отправится в «Ещё → Корзина» — оттуда её можно вернуть. Через {n} корзина уберёт её сама, если её можно будет вернуть; если нет, она останется в корзине и скажет почему.</p>' },
 'dlg.trashOk':     { en:'To the trash',           ru:'В корзину' },
 'dlg.foreverTitle':{ en:'Delete for good?',       ru:'Удалить навсегда?' },
 'dlg.foreverBody': { en:'<p>{n} will be gone for good — on this device and, after a sync, on the others.</p>',
@@ -7211,8 +7244,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.33.0';
-var APP_BUILD = '2026-10-13T18:51:44.538Z';
+var APP_VERSION = '1.33.1';
+var APP_BUILD = '2026-10-14T10:36:44.106Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -8659,8 +8692,8 @@ function trashRestoreIds(doc, id, whole){
  *    reason 'name'  — товар с таким именем уже есть (A6)
  *    reason 'phone' — номер уже записан за другим человеком (A7)
  */
-function trashRestoreCheck(doc, plan, remainingOf){
-  var back = {}, i, j, k, list, r, pid, need = {}, avail, prods = {}, keys, nm, ph, ex;
+function trashRestoreCheck(doc, plan, remainingOf, allowOver){
+  var back = {}, i, j, k, list, r, pid, need = {}, avail, prods = {}, keys, nm, ph, ex, over = [];   /* ++++++ TRASH KEEP ++++++ */
   for (k in plan.ids) if (trOwn(plan.ids, k))
     for (i = 0; i < plan.ids[k].length; i++) back[plan.ids[k][i]] = true;
 
@@ -8713,12 +8746,18 @@ function trashRestoreCheck(doc, plan, remainingOf){
     pid = keys[i];
     if (need[pid] <= 0) continue;            /* возврат товара только прибавляет */
     var pf = trashFind(doc, pid);
-    if (!pf) return { ok: false, reason: 'stock', need: need[pid], have: 0, product: '' };
+    if (!pf) return { ok: false, reason: 'gone' };
     /* товар, который возвращается вместе с набором, приносит свой склад
        целиком: активных выдач у него нет — они ушли тем же каскадом */
     avail = trOwn(back, pid) ? pf.rec.qty : remainingOf(pid);
+    /* ++++++ TRASH KEEP ++++++ нехватка склада — не отказ, а знание: перебор живой документ допускает (А5).
+       own — товар возвращается этим же набором: состояние ровно то, что было до удаления */
     if (need[pid] > avail)
-      return { ok: false, reason: 'stock', need: need[pid], have: avail, product: pf.rec.name };
+      over.push({ id: pid, product: pf.rec.name, need: need[pid], have: avail, after: avail - need[pid], own: trOwn(back, pid) });
+  }
+  /* ++++++ TRASH KEEP ++++++ товар живой, и возврат увёл бы склад в минус — без слова владельца не возвращается */
+  if (!allowOver) for (i = 0; i < over.length; i++){
+    if (!over[i].own) return { ok: false, reason: 'stock', over: over, need: over[i].need, have: over[i].have, product: over[i].product };
   }
   /* ++++++ CASH LOANS ++++++ СТОРОЖ ПЕРЕПЛАТЫ. Без него корзина обходит правило
      «возврат не больше остатка»: вернули долг двумя возвратами, один
@@ -8726,7 +8765,7 @@ function trashRestoreCheck(doc, plan, remainingOf){
      ЖЕ loanFigures(), что и форма; второй формулы остатка здесь нет. */
   var lg = loanRestoreCheck(doc, back);
   if (!lg.ok) return { ok: false, reason: 'loan', name: lg.name, cur: lg.cur, need: lg.need, have: lg.have };
-  return { ok: true };
+  return { ok: true, over: over };   /* ++++++ TRASH KEEP ++++++ */
 }
 
 /* ------------------------------------------------------------------ */
@@ -8740,11 +8779,11 @@ function trashRestoreCheck(doc, plan, remainingOf){
  *  секунду.
  *
  *  Возвращает { ok:true, ids, order, parents } либо ответ проверки. */
-function trashRestore(doc, id, whole, remainingOf, touchFn){
+function trashRestore(doc, id, whole, remainingOf, touchFn, allowOver){   /* ++++++ TRASH KEEP ++++++ */
   var plan = trashRestoreIds(doc, id, whole), chk, i, k, list, j, back = {}, parents = [];
   var self = {};
   if (!plan.order.length) return { ok: false, reason: 'gone' };
-  chk = trashRestoreCheck(doc, plan, remainingOf);
+  chk = trashRestoreCheck(doc, plan, remainingOf, allowOver);
   if (!chk.ok) return chk;
 
   if (whole){
@@ -8763,8 +8802,97 @@ function trashRestore(doc, id, whole, remainingOf, touchFn){
       if (touchFn) touchFn(list[j].id);
     }
   }
-  return { ok: true, ids: plan.ids, order: plan.order, parents: parents };
+  return { ok: true, ids: plan.ids, order: plan.order, parents: parents, over: chk.over || [] };
 }
+
+/* ++++++ TRASH KEEP ++++++ (находка Г38, слова владельца 13.10.2026)
+ * «Ничего из корзины не удаляется само, если его нельзя вернуть; возврат даёт состояние, что было до
+ * удаления, даже если склад в минусе.»
+ *
+ * Довод уборки по сроку — «владелец про эти записи уже решил» — держится, только пока у него все дни срока
+ * есть способ передумать. У записи, которую вернуть нельзя, такого способа нет ни одного дня. Поэтому
+ * уборка спрашивает ту же проверку возврата, что и кнопка «Восстановить»: группа, которая её не проходит,
+ * остаётся в корзине. Остаётся и группа, на запись которой такая запись опирается: убрать родителя —
+ * значит оставить её висячей, и следующее чтение выбросило бы её молча.
+ *
+ * Только СЧИТАЕТ. Снимает записи по-прежнему один путь — trashDropIds(). */
+/** Ключ группы записи корзины — тот же, что у trashGroups(). */
+function trashGroupKey(r){
+  return (typeof r.trashGroup === 'string' && r.trashGroup) ? r.trashGroup : r.id;
+}
+/** Почему группу нельзя вернуть одним нажатием прямо сейчас: ответ проверки возврата; null — можно.
+ *  «gone» (выдача товара, которого в документе нет вовсе) причиной не считается: такая запись уже висячая,
+ *  ни вернуть её, ни дождаться возврата нельзя — с ней уборка поступает как раньше. */
+function trashKeepWhy(doc, group, remainingOf){
+  var plan = trashRestoreIds(doc, group, true), chk;
+  if (!plan.order.length) return null;
+  chk = trashRestoreCheck(doc, plan, remainingOf, false);
+  return chk.ok || chk.reason === 'gone' ? null : chk;
+}
+/** Группы, которые уборка по сроку не трогает: ключ группы → причина. */
+function trashKeepMap(doc, remainingOf){
+  var gs = trashGroups(doc), out = {}, i, j, k, why, added = true, par, f, pg;
+  for (i = 0; i < gs.length; i++){
+    why = trashKeepWhy(doc, gs[i].group, remainingOf);
+    if (why) out[gs[i].group] = why;
+  }
+  /* родитель удержанной записи: без него её не вернуть — его группа остаётся тоже */
+  while (added){
+    added = false;
+    for (i = 0; i < gs.length; i++){
+      if (!trOwn(out, gs[i].group)) continue;
+      for (j = 0; j < gs[i].items.length; j++){
+        par = trashParents(doc, gs[i].items[j].col, gs[i].items[j].rec);
+        for (k = 0; k < par.length; k++){
+          f = par[k].id ? trashFind(doc, par[k].id) : null;
+          if (!f || !trashIs(f.rec)) continue;
+          pg = trashGroupKey(f.rec);
+          if (pg === gs[i].group) continue;
+          /* какая запись опирается — её называет пометка (слово владельца 14.10) */
+          if (trOwn(out, pg)){
+            if (out[pg].reason === 'child' && !trOwn(out[pg].seen, gs[i].items[j].rec.id)){
+              out[pg].seen[gs[i].items[j].rec.id] = true;
+              out[pg].deps.push(gs[i].items[j]);
+            }
+            continue;
+          }
+          out[pg] = { ok: false, reason: 'child', deps: [gs[i].items[j]], seen: {} };
+          out[pg].seen[gs[i].items[j].rec.id] = true;
+          added = true;
+        }
+      }
+    }
+  }
+  return out;
+}
+/** План уборки по сроку без удержанных групп. Ответ той же формы, что у trashPurgeIds(), плюс kept —
+ *  сколько записей с вышедшим сроком осталось в корзине. */
+function trashPurgePlan(doc, remainingOf){
+  var plan = trashPurgeIds(doc), out = { ids: {}, n: 0, kept: 0 }, keep, k, i, f;
+  if (!plan.n) return out;
+  keep = trashKeepMap(doc, remainingOf);
+  for (k in plan.ids) if (trOwn(plan.ids, k)){
+    for (i = 0; i < plan.ids[k].length; i++){
+      f = trashFind(doc, plan.ids[k][i]);
+      if (f && trOwn(keep, trashGroupKey(f.rec))){ out.kept++; continue; }
+      if (!trOwn(out.ids, k)) out.ids[k] = [];
+      out.ids[k].push(plan.ids[k][i]);
+      out.n++;
+    }
+  }
+  return out;
+}
+/** Сколько записей корзины вернуть сейчас нельзя вовсе: занято название, занят номер, переплата долга.
+ *  Нехватка склада сюда не входит — такую запись вернуть можно, программа спросит. */
+function trashLostCount(doc, remainingOf){
+  var gs = trashGroups(doc), keep = trashKeepMap(doc, remainingOf), n = 0, i, w;
+  for (i = 0; i < gs.length; i++){
+    w = trOwn(keep, gs[i].group) ? keep[gs[i].group] : null;
+    if (w && (w.reason === 'name' || w.reason === 'phone' || w.reason === 'loan')) n += gs[i].n;
+  }
+  return n;
+}
+/* ++++++ TRASH KEEP END ++++++ */
 
 /* ------------------------------------------------------------------ */
 /* Уборка по сроку                                                     */
@@ -9723,7 +9851,7 @@ function baseOf(doc){
    полям. Ядро конверта 4 берёт настройки набором и стёрло бы чужую правку;
    увидев 5, оно останавливает обмен и просит обновиться. Конверты 1–4 это
    ядро читает как прежде. */
-var SYNC_ENVELOPE = 5;
+var SYNC_ENVELOPE = 6;   /* ++++++ TRASH KEEP ++++++ формат 6: ядро прежнего формата убирало бы корзину по-старому — оно останавливается и просит обновиться */
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -19006,7 +19134,8 @@ var FAQ = [
   html: function(){
     var days = nq(TRASH_DAYS, 'day');
     return infoP(tr('trash.emptyHint', { n: days })) +
-           infoP(tr('trash.note30', { n: days }));
+           infoP(tr('trash.note30', { n: days })) +
+           infoP(tr('faq.a.trashWhat7'));   /* ++++++ TRASH KEEP ++++++ «уходят сами» верно не для всякой записи — оговорка сразу за утверждением */
   },
   see: ['backup.trash', 'tx.return']
 },
@@ -19022,6 +19151,7 @@ var FAQ = [
               верно не для всякой записи. Между утверждением и его
               оговоркой не должно стоять чужого текста. */
            infoP(tr('faq.a.trashWhat5', { n: days })) +
+           infoP(tr('faq.a.trashWhat7')) +   /* ++++++ TRASH KEEP ++++++ */
            infoP(tr('faq.a.trashWhat4')) +
            (modeIsProduct() ? infoP(tr('faq.a.trashWhat6', { n: nq(ATT_GONE_DAYS, 'day') })) : '');   /* ++++++ DISPUTE HOLD ++++++ */
   },
@@ -29534,7 +29664,7 @@ function trashParts(items, headId){
 
 /** Одна строка списка: тип, имя, что внутри, когда удалили и что уйдёт
  *  или вернётся вместе. Кнопки — СОСЕДИ строки, не её дети. */
-function trashRowHTML(g){
+function trashRowHTML(g, keep){
   var col = g.head.col, r = g.head.rec, age = trashAge(g.at);
   var when = tr('trash.deleted', { when: bakStamp(g.at) }) + ' · ' +
              (age === 0 ? tr('trash.today') : tr('trash.ago', { n: nq(age, 'day') }));
@@ -29542,7 +29672,7 @@ function trashRowHTML(g){
   var one = row({
     k: trashTypeName(col) + ' · ' + trashRowTitle(col, r),
     sub: trashRowSub(col, r, g),
-    sub2: when + (withText ? ' · ' + withText : ''),
+    sub2: when + (withText ? ' · ' + withText : '') + trashKeepNote(g, keep),   /* ++++++ TRASH KEEP ++++++ */
     v: trashRowAmount(col, r)
   });
   /* ++++++ TRASH ++++++ разделитель между кнопками — ТЕКСТ, а не правило в
@@ -29585,7 +29715,8 @@ function trashSectionHTML(){
     return listCard(tr('trash.title'),
       '<div class="empty">' + tr('trash.empty') + '</div>');
   }
-  for (i = 0; i < groups.length; i++) h += trashRowHTML(groups[i]);
+  var keep = trashKeepMap(state, remainingFor);   /* ++++++ TRASH KEEP ++++++ */
+  for (i = 0; i < groups.length; i++) h += trashRowHTML(groups[i], keep);
   return listCard(tr('trash.title') + ' · ' + n, h) +
     listCard('', row({ k: tr('trash.clear'), act: 'trash-clear' }));
 }
@@ -29709,33 +29840,88 @@ function trashNoDialog(html){
 
 /** Восстановить группу. Целиком или никак — решает ядро, здесь только
  *  слова. */
-function trashRestoreAct(group){
+/* ++++++ TRASH KEEP ++++++ слова корзины: пометка строки, вопрос о складе, слово о минусе после возврата */
+/** Запись, которая опирается на группу-опору, — «Выдача 12.09, Чайник»: вид, число и месяц, товар (у
+ *  платежа и возврата долга — имя). Ответ уже экранирован. */
+function trashDepLabel(d){
+  var dt = (typeof d.rec.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.rec.date))
+    ? d.rec.date.slice(8, 10) + '.' + d.rec.date.slice(5, 7) : '';
+  var nm = (d.col === 'transactions' || d.col === 'returns') ? trashProdName(d.col, d.rec) : trashRowTitle(d.col, d.rec);
+  return esc(trashTypeName(d.col)) + (dt ? ' ' + dt : '') + (nm ? ', ' + nm : '');
+}
+/** Причина словами — ОДНА на пометку строки и на окно «Вернуть не получится» (слово владельца 14.10:
+ *  «окно с причиной теми же словами, что пометка»). Ответ уже экранирован. */
+function trashKeepLine(w){
+  var why, d = w.deps || [];
+  if (w.reason === 'stock') why = tr('trash.keepStock', { name: esc(w.product), n: stockN(w.have - w.need) });
+  else if (w.reason === 'name') why = tr('trash.keepName', { name: esc(w.name) });
+  else if (w.reason === 'phone') why = tr('trash.keepPhone', { phone: esc(w.phone), other: esc(w.other) });
+  else if (w.reason === 'loan') why = tr('trash.keepLoan', { name: esc(w.name) });
+  else if (d.length > 1) why = tr('trash.keepChildOfN', { what: trashDepLabel(d[0]), n: d.length - 1 });
+  else if (d.length) why = tr('trash.keepChildOf', { what: trashDepLabel(d[0]) });
+  else why = tr('trash.keepChild');
+  return '<strong>' + esc(tr('trash.keep')) + '</strong> ' + why;   /* не <b>: у него в строке списка стиль заголовка строки */
+}
+/** Тело окна «Вернуть не получится»: та же строка, что пометка, и под ней — что делать, а у долга числа
+ *  (слово владельца 14.10: «перед необратимым действием пусть видно будет максимум»). */
+function trashRefuseHTML(res){
+  var tip = '';
+  if (res.reason === 'name') tip = tr('trash.tipName');
+  else if (res.reason === 'phone') tip = tr('trash.tipPhone');
+  else if (res.reason === 'loan') tip = tr('trash.tipLoan', { name: esc(res.name),
+    need: loanMoney(res.need, res.cur), have: loanMoney(res.have, res.cur) });
+  return '<p>' + trashKeepLine(res) + '</p>' + (tip ? '<p>' + tip + '</p>' : '');
+}
+/** Пометка группы, которую корзина сама не убирает, — второй строкой подписи. */
+function trashKeepNote(g, keep){
+  var w = keep && own(keep, g.group) ? keep[g.group] : null;
+  if (!w) return '';
+  return '<br>' + trashKeepLine(w);
+}
+/** Товары, по которым склад после возврата меньше нуля, — хвост сообщения «Восстановлено». */
+function trashOverSay(over){
+  var out = [], i;
+  for (i = 0; i < (over || []).length; i++){
+    if (over[i].after < 0) out.push(tr('trash.overItem', { name: over[i].product, n: stockN(over[i].after) }));
+  }
+  return out.length ? '. ' + tr('trash.overNow', { list: out.join('; ') }) : '';
+}
+/** Тело вопроса «склад уйдёт в минус»: по строке на товар, с числами. */
+function trashAskHTML(over){
+  var out = [], i;
+  for (i = 0; i < over.length; i++){
+    out.push(tr('trash.askItem', { name: esc(over[i].product), n: stockN(over[i].after),
+      have: stockN(over[i].have), need: units(over[i].need) }));
+  }
+  return tr('trash.askBody', { list: out.join('<br>') });
+}
+
+function trashRestoreAct(group, allowOver){
   var was = trashWasMap(state);   /* ++++++ UNDELETE ++++++ когда каждая запись ушла в корзину — до восстановления */
   var res = trashRestore(state, group, true, remainingFor, function(id){
     touch(id);
     if (own(was, id)) undelNote(id, was[id]);
-  });
+  }, !!allowOver);   /* ++++++ TRASH KEEP ++++++ */
   if (res.ok){
-    toast(res.parents.length
+    /* ++++++ TRASH KEEP ++++++ склад после возврата меньше нуля — сказано сразу, рядом со словом «Восстановлено»;
+       полосу перебора ставит обычная отрисовка */
+    var minus = trashOverSay(res.over);
+    toast((res.parents.length
       ? tr('msg.restoredWith', { what: trashParentNames(res.parents) })
-      : tr('msg.restored'), 'ok');
+      : tr('msg.restored')) + minus, minus ? 'warn' : 'ok');
     commit();
     return;
   }
   if (res.reason === 'stock'){
-    /* ++++++ STOCK WORDS ++++++ товар лежит среди живых — число есть остаток склада, тот же, что везде
-       зовётся «на складе». Товар сам возвращается из корзины этим же нажатием — число другое:
-       сколько его куплено (живых выдач у него нет); там слово прежнее и стоит пояснение */
-    var stockArgs = { name: esc(res.product), need: units(res.need), have: stockN(res.have) };
-    trashNoDialog(res.product && !findProductByName(res.product) ? tr('trash.noStockOwn', stockArgs) : tr('trash.noStock', stockArgs));
-  } else if (res.reason === 'name'){
-    trashNoDialog(tr('trash.noName', { name: esc(res.name) }));
-  } else if (res.reason === 'phone'){
-    trashNoDialog(tr('trash.noPhone', { phone: esc(res.phone), other: esc(res.other) }));
-  } else if (res.reason === 'loan'){
-    /* ++++++ CASH LOANS ++++++ сторож переплаты — с цифрами в валюте долга */
-    trashNoDialog(tr('trash.noLoan', { name: esc(res.name),
-      need: loanMoney(res.need, res.cur), have: loanMoney(res.have, res.cur) }));
+    /* ++++++ TRASH KEEP ++++++ товар живой, и возврат увёл бы склад в минус: не отказ, а вопрос с числами.
+       «Да» — вернуть как было; «нет» — запись остаётся в корзине и сама не убирается */
+    confirmBox(tr('trash.askTitle'), trashAskHTML(res.over), tr('trash.askOk')).then(function(okd){
+      if (okd) trashRestoreAct(group, true);
+    });
+  } else if (res.reason === 'name' || res.reason === 'phone' || res.reason === 'loan'){
+    /* ++++++ TRASH KEEP ++++++ причина — теми же словами, что пометка строки «Не убирается сама»: одна функция на оба
+       места; под ней — что делать, у долга числа (слова владельца 14.10) */
+    trashNoDialog(trashRefuseHTML(res));
   } else {
     toast(tr('trash.gone'), 'warn');
     render();
@@ -29762,7 +29948,7 @@ function trashForeverAct(group){
 
 /** Общее подтверждение окончательного удаления — и для одной группы, и
  *  для второго шага очистки. */
-function trashForeverConfirm(title, ids, n, orph){
+function trashForeverConfirm(title, ids, n, orph, lost){
   var att = trashAttIds(state, ids);
   confirmBox(title,
     tr('dlg.foreverBody', { n: nq(n, 'record') }) +
@@ -29770,6 +29956,7 @@ function trashForeverConfirm(title, ids, n, orph){
        лежат в других группах корзины, и владелец их не выбирал. */
     (orph ? tr('dlg.foreverOrphans', { n: nq(orph, 'record') }) : '') +
     (att.length ? tr('dlg.foreverFiles', { n: nq(att.length, 'file') }) : '') +
+    (lost ? tr('dlg.clearLost', { n: nq(lost, 'record') }) : '') +   /* ++++++ TRASH KEEP ++++++ */
     tr('dlg.foreverNoUndo'),
     tr('dlg.foreverOk'), true).then(function(okd){
       if (!okd) return;
@@ -29786,7 +29973,7 @@ function trashClearAct(){
   confirmBox(tr('dlg.clearTitle'), tr('dlg.clearBody', { n: nq(all.n, 'record') }),
     tr('dlg.clearOk'), true).then(function(okd){
       if (!okd) return;
-      trashForeverConfirm(tr('dlg.clearTitle2'), all.ids, all.n);
+      trashForeverConfirm(tr('dlg.clearTitle2'), all.ids, all.n, 0, trashLostCount(state, remainingFor));   /* ++++++ TRASH KEEP ++++++ */
     });
 }
 
@@ -29803,7 +29990,7 @@ function trashPurgeBoot(loaded){
 }
 /** Сама уборка: всё, чему вышел срок, — прежним путём. */
 function trashPurgeRun(){
-  var plan = trashPurgeIds(state);
+  var plan = trashPurgePlan(state, remainingFor);   /* ++++++ TRASH KEEP ++++++ что нельзя вернуть — не убирается */
   if (!plan.n) return 0;
   /* ++++++ SILENT DROP ++++++ у записи и её родителя сроки разные:
      товар пролежал 30 дней, выдача — двадцать, и уборка унесла бы
