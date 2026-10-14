@@ -1,13 +1,13 @@
 {
-  "version": "1.33.0",
-  "build": "2026-10-13T18:51:44.538Z",
+  "version": "1.33.1",
+  "build": "2026-10-14T10:36:44.106Z",
   "minShell": "0.0.0",
   "core": "app/goods-tracker.html",
-  "hash": "d39a8568-c92252ac-2062174",
-  "size": 2062174,
-  "sha256": "53fe829039aca7454035fadf2f245ce755d8fb75e3a4b44c59f03efc77080af8",
+  "hash": "d86888ae-cd1107fd-2072939",
+  "size": 2072939,
+  "sha256": "a17f31fe62f0b9a0cca77391e6b1e575f38c4d9ce6b6ea3db2d498f76771a787",
   "notes": "",
-  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.33.0",
-  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.33.0/personal-accountant-1.33.0.apk",
-  "apkVersion": "1.33.0"
+  "page": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/tag/v1.33.1",
+  "apk": "https://github.com/am1n90/Summary-of-Goods-Releases/releases/download/v1.33.1/personal-accountant-1.33.1.apk",
+  "apkVersion": "1.33.1"
 }
