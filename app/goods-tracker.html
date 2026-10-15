@@ -2011,6 +2011,13 @@ var STR = {
                      ru:'Недостаточно товара «{name}»: в этой выдаче можно указать до {n} шт., а введено {q}. Ничего не сохранено.' },
 'err.txStockNone': { en:'Not enough "{name}": nothing to hand out (in stock: {s}), but {q} were entered. Nothing was saved.',
                      ru:'Недостаточно товара «{name}»: выдать нечего (на складе: {s} шт), а введено {q}. Ничего не сохранено.' },
+/* ++++++ REFUSE LINE ++++++ Г39 */
+'err.txStockLine':   { en:'not enough "{name}": this line can take up to {n}, but {q} were entered. The whole handout can take up to {t}, and {sum} were entered. Nothing was saved.',
+                     ru:'недостаточно товара «{name}»: в этой строке можно указать до {n} шт., а введено {q}. На всю выдачу — до {t} шт., а набрано {sum}. Ничего не сохранено.' },
+'err.txStockLineNone1': { en:'not enough "{name}": nothing to hand out in this line — the whole handout can take up to {t}, and {o} are already entered in the other line; {q} entered here. Nothing was saved.',
+                     ru:'недостаточно товара «{name}»: в этой строке выдать нечего — на всю выдачу можно указать до {t} шт., и в другой строке уже набрано {o}; здесь введено {q}. Ничего не сохранено.' },
+'err.txStockLineNoneN': { en:'not enough "{name}": nothing to hand out in this line — the whole handout can take up to {t}, and {o} are already entered in the other lines; {q} entered here. Nothing was saved.',
+                     ru:'недостаточно товара «{name}»: в этой строке выдать нечего — на всю выдачу можно указать до {t} шт., и в других строках уже набрано {o}; здесь введено {q}. Ничего не сохранено.' },
 'err.txGone':      { en:'That transaction no longer exists.', ru:'Этой выдачи больше нет.' },
 'msg.txUpdated':   { en:'Transaction updated.', ru:'Выдача обновлена.' },
 'msg.txSaved':     { en:'Transaction saved — stock reduced by {n}{entry}.',
@@ -7244,8 +7251,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.33.1';
-var APP_BUILD = '2026-10-14T10:36:44.106Z';
+var APP_VERSION = '1.33.2';
+var APP_BUILD = '2026-10-15T05:37:58.480Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -27254,7 +27261,10 @@ function txHintText(i){
     sw.main.forEach(function(s){ out.push(s); });
   }
   var q = parseIntStrict(l.qty), m = parseMoneyToCents(l.price);
-  if (q && m !== null){
+  /* ++++++ HINT OVER ++++++ Г42: количество больше предела строки — сохранение строку отвергнет, поэтому ни
+     суммы («будет записано», «как записано», «записано; набрано»), ни курса записи; слова о
+     складе с пределом и фраза о скидке остаются. В пределе — подсказка прежняя */
+  if (q && m !== null && !(sw && q > sw.cap)){
     /* ++++++ ENTRY RELABEL ++++++ у строки, записанной до «только переименовать», подсказка
        называет то, что запишется: не тронутая цена — «как записано»,
        изменённая — курсом самой записи, и курс назван */
@@ -31922,6 +31932,21 @@ function handoutSave(o){
        условие прежнее: had ≤ avail. */
     if (need[p] > avail && need[p] > had){
       var pr = productById(p);
+      /* ++++++ REFUSE LINE ++++++ Г39: строк этого товара несколько — отказ называет ПОСЛЕДНЮЮ из них и её
+         предел (предел выдачи минус остальные строки товара) — то же число, что подсказка под
+         этой строкой, — а предел выдачи и набранное вторым предложением. Перебор суммы значит,
+         что перебрала каждая строка товара, поэтому решение выше не меняется, только слова.
+         Предел выдачи rAll — то же, что cap ниже. Одна строка товара и «выдать нечего всей
+         выдаче» — прежние тексты ниже. */
+      var rAll = Math.max(avail, had), rk = -1, rn = 0;
+      for (j = 0; j < parsed.length; j++) if (parsed[j].productId === p){ rk = j; rn++; }
+      if (rn > 1 && rAll > 0){
+        var rOther = need[p] - parsed[rk].qty, rCap = rAll - rOther, rName = pr ? pr.name : '';
+        return no(tag(rk, rCap > 0
+          ? tr('err.txStockLine', {name: rName, n: units(rCap), q: units(parsed[rk].qty), t: units(rAll), sum: units(need[p])})
+          : tr(rn > 2 ? 'err.txStockLineNoneN' : 'err.txStockLineNone1', {name: rName, t: units(rAll), o: units(rOther), q: units(parsed[rk].qty)})), rk);
+      }
+      /* ++++++ REFUSE LINE ++++++ END */
       /* ++++++ STOCK WORDS ++++++ отказ называет то же число, что подсказка под ценой, — сколько проверка
          выше пропускает; нечего выдать — сказано этими словами и назван остаток */
       var cap = Math.max(avail, had);
@@ -32200,8 +32225,12 @@ function txStockWords(productId, i){
   }
   var over = stock < 0, one = txLineN() === 1, rest = held - mine;
   var cap = over && held > 0 ? held - other : avail;
-  var res = { main: [over ? tr('tx.stockOver', {n: stockN(stock)}) : tr('tx.inStock', {n: stockN(stock)})], small: '' };
-  if (cap === stock && cap > 0) return res;
+  /* ++++++ HINT OVER ++++++ Г42: предел строки (cap — то самое число, что пропускает сохранение) отдаётся
+     наружу: txHintText() не печатает сумму сверх него. Набрано больше остатка — предел сказан
+     и тогда, когда он равен остатку (слово владельца 14.10.2026); в пределе — как было */
+  var res = { main: [over ? tr('tx.stockOver', {n: stockN(stock)}) : tr('tx.inStock', {n: stockN(stock)})], small: '', cap: cap };
+  var qi = parseIntStrict((txLine(i) || {}).qty);
+  if (cap === stock && cap > 0 && !(qi > cap)) return res;
   var tail = other ? (otherN === 1 ? tr('tx.whyOther1', {o: units(other)}) : tr('tx.whyOtherN', {o: units(other)})) : '';
   var parts = [];
   if (mine) parts.push(tr('tx.partOwn', {n: units(mine)}));
