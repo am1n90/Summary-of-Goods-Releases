@@ -515,7 +515,11 @@
   .btn.sm{padding:9px 14px;min-height:40px;font-size:14px;border-radius:11px}
   .btn.block{width:100%}
   .btns{display:flex;gap:9px;flex-wrap:wrap}
-  .btns .btn{flex:1 1 0;min-width:132px}
+  /* ++++++ BTN FIT ++++++ Г36: кнопка ряда не уже своей подписи с полями 18 px; пара не помещается — ряд
+     переносится сам (flex-wrap у .btns), каждая кнопка на своей строке во всю ширину, порядок прежний.
+     fit-content, а не max-content: подпись шире всего ряда (крупный системный шрифт) переносится внутри
+     кнопки, а не выносит кнопку за край экрана */
+  .btns .btn{flex:1 1 0;min-width:fit-content;white-space:normal}
   @media (max-width:520px){ .btn.sm{min-height:44px} }
   a.btn{text-decoration:none}
   .btn .ic{width:19px;height:19px;flex:0 0 auto}
@@ -1908,7 +1912,7 @@ var STR = {
 /* ---------------- document / header ---------------- */
 'app.title':       { en:'Goods Sales &amp; Debt Tracker', ru:'Учёт товаров и долгов' },
 'app.titlePlain':  { en:'Goods Sales & Debt Tracker',     ru:'Учёт товаров и долгов' },
-'hdr.base':        { en:'Base currency',                     ru:'Основная валюта' },
+'hdr.base':        { en:'Main currency',                     ru:'Основная валюта' },
 'hdr.peopleExtra': { en:'People tab &mdash; extra currency', ru:'Вкладка «Люди» &mdash; доп. валюта' },
 'hdr.lang':        { en:'Language',                          ru:'Язык' },
 
@@ -2030,12 +2034,28 @@ var STR = {
 'err.payGone':     { en:'That payment no longer exists.', ru:'Этого платежа больше нет.' },
 'msg.payUpdated':  { en:'Payment updated.',  ru:'Платёж обновлён.' },
 'msg.payAdded':    { en:'Payment recorded.', ru:'Платёж записан.' },
-'conv.noRate':     { en:'<span class="bad-txt">No rate is set for {cur} — add it in Currency &amp; Backup before saving.</span>',
-                     ru:'<span class="bad-txt">Для {cur} не задан курс — добавьте его в разделе «Валюты и копия» перед сохранением.</span>' },
-'err.noRate':      { en:'No exchange rate is set for {cur}. Open Currency & Backup and add "1 {cur} = ? {base}" ' +
-                         'before saving an amount in {cur}. Nothing was saved.',
-                     ru:'Для {cur} не задан курс. Откройте «Валюты и копия» и добавьте «1 {cur} = ? {base}», ' +
-                         'прежде чем сохранять сумму в {cur}. Ничего не сохранено.' },
+'conv.noRate':     { en:'<span class="bad-txt">No rate is set for {cur} — add it in {rates} before saving.</span>',
+                     ru:'<span class="bad-txt">Для {cur} не задан курс — добавьте его в {rates} перед сохранением.</span>' },
+'conv.noRateTick': { en:'<span class="bad-txt">No rate is set for {cur}, and {cur} is not ticked — tick it and set the rate in {rates} before saving.</span>',
+                     ru:'<span class="bad-txt">Для {cur} не задан курс, и {cur} не отмечена — отметьте её и задайте курс в {rates} перед сохранением.</span>' },
+'rh.how':          { en:'in the «{card}» card, type the rate into the field «{field}» (for example, {ex}) and press «{save}»',
+                     ru:'в карточке «{card}» впишите курс в поле «{field}» (например, {ex}) и нажмите «{save}»' },
+'rh.exUsd':        { en:'if a dollar costs 3.80 {cur}, type 3.80',
+                     ru:'если доллар стоит 3.80 {cur}, впишите 3.80' },
+'rh.exBase':       { en:'if 1 {base} costs 0.34 {cur}, type 0.34',
+                     ru:'если 1 {base} стоит 0.34 {cur}, впишите 0.34' },
+'rh.howShort':     { en:'type the rate into «{field}» and press «{save}»',
+                     ru:'впишите курс в «{field}» и нажмите «{save}»' },
+'rh.open':         { en:'Open {rates} and, {how}',
+                     ru:'Откройте {rates} и {how}' },
+'rh.tick':         { en:'{cur} is not ticked: open {rates}, tick {cur} with the gear in «{baseCard}», press «{ok}», then {how}',
+                     ru:'{cur} не отмечена: в {rates} шестерёнкой у «{baseCard}» отметьте {cur}, нажмите «{ok}», потом {how}' },
+'rh.tickNote':     { en:'{cur} is not ticked, so there is no field for its rate there: first press the gear in the «{baseCard}» card, tick {cur} and press «{ok}», then type the rate in the «{card}» card.',
+                     ru:'Валюта {cur} не отмечена, поэтому поля для её курса там нет: сначала нажмите шестерёнку в карточке «{baseCard}», отметьте {cur} и нажмите «{ok}», потом впишите курс в карточке «{card}».' },
+'rh.tickNoteN':    { en:'{cur} are not ticked, so there are no fields for their rates there: first press the gear in the «{baseCard}» card, tick them and press «{ok}», then type the rates in the «{card}» card.',
+                     ru:'Валюты {cur} не отмечены, поэтому полей для их курсов там нет: сначала нажмите шестерёнку в карточке «{baseCard}», отметьте их и нажмите «{ok}», потом впишите курсы в карточке «{card}».' },
+'err.noRate':      { en:'No exchange rate is set for {cur}. {open} before saving an amount in {cur}. Nothing was saved.',
+                     ru:'Для {cur} не задан курс. {open}, прежде чем сохранять сумму в {cur}. Ничего не сохранено.' },
 'rate.none':       { en:'no rate for {cur}', ru:'нет курса для {cur}' },
 
 /* ---------------- section warnings ---------------- */
@@ -2044,9 +2064,9 @@ var STR = {
                      ru:'Эта вкладка показывает только {codes} — недостающая читается как «—». ' },
 'sec.warnNone':    { en:'Money on this tab cannot be converted, so every figure reads “—”. ',
                      ru:'Суммы на этой вкладке пересчитать нельзя, поэтому все значения читаются как «—». ' },
-'sec.warnOpen':    { en:'Open <b>Currency &amp; Backup</b> and set “1 {cur} = ? {base}”. Nothing stored has changed.',
-                     ru:'Откройте <b>«Валюты и копия»</b> и задайте «1 {cur} = ? {base}». Сохранённые данные не изменились.' },
-'sec.storedCur':   { en:'(the stored currency)', ru:'(валюта хранения)' },
+'sec.warnOpen':    { en:'{open}. Nothing stored has changed.',
+                     ru:'{open}. Сохранённые данные не изменились.' },
+'sec.storedCur':   { en:'(the main currency)', ru:'(основная)' },
 /* ++++++ DISPLAY CURRENCY ++++++ пять записей, обе колонки всегда: tr() —
    единственный источник видимого текста в этом файле.
 
@@ -2057,25 +2077,13 @@ var STR = {
 'dc.label':       { en:'Show in',  ru:'Показывать в' },
 'dc.rate':        { en:'1 {base} = {v} {cur} — the rate applied here.',
                     ru:'1 {base} = {v} {cur} — по этому курсу пересчитано.' },
-'dc.noConv':      { en:'{cur} is the stored currency — no conversion is applied.',
-                    ru:'{cur} — валюта хранения, пересчёт не применяется.' },
+'dc.noConv':       { en:'No conversion is applied.',
+                     ru:'Пересчёт не применяется.' },
 /* ++++++ PRODUCT SNAPS ++++++ с v14 по курсу своей даты читаются и
    закупки; фраза, называвшая только продажи и оплаты, стала половиной
    правды — тот же дефект, что закрывали R11 и R16. */
 'dc.hist':        { en:'Records use the rate of their own date.',
                     ru:'Записи — по курсу на свою дату.' },
-/* Отдельная строка, а не err.noRate: та кончается словами «Ничего не
-   сохранено» и принадлежит форме. Здесь ничего не сохраняют — здесь
-   смотрят, и сказать надо другое.
-   Без разметки: единственный её потребитель — dcRateLine(), а он попадает
-   в шапку окна «Полного отчёта» через innerHTML. Подставляемые {cur} и
-   {base} экранируются на месте вызова. */
-'dc.noRate':      { en:'No rate is set for {cur}. Open More → Currency & Backup and add ' +
-                        '“1 {cur} = ? {base}” — the figures appear as soon as it is there. ' +
-                        'Nothing stored has changed.',
-                    ru:'Курс для {cur} не задан. Откройте «Ещё → Валюты и копия» и добавьте ' +
-                        '«1 {cur} = ? {base}» — суммы появятся сразу. ' +
-                        'Ничего из сохранённого не изменилось.' },
 
 
 /* ---------------- selects ---------------- */
@@ -2223,7 +2231,7 @@ var STR = {
 'cur.code':       { en:'Code',        ru:'Код' },
 
 /* ---- base currency change ---- */
-'dlg.baseTitle':  { en:'Change base currency to {cur}?', ru:'Сменить основную валюту на {cur}?' },
+'dlg.baseTitle':  { en:'Change the main currency to {cur}?', ru:'Сменить основную валюту на {cur}?' },
 /* ++++++ ACTIVE CURRENCIES ++++++ решение владельца 2026-09-03: объяснять
    ПРОСТЫМИ СЛОВАМИ и НА ПРИМЕРЕ СУММЫ, а не терминами. Прежний текст
    говорил «каждая цена делится на 10.93» — это верно и это про механизм;
@@ -2254,7 +2262,7 @@ var STR = {
    а настройки остаются. Прежняя фраза перечисляла, что сбрасывается, — она
    описывала поведение, которого больше нет, и потому переписана целиком, а не
    дополнена. Ключ, приставка и место в словаре те же. */
-'dlg.resetAlso':  { en:'Your settings are kept — the base currency, the exchange rates you typed in, the VAT rate, the currency the Summary is read in and the interface language. Only the records go.',
+'dlg.resetAlso':  { en:'Your settings are kept — the main currency, the exchange rates you typed in, the VAT rate, the currency the Summary is read in and the interface language. Only the records go.',
                     ru:'Настройки сохранятся: основная валюта, набранные вами курсы обмена, ставка НДС, валюта «Сводки» и язык интерфейса. Уйдут только записи.' },
 /* ++++++ BASE CHANGE ++++++ R9: пересчёт сумм необратим, и об этом молчали.
    Приставка `dlg.` — та же, что у остальных фраз этого подтверждения. */
@@ -2266,13 +2274,13 @@ var STR = {
 'cur.undoOnce':    { en:'offered while nothing has changed since — one step, not a history',
                      ru:'предлагается, пока с тех пор ничего не менялось — один шаг, а не история' },
 'cur.undoDo':      { en:'Undo',                               ru:'Вернуть' },
-'msg.baseUndone':  { en:'The amounts and the base currency are back in {cur}.',
+'msg.baseUndone':  { en:'The amounts and the main currency are back in {cur}.',
                      ru:'Суммы и основная валюта вернулись в {cur}.' },
 'dlg.baseUndoTitle':{ en:'Undo the conversion?',              ru:'Отменить пересчёт?' },
-'dlg.baseUndoBody': { en:'Every price, shipment total, handout price and payment goes back to the number it had before the conversion, and the base currency goes back to {cur}. The rates recorded with past handouts and payments start applying again. This is offered once: after it, there is nothing left to undo.',
+'dlg.baseUndoBody': { en:'Every price, shipment total, handout price and payment goes back to the number it had before the conversion, and the main currency goes back to {cur}. The rates recorded with past handouts and payments start applying again. This is offered once: after it, there is nothing left to undo.',
                      ru:'Каждая цена, итог партии, цена выдачи и платёж вернутся к числу, которое было до пересчёта, а основная валюта — к {cur}. Курсы, записанные с прошлыми выдачами и оплатами, снова начнут применяться. Это предлагается один раз: после возврата отменять будет нечего.' },
 'dlg.baseUndoOk':   { en:'Put the amounts back',              ru:'Вернуть суммы' },
-'dlg.baseLossy': { en:'<b>Convert amounts</b> rounds every stored price and payment. Switching the base back will not restore the original numbers — on a handout of many units the price can move by a few cents.',
+'dlg.baseLossy': { en:'<b>Convert amounts</b> rounds every stored price and payment. Switching the main currency back will not restore the original numbers — on a handout of many units the price can move by a few cents.',
                    ru:'<b>Пересчитать суммы</b> округляет каждую сохранённую цену и платёж. Вернуться к прежним числам, сменив валюту обратно, не получится: на выдаче из многих единиц цена может уехать на несколько копеек.' },
 /* ++++++ BASE SNAPS ++++++ R32: снимки переезжают, и это сказано. */
 /* ++++++ AED SNAPS ++++++ здесь стоял ключ dlg.baseStuck — «столько-то
@@ -2283,14 +2291,14 @@ var STR = {
 /* ++++++ BASE SNAPS ++++++ R32, исправлено 2026-08-24. Прежняя фраза
    описывала поведение, которого больше нет: снимки теперь переезжают в новую
    базу вместе с суммами. Ключ, приставка и место в словаре те же. */
-'dlg.baseSnaps':  { en:'If you convert, the rates recorded with each past handout and payment move into the new base with them, and the Summary keeps showing the past at the rates of the day. If you only re-label, they stop applying — the stored numbers are being declared a different currency, so what they were worth on their day can no longer be worked out from them, and the Summary reads everything at today\u2019s rates.',
+'dlg.baseSnaps':  { en:'If you convert, the rates recorded with each past handout and payment move into the new main currency with them, and the Summary keeps showing the past at the rates of the day. If you only re-label, they stop applying — the stored numbers are being declared a different currency, so what they were worth on their day can no longer be worked out from them, and the Summary reads everything at today\u2019s rates.',
                     ru:'При пересчёте курсы, записанные вместе с прежними выдачами и платежами, переедут в новую основную валюту вместе с ними — «Сводка» по-прежнему покажет прошлое по курсам того дня. При переименовании они перестанут применяться: хранимые числа объявляются другой валютой, и сколько они стоили в свой день, по ним уже не узнать — «Сводку» программа покажет по сегодняшним курсам.' },
-'dlg.baseSumCur': { en:'The Summary stays set to <b>{cur}</b> — it does not follow the base currency. Change it from the tile on the Summary if you need to.',
+'dlg.baseSumCur': { en:'The Summary stays set to <b>{cur}</b> — it does not follow the main currency. Change it from the tile on the Summary if you need to.',
                     ru:'«Сводка» останется в <b>{cur}</b> — за основной валютой она не следует. Поменяйте её сами на плашке в «Сводке», если нужно.' },
 
 'dlg.baseRelabel':{ en:'Re-label only',   ru:'Только переименовать' },
 'dlg.baseConvert':{ en:'Convert amounts', ru:'Пересчитать суммы' },
-'msg.baseChanged':{ en:'Base currency is now {cur}{how}', ru:'Основная валюта теперь {cur}{how}' },
+'msg.baseChanged':{ en:'The main currency is now {cur}{how}', ru:'Основная валюта теперь {cur}{how}' },
 'msg.baseConv':   { en:' (amounts converted).',  ru:' (суммы пересчитаны).' },
 'msg.baseRelab':  { en:' (amounts re-labelled).',ru:' (суммы переименованы).' },
 
@@ -2449,7 +2457,7 @@ var STR = {
                           '<p><b>{qty}</b> шт. вернутся на склад, а {total} уйдут из начислений этого человека.</p>' },
 'dlg.delPayTitle':  { en:'Delete this payment?', ru:'Удалить этот платёж?' },
 'dlg.delPayBody':   { en:'<p><b>{person}</b> &mdash; {amount} on {date}</p>' +
-                          '<p>Their status may move back to {partial} or {unpaid}.</p>',
+                          '<p>Their status may move back to «{partial}» or «{unpaid}».</p>',
                       ru:'<p><b>{person}</b> &mdash; {amount}, {date}</p>' +
                           '<p>Статус может вернуться к «{partial}» или «{unpaid}».</p>' },
 /* ++++++ ATTACHMENTS ++++++ photos and invoices are erased with everything
@@ -2532,12 +2540,8 @@ var STR = {
 /* ---------------- storage / banners ---------------- */
 'store.working':   { en:'working',        ru:'работает' },
 'store.writeFail': { en:'write failed',   ru:'ошибка записи' },
-'save.fail':       { en:'<b>Auto-save failed</b> ({err}). The browser refused to store your data — it may be out of space ' +
-                         'or blocking site data. Your work is only in this open page: use ' +
-                         '<b>Currency &amp; Backup &rarr; Export backup</b> now.',
-                     ru:'<b>Автосохранение не удалось</b> ({err}). Браузер отказался сохранить данные — возможно, кончилось ' +
-                         'место или запрещено хранение данных сайта. Ваша работа существует только на этой открытой странице: ' +
-                         'сейчас же откройте <b>«Валюты и копия» &rarr; «Экспорт копии»</b>.' },
+'save.fail':       { en:'<b>Auto-save failed</b> ({err}). The browser refused to store your data — it may be out of space or blocking site data. Your work is only in this open page: use <b>{backupDl}</b> now.',
+                     ru:'<b>Автосохранение не удалось</b> ({err}). Браузер отказался сохранить данные — возможно, кончилось место или запрещено хранение данных сайта. Ваша работа существует только на этой открытой странице: сейчас же откройте <b>{backupDl}</b>.' },
 'load.badJson':    { en:'Saved data in this browser could not be read (invalid JSON) and was left untouched. ' +
                          'Start fresh or import a backup.',
                      ru:'Сохранённые в браузере данные не удалось прочитать (некорректный JSON), они оставлены без изменений. ' +
@@ -2563,14 +2567,8 @@ var STR = {
                          'The unreadable data is kept — you can download it in «Account → Backup».',
                      ru:'Документ этого устройства не прочитался, и записи возвращены обменом. ' +
                          'Непрочитанный документ сохранён — скачать его можно в «Аккаунт → Резервная копия».' },
-'boot.noStorage':  { en:'<b>Automatic saving is not available in this browser window.</b> Local storage is blocked ' +
-                         '(private window, blocked site data, or a browser restriction for files opened from disk). ' +
-                         'Your work will be lost when this page is closed — use <b>Currency &amp; Backup &rarr; Export backup</b> ' +
-                         'before closing, and Import it next time.',
-                     ru:'<b>Автосохранение в этом окне браузера недоступно.</b> Локальное хранилище заблокировано ' +
-                         '(приватное окно, запрет данных сайта или ограничение браузера для файлов с диска). ' +
-                         'Работа будет потеряна при закрытии страницы — перед закрытием сделайте ' +
-                         '<b>«Валюты и копия» &rarr; «Экспорт копии»</b>, а в следующий раз импортируйте её.' },
+'boot.noStorage':  { en:'<b>Automatic saving is not available in this browser window.</b> Local storage is blocked (private window, blocked site data, or a browser restriction for files opened from disk). Your work will be lost when this page is closed — use <b>{backupDl}</b> before closing, and <b>{backupIn}</b> next time.',
+                     ru:'<b>Автосохранение в этом окне браузера недоступно.</b> Локальное хранилище заблокировано (приватное окно, запрет данных сайта или ограничение браузера для файлов с диска). Работа будет потеряна при закрытии страницы — перед закрытием сделайте <b>{backupDl}</b>, а в следующий раз верните её через <b>{backupIn}</b>.' },
 
 /* ---------------- validate() messages ---------------- */
 'v.notObject':   { en:'not an object',        ru:'это не объект' },
@@ -2578,7 +2576,7 @@ var STR = {
 'v.newer':       { en:'file was made by a newer version of this tool (schema {n})',
                    ru:'файл создан более новой версией программы (схема {n})' },
 'v.noSettings':  { en:'missing settings',     ru:'нет раздела settings' },
-'v.badBase':     { en:'invalid base currency',ru:'некорректная основная валюта' },
+'v.badBase':     { en:'invalid main currency',ru:'некорректная основная валюта' },
 'v.badCode':     { en:'invalid currency code "{code}"', ru:'некорректный код валюты «{code}»' },
 'v.badRate':     { en:'invalid rate for {code}',        ru:'некорректный курс для {code}' },
 'v.notList':     { en:'{name} is not a list', ru:'«{name}» — не список' },
@@ -2623,7 +2621,6 @@ var STR = {
 'tabS.people':   { en:'People',                             ru:'Люди' },
 'tabS.tx':       { en:'Handouts',                           ru:'Выдачи' },
 'tabS.pay':      { en:'Payments',                           ru:'Оплаты' },
-'tabS.more':     { en:'More',                               ru:'Ещё' },
 'tabS.money':    { en:'Money',                              ru:'Деньги' },
 'tabS.acct':     { en:'Account',                            ru:'Аккаунт' },
 'w.back':        { en:'Back',                               ru:'Назад' },
@@ -3291,7 +3288,7 @@ var STR = {
 /* ++++++ ACCOUNT ++++++ экран учётной записи вместо вкладки «Ещё» */
 'acct.sections': { en:'Sections',                           ru:'Разделы' },
 'acct.cur':      { en:'Currencies and rates',               ru:'Валюты и курсы' },
-'acct.curSub':   { en:'base currency, rates, edit history',
+'acct.curSub':   { en:'main currency, rates, edit history',
                    ru:'основная валюта, курсы, история правок' },
 'acct.backup':   { en:'Backup',                             ru:'Резервная копия' },
 'acct.backupSub':{ en:'download, restore, erase data',
@@ -3861,7 +3858,7 @@ var STR = {
    определён в словаре и не печатается нигде (мёртвый ключ, как были
    `msg.shipAdded` и `msg.shipPrice`). Поэтому фраза несёт ОБЕ половины —
    иначе «правка курса меняет…» читалось бы как «меняет ваши данные». */
-'cur.rateShows': { en:'Editing a rate does not change what is <b>stored</b>: amounts always live in the base currency. It changes what is <b>shown</b> — every converted figure is read at the current rate. The Summary is the exception: it uses the rates recorded with the record itself, where they were recorded.',
+'cur.rateShows': { en:'Editing a rate does not change what is <b>stored</b>: amounts always live in the main currency. It changes what is <b>shown</b> — every converted figure is read at the current rate. The Summary is the exception: it uses the rates recorded with the record itself, where they were recorded.',
                    ru:'Правка курса не меняет <b>хранимого</b>: суммы всегда лежат в основной валюте. Она меняет <b>показанное</b> — каждая пересчитанная величина читается по текущему курсу. Исключение — «Сводка»: она берёт курсы, записанные вместе с самой записью, если они там есть.' },
 /* ++++++ RATE PAIR ++++++ раздел «Курсы»: два поля и шесть направлений */
 'rp.field':      { en:'1 {anchor} = … {cur}',              ru:'1 {anchor} = … {cur}' },
@@ -3887,7 +3884,7 @@ var STR = {
                    ru:'Сохранённые курсы применяются к записям, созданным после сохранения. Всё, что уже сохранено, остаётся по своему курсу.' },
 'rp.errRate':    { en:'1 {anchor} → {cur} must be a number greater than zero. Nothing was saved.',
                    ru:'1 {anchor} → {cur} должен быть числом больше нуля. Ничего не сохранено.' },
-'rp.errAnchor':  { en:'There is no {anchor} rate against the base currency {base} — add it below first.',
+'rp.errAnchor':  { en:'There is no {anchor} rate against the main currency {base} — add it below first.',
                    ru:'Нет курса {anchor} к основной валюте {base} — сначала добавьте его ниже.' },
 'rp.saved':      { en:'Rates saved',                       ru:'Курсы сохранены' },
 'rp.savedSame':  { en:'Saved — no rate moved',             ru:'Сохранено — ни один курс не сдвинулся' },
@@ -3968,7 +3965,7 @@ var STR = {
 'inv.calcVat':   { en:' + VAT {v}',                         ru:' + НДС {v}' },
 'inv.calcManual':{ en:'{qty} pcs &times; {unit} = <b>{total} {cur}</b>',
                    ru:'{qty} шт &times; {unit} = <b>{total} {cur}</b>' },
-'inv.inBase':    { en:'in the base currency: {unit} {base} per unit &middot; item total {total} {base}',
+'inv.inBase':    { en:'in the main currency: {unit} {base} per unit &middot; item total {total} {base}',
                    ru:'в основной валюте: {unit} {base} за штуку &middot; позиция {total} {base}' },
 'inv.total':     { en:'Invoice total: {sum}',               ru:'Итого по инвойсу: {sum}' },
 'inv.totalVat':  { en:'(incl. VAT {sum})',                  ru:'(в т.ч. НДС {sum})' },
@@ -4231,8 +4228,8 @@ var STR = {
                   ru:'Отметьте хотя бы одну валюту: без неё программе не в чем считать.' },
 /* Единственный отказ у «Сделать основной»: applyBaseChange() без курса
    молча не делает ничего, и сказать об этом обязано окно. */
-'cp.baseNoRate':{ en:'Set a rate for {cur} first — without it the amounts cannot be re-expressed.',
-                  ru:'Сначала задайте курс {cur} — без него суммы не в чем пересчитать.' },
+'cp.baseNoRate':   { en:'{cur} has no rate yet, so it cannot be made the main currency for now. Do this: 1) press «{make}» on {prev}, keep {cur} ticked and press «{ok}»; 2) open {rates} and, {how}; 3) press the gear again, «{make}» on {cur} and «{ok}» — the app will ask whether to convert the amounts or only rename.',
+                     ru:'У {cur} ещё нет курса, поэтому основной её пока сделать нельзя. Так: 1) нажмите «{make}» у {prev}, оставьте {cur} отмеченной и нажмите «{ok}»; 2) откройте {rates} и {how}; 3) снова нажмите шестерёнку, «{make}» у {cur} и «{ok}» — программа спросит, пересчитать суммы или только переименовать.' },
 'cp.own':       { en:'your own currency',           ru:'своя валюта' },
 'cp.addTitle':  { en:'Your own currency',           ru:'Своя валюта' },
 'cp.rate':      { en:'1 unit = how many {base}',    ru:'1 единица = сколько {base}' },
@@ -4244,7 +4241,7 @@ var STR = {
                   ru:'{cur} уже есть в списке.' },
 'cp.errRate':   { en:'The rate must be a number greater than zero.',
                   ru:'Курс должен быть числом больше нуля.' },
-'cp.delBase':   { en:'{cur} is the base currency — it cannot be deleted.',
+'cp.delBase':   { en:'{cur} is the main currency — it cannot be deleted.',
                   ru:'{cur} — основная валюта, её нельзя удалить.' },
 'cp.delPopular':{ en:'{cur} is a built-in currency — it cannot be deleted. Untick it instead.',
                   ru:'{cur} — встроенная валюта, её нельзя удалить. Снимите отметку.' },
@@ -4256,7 +4253,7 @@ var STR = {
 'cp.where.pay':  { en:'payments',               ru:'оплаты' },
 'cp.where.exp':  { en:'expenses',               ru:'расходы' },
 'cp.where.inv':  { en:'supplier invoices',      ru:'накладные' },
-'cp.where.base': { en:'the base currency',      ru:'основная валюта' },
+'cp.where.base': { en:'the main currency',      ru:'основная валюта' },
 'cp.where.sumCur': { en:'the Summary currency', ru:'валюта «Сводки»' },
 'cp.where.displayCurrency': { en:'the People tab currency', ru:'валюта вкладки «Люди»' },
 'cp.where.buyCur': { en:'the purchase currency', ru:'валюта покупки' },
@@ -4286,7 +4283,7 @@ var STR = {
                        'change what each tab shows.',
                    ru:'Назначается в окне выбора валют — шестерёнка выше. Смена валюты не ' +
                        'меняет то, что показывают вкладки.' },
-'cur.peopleHint':{ en:'Extra currency next to the base one, on the People tab.',
+'cur.peopleHint':{ en:'Extra currency next to the main one, on the People tab.',
                    ru:'Дополнительная валюта рядом с основной — на вкладке «Люди».' },
 /* ++++++ RATE LOG ++++++ R16. Приставка `cur.` — та же, что у остальных
    строк «Ещё → Валюты»; заголовок карточки — `hdr.`, как у соседей. */
@@ -4313,15 +4310,15 @@ var STR = {
                      ru:'{cur} добавлена — 1 {cur} = {now} {base}' },
 'cur.logDel':      { en:'{cur} removed — it was 1 {cur} = {was} {base}',
                      ru:'{cur} удалена — было 1 {cur} = {was} {base}' },
-'cur.logBaseConv': { en:'Base {from} &rarr; {cur}, amounts converted and every rate re-expressed',
+'cur.logBaseConv': { en:'Main currency {from} &rarr; {cur}, amounts converted and every rate re-expressed',
                      ru:'Основная валюта {from} &rarr; {cur}, суммы пересчитаны и все курсы выражены заново' },
 /* ++++++ UNDO LOGGED ++++++ B4. Третий вид смены базы. Прежние две фразы
    не годятся ни одна — «пересчитаны» и «переименованы» одинаково неправда о
    возврате, — а чужая фраза записала бы в историю неверное событие (область
    43). Приставка `cur.` — та же, что у трёх соседних строк истории. */
-'cur.logBaseUndo': { en:'Base {from} &rarr; {cur} — the amounts were put back as they were before the conversion, and the rates with them',
+'cur.logBaseUndo': { en:'Main currency {from} &rarr; {cur} — the amounts were put back as they were before the conversion, and the rates with them',
                    ru:'Основная валюта {from} &rarr; {cur} — суммы возвращены к тому, что было до пересчёта, и курсы вместе с ними' },
-'cur.logBaseRelab':{ en:'Base {from} &rarr; {cur}, re-labelled and every rate re-expressed',
+'cur.logBaseRelab':{ en:'Main currency {from} &rarr; {cur}, re-labelled and every rate re-expressed',
                      ru:'Основная валюта {from} &rarr; {cur}, переименована и все курсы выражены заново' },
 'cur.logMore':     { en:'{n} in total; the last {shown} are shown',
                      ru:'всего {n}; показаны последние {shown}' },
@@ -5049,8 +5046,8 @@ var STR = {
 'loan.openN':     { en:'not repaid: {n}',  ru:'не возвращено: {n}' },
 'loan.phSearch':  { en:'Name or note',     ru:'Имя или заметка' },
 'loan.rowPaid':   { en:'{paid} of {total} repaid', ru:'возвращено {paid} из {total}' },
-'loan.noRate':    { en:'No rate is set for {codes}, so this total is not counted. The rate is set in &laquo;Account &rarr; Currencies and rates&raquo;.',
-                    ru:'Для {codes} не задан курс — итог не посчитан. Курс задаётся в «Аккаунт → Валюты и курсы».' },
+'loan.noRate':     { en:'No rate is set for {codes}, so this total is not counted. The rate is set in {rates}.',
+                     ru:'Для {codes} не задан курс — итог не посчитан. Курс задаётся в {rates}.' },
 'loan.history':   { en:'Repaid loans',     ru:'Возвращённые долги' },
 'loan.histEmpty': { en:'No repaid loans yet. A loan moves here once it is repaid in full.',
                     ru:'Возвращённых долгов пока нет. Долг попадает сюда, когда его вернули полностью.' },
@@ -5108,8 +5105,8 @@ var STR = {
                     ru:'Вернули на {sum} больше суммы долга. Так бывает, когда возвраты внесли на двух устройствах до обмена, — проверьте, нет ли среди них лишнего.' },
 'loan.foreign':   { en:'Recorded in another currency: {n}. It is not counted in the balance &mdash; an amount in another currency says nothing about a loan in {cur}. Delete it and record it again in {cur}.',
                     ru:'Внесено в другой валюте: {n}. В остаток это не входит — сумма в другой валюте ничего не говорит о долге в {cur}. Удалите такой возврат и внесите заново в {cur}.' },
-'loan.noRateOne': { en:'No rate is set for {cur}, so this loan is not in the totals. The rate is set in &laquo;Account &rarr; Currencies and rates&raquo;.',
-                    ru:'Для {cur} не задан курс — этот долг не входит в итоги. Курс задаётся в «Аккаунт → Валюты и курсы».' },
+'loan.noRateOne':  { en:'No rate is set for {cur}, so this loan is not in the totals. The rate is set in {rates}.',
+                     ru:'Для {cur} не задан курс — этот долг не входит в итоги. Курс задаётся в {rates}.' },
 'loan.repayBtn':  { en:'Record a repayment', ru:'Внести возврат' },
 'loan.details':   { en:'Loan',             ru:'Долг' },
 'loan.amountLabel':    { en:'Amount of the loan', ru:'Сумма долга' },
@@ -5128,7 +5125,7 @@ var STR = {
 
 /* ---- возврат ---- */
 'loan.repayAmount':{ en:'Amount repaid',   ru:'Сколько вернули' },
-'loan.repayNotePh':{ en:'cash, transfer&hellip;', ru:'наличными, переводом…' },
+'loan.repayNotePh':{ en:'cash, transfer…', ru:'наличными, переводом…' },
 'loan.repayRecord':{ en:'Record repayment', ru:'Записать возврат' },
 'loan.repayCan':  { en:'Up to {sum} can be repaid.', ru:'Вернуть можно до {sum}.' },
 'loan.repayCloses':{ en:'This repayment closes the loan.', ru:'Этот возврат закроет долг.' },
@@ -5204,8 +5201,8 @@ var STR = {
 'ord.apxShort':   { en:'&asymp; converted at today’s rate', ru:'≈ пересчёт по сегодняшнему курсу' },
 'ord.apxNote':    { en:'&asymp; marks a figure converted from another currency at today’s rate in &laquo;Currencies and rates&raquo;. It is an approximation, not an exact sum, and it moves when the rate is changed. The amounts recorded in orders do not.',
                     ru:'≈ — цифра пересчитана из другой валюты по сегодняшнему курсу из «Валюты и курсы». Это приближение, а не точная сумма, и оно меняется вместе с курсом. Суммы, записанные в заказах, не меняются.' },
-'ord.noRate':     { en:'No rate is set for {codes}, so some totals are not counted. The rate is set in &laquo;Account &rarr; Currencies and rates&raquo;.',
-                    ru:'Для {codes} не задан курс — часть итогов не посчитана. Курс задаётся в «Аккаунт → Валюты и курсы».' },
+'ord.noRate':      { en:'No rate is set for {codes}, so some totals are not counted. The rate is set in {rates}.',
+                     ru:'Для {codes} не задан курс — часть итогов не посчитана. Курс задаётся в {rates}.' },
 'ord.activeT':    { en:'In progress',      ru:'В работе' },
 'ord.empty':      { en:'No orders in progress. Add one in &laquo;New order&raquo;.',
                     ru:'Заказов в работе нет. Добавьте его в «Новый заказ».' },
@@ -5539,8 +5536,8 @@ var STR = {
 'trash.gone':      { en:'That record is no longer here.', ru:'Этой записи уже нет.' },
 /* Хвост к КАЖДОМУ подтверждению удаления. Прежние тела не тронуты. */
 /* ++++++ TRASH KEEP ++++++ вторая фраза — слово владельца 14.10 */
-'dlg.trashNote': { en:'<p>The record goes to «More → Trash» and can be brought back from there. After {n} the trash removes it on its own if it can be restored then; if not, it stays in the trash and says why.</p>',
-                     ru:'<p>Запись отправится в «Ещё → Корзина» — оттуда её можно вернуть. Через {n} корзина уберёт её сама, если её можно будет вернуть; если нет, она останется в корзине и скажет почему.</p>' },
+'dlg.trashNote':   { en:'<p>The record goes to {trash} and can be brought back from there. After {n} the trash removes it on its own if it can be restored then; if not, it stays in the trash and says why.</p>',
+                     ru:'<p>Запись отправится в {trash} — оттуда её можно вернуть. Через {n} корзина уберёт её сама, если её можно будет вернуть; если нет, она останется в корзине и скажет почему.</p>' },
 'dlg.trashOk':     { en:'To the trash',           ru:'В корзину' },
 'dlg.foreverTitle':{ en:'Delete for good?',       ru:'Удалить навсегда?' },
 'dlg.foreverBody': { en:'<p>{n} will be gone for good — on this device and, after a sync, on the others.</p>',
@@ -5555,7 +5552,8 @@ var STR = {
                      ru:'<p>В корзине {n}. Все они будут удалены навсегда.</p>' },
 'dlg.clearOk':     { en:'Continue',               ru:'Продолжить' },
 'dlg.clearTitle2': { en:'Empty it for certain?',  ru:'Точно очистить корзину?' },
-'msg.trashed':     { en:'In the trash — «More → Trash»', ru:'Запись в корзине — «Ещё → Корзина»' },
+'msg.trashed':     { en:'In the trash — {trash}',
+                     ru:'Запись в корзине — {trash}' },
 'msg.restored':    { en:'Restored',               ru:'Восстановлено' },
 'msg.restoredWith':{ en:'Restored. Brought back with it: {what}',
                      ru:'Восстановлено. Вместе с записью вернулось: {what}' },
@@ -6594,7 +6592,7 @@ function secWarnHTML(sec){
     (shown.length
       ? tr('sec.warnShowing', {codes: shown.map(esc).join(tr('w.and'))})
       : tr('sec.warnNone')) +
-    tr('sec.warnOpen', {cur: esc(miss[0]), base: esc(state.settings.baseCurrency)});
+    tr('sec.warnOpen', {open: rateOpenText(miss[0])});
 }
 
 /* ---- entry currencies (A3: the Payments form offers USD and TJS only) ---- */
@@ -6922,7 +6920,7 @@ function dcRateLine(){
   var c = dcCur(), b = state.settings.baseCurrency;
   if (c === b) return tr('dc.noConv', {cur: esc(b)});
   var r = rateOf(c);
-  if (r === null) return tr('dc.noRate', {cur: esc(c), base: esc(b)});
+  if (r === null) return '';   /* ++++++ P1 WORDS ++++++ что делать — в полосе над шапкой; повтор не печатается */
   return tr('dc.rate', {base: esc(b), v: esc(trimNum(1 / r)), cur: esc(c)}) +
     (dcHasSnap() ? ' · ' + tr('dc.hist') : '');
 }
@@ -7251,8 +7249,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.33.2';
-var APP_BUILD = '2026-10-15T05:37:58.480Z';
+var APP_VERSION = '1.34.0';
+var APP_BUILD = '2026-10-16T13:14:27.442Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -14251,7 +14249,7 @@ function save(){
   }catch(e){
     lastSaveOk = false;
     setStorageBadge();
-    banner('save-fail','err', tr('save.fail', {err: esc(e && e.name ? e.name : 'error')}));
+    banner('save-fail','err', tr('save.fail', navVars({err: esc(e && e.name ? e.name : 'error')})));
     return false;
   }
 }
@@ -21420,7 +21418,7 @@ function warnNote(sec){
 }
 
 function noRateText(cur){
-  return tr('err.noRate', {cur: esc(cur), base: esc(state.settings.baseCurrency)});
+  return tr('err.noRate', {cur: esc(cur), open: rateOpenText(cur)});
 }
 
 /* ---- мелкие помощники отображения ---- */
@@ -24528,7 +24526,7 @@ function remSheetHTML(){
   return '<div class="rem">' + warnNote('summary') +
     '<label class="f"><span>' + tr('rem.pick') + '</span>' + remSelectHTML() + '</label>' +
     '<div class="remcap" id="remCap">' + tr('sum.inCur', {note: dcNote()}) +
-      '<br>' + dcRateLine() + '</div>' +
+      (dcRateLine() ? '<br>' + dcRateLine() : '') + '</div>' +
     '<div id="remCards">' + remCardsHTML(d) + '</div>' +
     '<div id="remBody">' + remBodyHTML(d) + '</div></div>';
 }
@@ -26913,7 +26911,7 @@ function deleteRet(id){
       /* ++++++ TRASH ++++++ проверка склада выше остаётся на месте: удаление
          возврата УМЕНЬШАЕТ остаток, и пометка в корзину делает ровно то же. */
       trashMark(state, 'returns', id, nowISO(), touch);
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
     });
 }
@@ -27282,7 +27280,7 @@ function txHintText(i){
        равенство — названа ЗАПИСАННАЯ цена за штуку, набранная стоит в скобках
        (слова владельца 12.10.2026, оба случая) */
     var ownL = keptL && cents !== null && l.cur === state.settings.baseCurrency;
-    if (cents === null) out.push(tr('conv.noRate', {cur: esc(l.cur)}));
+    if (cents === null) out.push(convNoRateText(l.cur));
     else if (ownL) out.push(tr('tx.keepOwn', {q: units(q), price: fmtMinor(cents), v: fmtMinor(m), cur: esc(l.cur),
       sum: money(q * cents, state.settings.baseCurrency) + ' ' + esc(state.settings.baseCurrency)}));
     else out.push(tr(keptL ? 'tx.keepStore' : 'tx.willStore', {q: units(q), v: fmtMinor(m), cur: esc(l.cur),
@@ -27608,7 +27606,7 @@ function payHintText(){
        хранимая другим числом, — тоже «как записано», а не «будет записано» */
     var yEd = f.editId ? payById(f.editId) : null, keeps = !!yEd && recEditKeeps(yEd, f.cur, m);
     var kept = keeps && (f.cur !== state.settings.baseCurrency || cents !== m);
-    if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
+    if (cents === null) out.push(convNoRateText(f.cur));
     else out.push(tr(kept ? 'pay.keepStore' : 'pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
     /* ++++++ ENTRY RELABEL ++++++ изменённая сумма посчитана курсом самой записи — подсказка
@@ -27926,7 +27924,7 @@ function expHintText(){
     /* ++++++ EXP EDIT RATE ++++++ не тронутая сумма, которая хранится не тем числом, что
        введена, — «как записано», а не «будет записано»: её не пересчитывают */
     var kept = !!x && recEditKeeps(x, f.cur, m) && (f.cur !== state.settings.baseCurrency || cents !== m);
-    if (cents === null) out.push(tr('conv.noRate', {cur: esc(f.cur)}));
+    if (cents === null) out.push(convNoRateText(f.cur));
     else out.push(tr(kept ? 'pay.keepStore' : 'pay.willStore', {v: fmtMinor(m), cur: esc(f.cur),
       sum: money(cents, state.settings.baseCurrency), base: esc(state.settings.baseCurrency)}));
   }
@@ -28337,7 +28335,7 @@ function deleteExp(id){
       if (!okd) return;
       trashMark(state, 'expenses', id, nowISO(), touch);
       if (ui.form.exp.editId === id) resetExpForm();
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
     });
 }
@@ -28387,7 +28385,7 @@ function loanConvLine(f){
 function loanNoRateNote(list){
   var codes = loanNoRateCodes(list);
   if (!codes.length) return '';
-  return '<div class="note warn">' + tr('loan.noRate', { codes: esc(codes.join(', ')) }) + '</div>';
+  return '<div class="note warn">' + tr('loan.noRate', navVars({ codes: esc(codes.join(', ')) })) + rateTickNote(codes) + '</div>';
 }
 /** Совпадает ли долг с запросом поиска — по имени и заметке. */
 function loanMatch(f){ return qMatch(ui.loanQuery, [f.loan.name, f.loan.note || '']); }
@@ -28525,7 +28523,7 @@ function formLoan(){
 function loanHintText(){
   var f = ui.form.loan, out = [];
   if (f.cur && f.cur !== state.settings.baseCurrency && rateOf(f.cur) === null)
-    out.push(tr('conv.noRate', { cur: esc(f.cur) }));
+    out.push(convNoRateText(f.cur));
   if (f.editId){
     var fig = loanFigures(state), x = own(fig.byId, f.editId) ? fig.byId[f.editId] : null;
     if (x && x.closed) out.push(tr('loan.editClosed'));
@@ -28617,7 +28615,7 @@ function viewLoanCard(){
   if (f.overMinor) h += '<div class="note warn">' + tr('loan.over', { sum: loanMoney(f.overMinor, l.cur) }) + '</div>';
   if (f.foreign.length) h += '<div class="note warn">' +
     tr('loan.foreign', { n: nq(f.foreign.length, 'repayment'), cur: esc(l.cur) }) + '</div>';
-  if (loanRate(l.cur, l.rateSnap) === null) h += '<div class="note warn">' + tr('loan.noRateOne', { cur: esc(l.cur) }) + '</div>';
+  if (loanRate(l.cur, l.rateSnap) === null) h += '<div class="note warn">' + tr('loan.noRateOne', navVars({ cur: esc(l.cur) })) + rateTickNote([l.cur]) + '</div>';
 
   if (!f.closed){
     h += ui.repayFor === l.id ? formRepay(f)
@@ -28742,7 +28740,7 @@ function deleteRepay(id){
   confirmBox(tr('dlg.repDelTitle'), body + trashNoteHTML(), tr('dlg.trashOk'), true).then(function(okd){
     if (!okd) return;
     trashMark(state, 'repayments', id, nowISO(), touch);
-    toast(tr('msg.trashed'), 'ok');
+    toast(tr('msg.trashed', navVars()), 'ok');
     commit();
   });
 }
@@ -28766,7 +28764,7 @@ function deleteLoan(id){
         nb = navPop();
         if (!nb) ui.detail = null;
       }
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
       if (nb) scrTo(nb.y);
     });
@@ -28903,7 +28901,7 @@ function viewOrders(){
   if (s.spentApprox || s.soldApprox || s.receivedApprox)
     h += '<div class="note">' + tr('ord.apxNote') + '</div>';
   if (s.noRate.length)
-    h += '<div class="note warn">' + tr('ord.noRate', { codes: esc(s.noRate.join(', ')) }) + '</div>';
+    h += '<div class="note warn">' + tr('ord.noRate', navVars({ codes: esc(s.noRate.join(', ')) })) + rateTickNote(s.noRate) + '</div>';
   var rows = '';
   fig.active.forEach(function(f){ rows += ordRowHTML(f); });
   return h + listCard(tr('ord.activeT'), rows ||
@@ -29024,7 +29022,7 @@ function formOrder(){
 function ordHintText(){
   var f = ui.form.order, out = [];
   [f.costCur, f.saleCur].forEach(function(c, i){
-    if (c && rateOf(c) === null && (i === 0 || c !== f.costCur)) out.push(tr('conv.noRate', { cur: esc(c) }));
+    if (c && rateOf(c) === null && (i === 0 || c !== f.costCur)) out.push(convNoRateText(c));
   });
   var c = parseMoneyToCents(f.cost), s = parseMoneyToCents(f.sale);
   if (c !== null && c > 0 && s !== null && s > 0 && !out.length){
@@ -29129,7 +29127,7 @@ function orderTrash(id){
       if (!okd) return;
       trashMark(state, 'orders', id, nowISO(), touch);
       if (ui.form.order.editId === id) resetOrderForm();
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
     });
 }
@@ -29504,7 +29502,7 @@ function batchLotSub(p, i){
  *  Прежние тела не переписаны ни в одном из шести мест: они говорят, ЧТО
  *  удаляется, а эта строка — куда оно денется. */
 function trashNoteHTML(){
-  return tr('dlg.trashNote', { n: nq(TRASH_DAYS, 'day') });
+  return tr('dlg.trashNote', navVars({ n: nq(TRASH_DAYS, 'day') }));
 }
 function trashRowTitle(col, r){
   var f;
@@ -30319,6 +30317,73 @@ function curName(c){ return has('cur.n.' + c) ? tr('cur.n.' + c) : c; }
  *  «Курсы от XYZ»: склонять незнакомый код не по чему. */
 function curOfName(c){ return has('cur.of.' + c) ? tr('cur.of.' + c) : c; }
 
+/* ++++++ P1 WORDS ++++++ П1 (Г31): пути и названия в текстах — из тех же ключей, что рисуют экран (слово владельца
+   16.10.2026). Текст и экран разойтись не могут: переименуют раздел или кнопку — текст скажет новое имя сам, на
+   любом из двух языков. Путь печатается в «…», звенья — через «→». */
+function navPath(keys){
+  return '«' + keys.map(function(k){ return tr(k); }).join(' → ') + '»';
+}
+/** Подстановки для словаря: пути {trash} {rates} {backupDl} {backupIn}, названия {baseCard} {picker} {ok}
+ *  {save} {make}; к ним — переданные в o. */
+function navVars(o){
+  var v = { trash: navPath(['tab.acct', 'trash.title']), rates: navPath(['tab.acct', 'acct.cur']),
+            backupDl: navPath(['tab.acct', 'acct.backup', 'bak.export']),
+            backupIn: navPath(['tab.acct', 'acct.backup', 'bak.import']),
+            baseCard: tr('hdr.base'), picker: tr('cp.title'), ok: tr('w.save'), save: tr('rp.save'),
+            make: tr('cp.makeBase') }, k;
+  if (o) for (k in o) if (own(o, k)) v[k] = o[k];
+  return v;
+}
+/** Якорь карточки курсов, когда {cur} уже отмечена: доллар, если он среди отмеченных или это он сам; иначе
+ *  основная — так же решает curAnchor(). */
+function rateAnchorFor(cur, on, base){
+  return (cur === 'USD' || on.indexOf('USD') > -1) ? 'USD' : base;
+}
+/** «в карточке «Курсы от …» впишите курс в поле «1 … = … …» (например, …) и нажмите «Сохранить курсы»» —
+ *  варианты а (якорь доллар), а′ ({cur} — сам доллар: поле его к основной), а″ (якорь основная). Карточка
+ *  и поле — теми же ключами, что их рисует ratePairCardHTML(); пробелы в подписи поля неразрывные — на 320 px
+ *  «1 USD = … EUR» не рвётся на две строки. */
+function rateHowText(cur, anchor, base, short){
+  var fieldCur = cur, ex;
+  if (anchor === 'USD'){
+    if (cur === 'USD') fieldCur = base;
+    ex = tr('rh.exUsd', { cur: esc(fieldCur) });
+  } else ex = tr('rh.exBase', { base: esc(base), cur: esc(cur) });
+  return tr(short ? 'rh.howShort' : 'rh.how', navVars({ card: tr('rp.titleOf', { of: esc(curOfName(anchor)) }),
+    field: tr('rp.field', { anchor: esc(anchor), cur: esc(fieldCur) }).replace(/ /g, '\u00a0'), ex: ex }));
+}
+/** Как задать курс {cur}: вариант б, если валюта не отмечена, иначе а / а′ / а″. Без точки в конце —
+ *  предложение продолжает словарь (dc.noRate, err.noRate, sec.warnOpen). */
+function rateOpenText(cur){
+  var s = state.settings, base = curNorm(s.baseCurrency), on = curActiveOf(s);
+  var ticked = on.indexOf(cur) > -1, how = rateHowText(cur, rateAnchorFor(cur, on, base), base, !ticked);
+  return tr(ticked ? 'rh.open' : 'rh.tick', navVars({ cur: esc(cur), how: how }));
+}
+/** Строка «нет курса» под суммой в пяти формах (выдача, оплата, расход, долг, заказ). */
+function convNoRateText(cur){
+  var s = state.settings, base = curNorm(s.baseCurrency), on = curActiveOf(s);
+  if (on.indexOf(cur) > -1) return tr('conv.noRate', navVars({ cur: esc(cur) }));
+  return tr('conv.noRateTick', navVars({ cur: esc(cur),
+    card: tr('rp.titleOf', { of: esc(curOfName(rateAnchorFor(cur, on, base))) }) }));
+}
+/** Добавка к «Долгам» и «Заказам»: о неотмеченных валютах среди codes; все отмечены — пусто. */
+function rateTickNote(codes){
+  var s = state.settings, base = curNorm(s.baseCurrency), on = curActiveOf(s);
+  var off = codes.filter(function(c){ return on.indexOf(c) < 0; });
+  if (!off.length) return '';
+  var anchor = off.indexOf('USD') > -1 ? 'USD' : rateAnchorFor('', on, base);
+  return ' ' + tr(off.length > 1 ? 'rh.tickNoteN' : 'rh.tickNote', navVars({ cur: esc(off.join(', ')),
+    card: tr('rp.titleOf', { of: esc(curOfName(anchor)) }) }));
+}
+/** Окно «Какие валюты показывать»: у {cur} нет курса — три шага; {prev} — нынешняя основная, карточка
+ *  курсов — по отметкам в окне (после шага 1 они сохранены). */
+function cpNoRateText(cur){
+  var prev = curNorm(state.settings.baseCurrency);
+  return tr('cp.baseNoRate', navVars({ cur: esc(cur), prev: esc(prev),
+    how: rateHowText(cur, rateAnchorFor(cur, curPickOn(), prev), prev) }));
+}
+/* ++++++ P1 WORDS ++++++ конец */
+
 /** Флажок. Своего знака не заводим: выбор в этом файле уже помечает `.av`
  *  с галочкой, а невыбранное — его нейтральный двойник `.av.sq` (окно
  *  выбора товаров у расходов). */
@@ -30440,7 +30505,7 @@ function curPickNoteHTML(){
   if (vbad.length) return '<div class="note err" style="margin-top:12px">' +
     tr('vat.errEmpty', { cur: esc(vbad.join(', ')), max: VAT_MAX }) + '</div>';
   if (why) return '<div class="note warn" style="margin-top:12px">' +
-    (why === 'empty' ? tr('cp.needOne') : tr('cp.baseNoRate', { cur: esc(d.base) })) +
+    (why === 'empty' ? tr('cp.needOne') : cpNoRateText(d.base)) +
     '</div>';
   if (d.setup || d.base === curNorm(state.settings.baseCurrency)) return '';
   return '<div class="note" style="margin-top:12px">' +
@@ -32803,19 +32868,31 @@ function deleteTx(id){
     if (many) handoutTrash(state, key, nowISO(), touch);
     else trashMark(state, 'transactions', id, nowISO(), touch);
     if (ui.form.tx.editId === key) resetTxForm();
-    toast(tr('msg.trashed'), 'ok');
+    toast(tr('msg.trashed', navVars()), 'ok');
     commit();
   });
 }
 function deletePay(id){
   var y = payById(id);
   if (!y) return;
-  confirmBox(tr('dlg.delPayTitle'), tr('dlg.delPayBody') + trashNoteHTML(),
+  /* ++++++ PAY DELETE WORDS ++++++ Г46: окно называет ЭТОТ платёж — человек, сумма и дата, как на листе, с которого
+     окно открыто (paySheet): записанное число в основной валюте и, если набрано иначе, «(введено …)».
+     Числа — из записи, без пересчёта; названия статусов — из словаря (решения владельца 16.10.2026).
+     Прежде текст окна звался без подстановок, и окно печатало их буквами (находка Г46).
+     Неразрывный пробел держит вместе число с кодом валюты и день с месяцем: на 320 px строка иначе
+     рвала дату («3» в конце строки, «октября» на следующей). Только здесь; baseOne() и fmtDateLong() прежние. */
+  var per = personById(y.personId);
+  var sum = baseOne(y.amountCents).replace(' ', '\u00a0') + ((hasEntry(y) || recKeptOwn(y, y.amountCents))
+    ? tr('entry.inline', { v: fmtMinor(y.entryMinor), cur: esc(y.entryCur) }) : '');
+  confirmBox(tr('dlg.delPayTitle'), tr('dlg.delPayBody', { person: esc(per ? per.name : '\u2014'),
+      amount: sum, date: fmtDateLong(y.date).replace(' ', '\u00a0'),
+      partial: tr('status.partial'), unpaid: tr('status.unpaid') }) +
+      trashNoteHTML(),
     tr('dlg.trashOk'), true).then(function(okd){
     if (!okd) return;
     trashMark(state, 'payments', id, nowISO(), touch);
     if (ui.form.pay.editId === id) resetPayForm();
-    toast(tr('msg.trashed'), 'ok');
+    toast(tr('msg.trashed', navVars()), 'ok');
     commit();
   });
 }
@@ -32859,7 +32936,7 @@ function deleteProduct(id){
          остаёмся в списке, как и было. */
       var nb = navPop();
       if (!nb) ui.detail = null;
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
       if (nb) scrTo(nb.y);
 
@@ -32892,7 +32969,7 @@ function deletePerson(id){
       if (ui.form.person.editId === id) resetPersonForm();
       var nb = navPop();                   /* ++++++ BACK STACK ++++++ как по «Назад» */
       if (!nb) ui.detail = null;
-      toast(tr('msg.trashed'), 'ok');
+      toast(tr('msg.trashed', navVars()), 'ok');
       commit();
       if (nb) scrTo(nb.y);
     });
@@ -36611,7 +36688,7 @@ function lockGoneWatch(){
 /* ++++++ APP LOCK END ++++++ */
 
 function boot(){
-  if (!storageUsable) banner('nostorage','warn', tr('boot.noStorage'));
+  if (!storageUsable) banner('nostorage','warn', tr('boot.noStorage', navVars()));
   var loaded = loadFromStorage();
   setLang(isLang(state.settings.lang) ? state.settings.lang : detectLang());
   state.settings.lang = getLang();
