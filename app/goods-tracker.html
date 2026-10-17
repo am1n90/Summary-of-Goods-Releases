@@ -7249,8 +7249,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.34.0';
-var APP_BUILD = '2026-10-16T13:14:27.442Z';
+var APP_VERSION = '1.34.1';
+var APP_BUILD = '2026-10-17T07:13:12.920Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -22154,6 +22154,50 @@ function cfMarkHTML(id){
   return cfHeldRec(id) ? '<span class="dmark cf">' + esc(tr('cf.mark')) + '</span>' : '';
 }
 
+/* ++++++ DISPUTE MARK ++++++ Г24: пометка «спорная» — и в окнах записей, и в формах правки (решения владельца
+   16.10.2026). Окно или форма ставят пометку в ГНЕЗДО — пустое место с id записи (data-cfslot). Спор пришёл
+   обменом или решён, пока окно или форма открыты, — cfMarksPaint() перерисовывает гнёзда НА МЕСТЕ, без render():
+   поле, в котором печатают, каретку не теряет (хрупкое место 12, правило 123). Зовётся первой строкой
+   syncDisputesSave(): через неё проходит каждое изменение списка споров, и к этому мигу syncStatus.conflicts уже
+   новый. Экран под окном (#app) получает пометку обычной перерисовкой пути обмена. Разметка самой пометки — по-
+   прежнему ОДНА, cfMarkHTML(). */
+function cfSlotHTML(id, solo){
+  return '<span data-cfslot="' + esc(id) + '"' + (solo ? ' data-cfk="s"' : '') + '>' + cfMarkHTML(id) + '</span>';
+}
+/** Форма правки: пометка ОТДЕЛЬНОЙ строкой над первым полем (слово владельца). Новая запись — ничего. */
+function cfFormMark(f){
+  var id = f && f.editId ? String(f.editId) : '';
+  return id ? '<div data-cfslot="' + esc(id) + '" data-cfk="f">' + cfFormInner(id) + '</div>' : '';
+}
+/** Содержимое гнезда формы: пометка с отступом под ней — или ничего (пустое гнездо высоты не имеет). */
+function cfFormInner(id){
+  var m = cfMarkHTML(id);
+  return m ? '<div style="margin-bottom:10px">' + m + '</div>' : '';
+}
+/** Перерисовать все гнёзда по нынешнему списку споров. Гнездо «s» само и есть подзаголовок окна (у окна оплаты из
+ *  «Истории» подзаголовка нет): без пометки подзаголовок не показывается вовсе, как до задачи. */
+function cfMarksPaint(){
+  var l, i, e, id, k, h;
+  if (typeof document === 'undefined' || !document.querySelectorAll) return;
+  l = document.querySelectorAll('[data-cfslot]');
+  for (i = 0; i < l.length; i++){
+    e = l[i]; id = e.getAttribute('data-cfslot'); k = e.getAttribute('data-cfk');
+    h = k === 'f' ? cfFormInner(id) : cfMarkHTML(id);
+    if (e.innerHTML !== h) e.innerHTML = h;
+    if (k === 's' && e.parentNode && e.parentNode.style) e.parentNode.style.display = h ? '' : 'none';
+  }
+}
+/** Окна Г24: день с месяцем и число с кодом валюты не рвутся на узком экране — неразрывный пробел, как в окне
+ *  удаления платежа (Г46, слово владельца при внедрении Г24). Только эти шесть окон; fmtDateLong(), money() и
+ *  остальные окна прежние (такие же места в других окнах записаны в аудит, не тронуты). */
+function nbJoin(h){
+  var m = [], i;
+  for (i = 1; i <= 12; i++) m.push(tr('monR.' + i).replace(/[.*+?^$(){}|[\]\\]/g, '\\$&'));
+  return String(h)
+    .replace(new RegExp('(\\d) (' + m.join('|') + ')', 'g'), '$1\u00a0$2')
+    .replace(/(\d) ([A-Z][A-Z0-9]{0,5})(?![A-Za-z0-9])/g, '$1\u00a0$2');
+}
+
 /** Строка списка, открывающая спорную запись: пометка — во ВТОРОЙ подписи,
  *  той, что переносится: в первой она на узком экране съедала дату.
  *  Одно место на все списки: товары, люди, выдачи, оплаты, расходы, долги,
@@ -25343,7 +25387,7 @@ function viewProductCard(){
 /* ---- форма товара: один инвойс, сколько угодно позиций ---- */
 function formProduct(){
   var f = ui.form.product, editing = !!f.editId;
-  var h = '<form id="fProduct" novalidate>' + errNote();
+  var h = '<form id="fProduct" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   if (editing) h += '<div class="note info">' + tr('prod.editingNote', {name: esc(f.lines[0].name)}) + '</div>';
   h += seg2('product.mode', f.mode, [['inv', tr('prod.modeInvoice')], ['man', tr('prod.modeManual')]]);
 
@@ -26465,7 +26509,7 @@ function personFieldsHTML(f, mk, twinId){
 }
 function formPerson(){
   var f = ui.form.person;
-  var h = '<form id="fPerson" novalidate>' + errNote();
+  var h = '<form id="fPerson" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += personFieldsHTML(f, function(k, o){ o.f = 'person.' + k; return input(o); }, 'personTwin');
   if (f.note){
     h += field({ label: tr('ppl.noteOld'), control: input({ f:'person.note', value:f.note }),
@@ -26760,9 +26804,13 @@ function ledOpen(arg){
   /* ++++++ MULTI FORM ++++++ у выдачи из нескольких товаров подзаголовок — сколько их */
   var title = (d.kind === 'take' || d.kind === 'hand') ? tr('led.d.take') :
     (d.kind === 'pay' ? tr('led.payment') : tr('led.ret'));
-  dialog({ title: title, sub: d.kind === 'pay' ? '' :
-             (d.kind === 'hand' ? nq(d.lines.length, 'product') : esc(d.name || '—')),
-           html: '<div class="rows">' + ledSheetHTML(d) + '</div>',
+  /* ++++++ DISPUTE MARK ++++++ Г24: выдача — ключом выдачи: спорной её делает любая строка. У оплаты подзаголовка нет —
+     гнездо само становится подзаголовком и прячется, пока спора нет (cfMarksPaint ниже) */
+  var cfId = s.slice(i + 1), cfT = s.slice(0, i) === 'take' ? txById(cfId) : null;
+  if (cfT) cfId = handoutKey(cfT);
+  dialog({ title: title, sub: d.kind === 'pay' ? cfSlotHTML(cfId, true) :
+             cfSlotHTML(cfId) + (d.kind === 'hand' ? nq(d.lines.length, 'product') : esc(d.name || '—')),
+           html: nbJoin('<div class="rows">' + ledSheetHTML(d) + '</div>'),
            closeX: true, buttons: [], cancelLabel: tr('w.close') })
     .then(function(){
       /* нас уже сменило другое окно — фокус ему, не нам */
@@ -26773,6 +26821,7 @@ function ledOpen(arg){
   /* dialog() добавляет узел синхронно — тот же приём, что у infoOpen() */
   mine = $('modalRoot').lastChild;
   ledNode = mine;
+  cfMarksPaint();   /* ++++++ DISPUTE MARK ++++++ Г24 */
 }
 
 /** Нажимаемость строки «Истории»: пустая кнопка-наложение и шеврон.
@@ -27232,7 +27281,7 @@ function formTx(){
   actProducts().forEach(function(p){
     pItems.push([p.id, tr('sel.available', {name: p.name, n: stockN(ps[p.id].remaining)})]);   /* ++++++ STOCK WORDS ++++++ */
   });
-  var h = '<form id="fTx" novalidate>' + errNote();
+  var h = '<form id="fTx" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += field({ label: tr('tx.toWhom'),
     control: select({ f:'tx.personId', value:f.personId, items:hItems,
       ph: tr('tx.pickPerson') }) });
@@ -27349,7 +27398,7 @@ function payListHTML(){
 function formPay(){
   /* ++++++ NAME TWINS ++++++ тот же список, что в форме выдачи. */
   var f = ui.form.pay, hItems = newBuyerItems();
-  var h = '<form id="fPay" novalidate>' + errNote();
+  var h = '<form id="fPay" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += field({ label: tr('pay.fromWhom'),
     control: select({ f:'pay.personId', value:f.personId, items:hItems,
       ph: tr('pay.pickPerson') }) });
@@ -27891,7 +27940,7 @@ function expListHTML(){
 function formExp(){
   var f = ui.form.exp, items = [];
   EXP_CATS.forEach(function(c){ items.push([c, tr('exp.cat.' + c)]); });
-  var h = '<form id="fExp" novalidate>' + errNote();
+  var h = '<form id="fExp" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += field({ label: tr('exp.cat'),
     control: select({ f:'exp.cat', value:f.cat, items:items, ph: tr('exp.pickCat') }) });
   h += field({ label: tr('exp.desc'),
@@ -28292,7 +28341,7 @@ function startExpEdit(id){
  *  целиком: в строке списка оно ужато многоточием, и это единственное
  *  место, где его видно полностью. */
 function expSheet(x){
-  var body = '<div class="body">' +
+  var body = '<div class="body">' + cfSlotHTML(x.id) +   /* ++++++ DISPUTE MARK ++++++ Г24 */
     /* ++++++ ENTRY RELABEL ++++++ Г27: первая строка — ЗАПИСАННОЕ число в основной валюте, как у
        листов оплаты и выдачи. Здесь стоял пересчёт в валюту «Сводки»: при
        «Сводке» не в основной на листе не было записанного числа, и строке
@@ -28315,7 +28364,7 @@ function expSheet(x){
      карточки не получает: делить нечего. */
   var split = expSplitCard(expItemsOf(x), x.amountCents, x.rateSnap,
                            x.entryCur, x.entryMinor);
-  dialog({ title: tr('tab.expenses'), html: body + split, cancelLabel: tr('w.close'),
+  dialog({ title: tr('tab.expenses'), html: nbJoin(body + split), cancelLabel: tr('w.close'),   /* ++++++ DISPUTE MARK ++++++ Г24 */
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
       if (k === 'edit') startExpEdit(x.id);
@@ -28501,7 +28550,7 @@ function loanFormCodes(){
 }
 function formLoan(){
   var f = ui.form.loan;
-  var h = '<form id="fLoan" novalidate>' + errNote();
+  var h = '<form id="fLoan" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += '<div class="f"><span>' + tr('loan.kindLabel') + '</span>' +
     seg2('loan.kind', f.kind, [['lent', tr('loan.kindLent')], ['borrowed', tr('loan.kindBorrowed')]]) + '</div>';
   h += '<label class="f"><span>' + tr('loan.nameLabel') + '</span>' +
@@ -28967,7 +29016,7 @@ function ordOpen(id){
     row({ k: tr('w.date'), v: fmtDateLong(o.date) }) +
     row({ k: tr('ord.stLabel'), v: ordStatusWord(o) +
       (o.status === 'active' ? '' : ' · ' + fmtDateLong(o.closedAt || o.date)) });
-  dialog({ title: esc(o.product), sub: esc(o.name), html: '<div class="rows">' + rows + '</div>',
+  dialog({ title: esc(o.product), sub: cfSlotHTML(o.id) + esc(o.name), html: nbJoin('<div class="rows">' + rows + '</div>'),   /* ++++++ DISPUTE MARK ++++++ Г24 */
            closeX: true, buttons: [], cancelLabel: tr('w.close') })
     .then(function(){
       if (ordNode !== mine) return;
@@ -29000,7 +29049,7 @@ function ordFormCodes(cur){
 }
 function formOrder(){
   var f = ui.form.order;
-  var h = '<form id="fOrder" novalidate>' + errNote();
+  var h = '<form id="fOrder" novalidate>' + errNote() + cfFormMark(f);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   h += '<label class="f"><span>' + tr('ord.nameLabel') + '</span>' +
     input({ f:'order.name', value:f.name, ph: tr('loan.namePh') }) +
     '<span id="ordAc">' + ordAcHTML(f.name) + '</span>' +
@@ -32584,8 +32633,9 @@ function txHandSheet(ls){
   });
   rows += row({ cls:'wrap', k: '<b>' + tr('w.total') + '</b>', v: '<b>' + handoutV(ls) + '</b>' });
   var rt1 = handoutOwnRateText(ls);          /* ++++++ ENTRY RELABEL ++++++ курс записи — одной строкой на выдачу */
-  var body = '<div class="body">' + esc(per ? per.name : '—') + ' · ' + fmtDateLong(t0.date) +
+  var body = '<div class="body">' + cfSlotHTML(handoutKey(t0)) + esc(per ? per.name : '—') + ' · ' + fmtDateLong(t0.date) +   /* ++++++ DISPUTE MARK ++++++ Г24 */
     ' · ' + nq(ls.length, 'product') + (rt1 ? '<br>' + rt1 : '') + '</div><div class="rows">' + rows + '</div>';
+  body = nbJoin(body);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   dialog({ title: tr('tab.transactions'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
@@ -32724,7 +32774,7 @@ function txSheet(t){
      итог; кнопки — на всю выдачу целиком */
   if (ls.length > 1){ txHandSheet(ls); return; }
   var p = productById(t.productId), per = personById(t.personId);
-  var body = '<div class="body">' +
+  var body = '<div class="body">' + cfSlotHTML(t.id) +   /* ++++++ DISPUTE MARK ++++++ Г24 */
     tr('tx.sheetLine', {person: esc(per ? per.name : '—'), q: units(t.qty),
       name: esc(p ? p.name : '—'), date: fmtDateLong(t.date),
       price: secOne('transactions', t.unitPriceCents)}) +
@@ -32735,6 +32785,7 @@ function txSheet(t){
     (txEntryUnitHTML(t) ? ' ' + txEntryUnitHTML(t) : '') +
     '<br><b>' + tr('w.total') + ': ' + secOne('transactions', t.qty * t.unitPriceCents) + '</b>' +
     (recOwnRateText(t, t.unitPriceCents) ? '<br>' + recOwnRateText(t, t.unitPriceCents) : '') + '</div>';
+  body = nbJoin(body);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   dialog({ title: tr('tab.transactions'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
@@ -32744,12 +32795,13 @@ function txSheet(t){
 }
 function paySheet(y){
   var per = personById(y.personId);
-  var body = '<div class="body">' +
+  var body = '<div class="body">' + cfSlotHTML(y.id) +   /* ++++++ DISPUTE MARK ++++++ Г24 */
     tr('pay.sheetLine', {person: esc(per ? per.name : '—'),
       sum: secOne('payments', y.amountCents), date: fmtDateLong(y.date)}) +
     (y.note ? ' · ' + esc(y.note) : '') +
     (hasEntry(y) ? '<br>' + entryInline(y) : '') +
     recOwnSheetHTML(y, y.amountCents) + '</div>';   /* ++++++ ENTRY RELABEL ++++++ */
+  body = nbJoin(body);   /* ++++++ DISPUTE MARK ++++++ Г24 */
   dialog({ title: tr('tab.payments'), html: body, cancelLabel: tr('w.close'),
     buttons: [{key:'edit', label: tr('w.edit')}, {key:'del', label: tr('w.delete'), variant:'danger'}] })
     .then(function(k){
@@ -34671,6 +34723,7 @@ function syncDisputesRead(){
   return Object.prototype.toString.call(d) === '[object Array]' ? d : [];
 }
 function syncDisputesSave(list){
+  cfMarksPaint();   /* ++++++ DISPUTE MARK ++++++ Г24: открытые окна и формы — сразу */
   var o = syncRead();
   if (!o) return;
   if (list && list.length) o.disputes = list;
