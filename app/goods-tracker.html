@@ -7249,8 +7249,8 @@ function dcStockCostFiltered(d){
 
 /* Заполняется скриптом выкладки. В рабочем дереве стоит 'dev' — это и
    значит «собрано руками, обновлений не ищем». */
-var APP_VERSION = '1.34.1';
-var APP_BUILD = '2026-10-17T07:13:12.920Z';
+var APP_VERSION = '1.34.2';
+var APP_BUILD = '2026-10-18T20:17:16.214Z';
 
 /* ==================================================================
  * ++++++ PRODUCT UPDATE ++++++   ОБНОВЛЕНИЕ БЕЗ ТОКЕНА И БЕЗ ВХОДА
@@ -9856,7 +9856,8 @@ function baseOf(doc){
    полям. Ядро конверта 4 берёт настройки набором и стёрло бы чужую правку;
    увидев 5, оно останавливает обмен и просит обновиться. Конверты 1–4 это
    ядро читает как прежде. */
-var SYNC_ENVELOPE = 6;   /* ++++++ TRASH KEEP ++++++ формат 6: ядро прежнего формата убирало бы корзину по-старому — оно останавливается и просит обновиться */
+/* ++++++ TRASH KEEP ++++++ конверт 6 (14.10.2026): ядро прежнего формата убирало бы корзину по-старому — оно останавливается и просит обновиться. */
+var SYNC_ENVELOPE = 7;   /* ++++++ TWO WRITE ++++++ формат 7: в нём метки записи — кто записал, номер, счёт увиденного; ядро формата 6 теряло бы правку при почти одновременной записи двух устройств (А20) — оно останавливается и просит обновиться */
 
 function envelopeOf(doc, tombs, meta){
   var e = {
@@ -10820,21 +10821,29 @@ function gdUpdate(access, id, text, cb){
  * отправленной — и заменял её нашим значением. Молча, на обоих.
  *
  * Закрыть окно нельзя. Но Диск ХРАНИТ затёртое: каждая запись — своя
- * ревизия, список ревизий идёт в порядке, в котором Диск записи применил, и
- * содержимое свежей ревизии скачивается (замер на настоящем Диске с двух
- * устройств, 05.10.2026: 117 проверок; две записи подряд — всегда две
- * ревизии). Отсюда правило: ЗАМЕТИТЬ ПОСЛЕ ЗАПИСИ И ДОПИСАТЬ.
+ * ревизия, и содержимое свежей ревизии скачивается (замер на настоящем
+ * Диске с двух устройств, 05.10.2026: 117 проверок; две записи подряд —
+ * всегда две ревизии). Отсюда правило: ЗАМЕТИТЬ ПОСЛЕ ЗАПИСИ И ДОПИСАТЬ.
+ * ++++++ TWO WRITE ++++++ Здесь стояло «список ревизий идёт в порядке, в котором Диск
+ * записи применил». Замер 17.10.2026 это опроверг (находка А20): список
+ * упорядочен по времени изменения — по моменту, когда запрос ДОШЁЛ до
+ * сервера, а не когда запись ЛЕГЛА. Пришедший первым может лечь последним,
+ * и затёртая им ревизия стоит в списке ПОСЛЕ его собственной.
  *
  *   1. До записи устройство запоминает окно: «читал ревизию такую-то, пишу
- *      столько-то байт с таким отпечатком». После ответа записи — её
- *      ревизию. Ответ не дошёл (запись при этом могла лечь) — своя ревизия
+ *      столько-то байт с таким отпечатком» — и какие ревизии на Диске уже
+ *      были (список до записи, А20). После ответа записи — её ревизию.
+ *      Ответ не дошёл (запись при этом могла лечь) — своя ревизия
  *      узнаётся потом: по размеру и отпечатку содержимого.
- *   2. Сразу после записи спрашивается список ревизий. Между прочитанной и
- *      своей пусто — сосед не писал, обмен кончен как прежде. Не пусто —
- *      это ревизии, которые наша запись затёрла.
+ *   2. Сразу после записи спрашивается список ревизий. Новых, кроме своей,
+ *      нет — сосед не писал, обмен кончен как прежде. Есть — это ревизии,
+ *      которые наша запись затёрла, где бы они ни стояли в списке (прежде
+ *      искалось только МЕЖДУ прочитанной и своей — А20). Ревизию, которую
+ *      голова файла уже учла (счёт увиденного), не чинят.
  *   3. Затёртая ревизия чинится НА ДИСКЕ: голова файла сливается с ней тем
  *      же движком слияния (mergeDocs), общий предок — ревизия, которую
- *      читали перед записью. Разные записи и разные поля сливаются сами;
+ *      читал её автор (А20; не известна — читанная перед своей записью).
+ *      Разные записи и разные поля сливаются сами;
  *      одно поле — на Диск уходит значение соседа, а база этой записи на
  *      устройстве возвращается к предку, и следующий оборот видит обычный
  *      спор с обоими значениями (правила А6). Документ устройства починка
@@ -10883,6 +10892,7 @@ function raceRead(){
     out.win = { from: r.win.from, to: typeof r.win.to === 'string' ? r.win.to : '',
                 size: typeof r.win.size === 'number' ? r.win.size : -1,
                 sum: typeof r.win.sum === 'string' ? r.win.sum : '' };
+  if (out.win){ out.win.known = twKnownOf(r.win.known); if (!out.win.known) delete out.win.known; }   /* ++++++ TWO WRITE ++++++ */
   if (Object.prototype.toString.call(r.revs) === '[object Array]'){
     for (i = 0; i < r.revs.length; i++){
       x = r.revs[i];
@@ -10899,7 +10909,9 @@ function raceSave(r){
   else delete o.race;
   syncWrite(o);
 }
-/** Список ревизий файла в порядке, в котором Диск их применил. */
+/** Список ревизий файла. Порядок — по времени изменения, то есть по приходу
+ *  запроса, а не по тому, когда запись легла (замер 17.10.2026, А20): голову
+ *  по нему не узнать, затёртое — тоже. ++++++ TWO WRITE ++++++ */
 function gdRevList(access, id, cb, page, acc, n){
   gdReq({ url: GD_API + '/files/' + encodeURIComponent(id) + '/revisions?pageSize=1000&fields=' +
                encodeURIComponent('nextPageToken,revisions(id,size)') +
@@ -11068,11 +11080,16 @@ function raceTransport(raw, cfg, st, withFile){
   /* Окно последней своей записи: что между прочитанным и записанным. */
   function settle(access, cb){
     var r = raceRead(), w = r.win;
-    if (!w){ cb(null); return; }
+    /* ++++++ TWO WRITE ++++++ долг без окна (починка идёт следующим обменом): список всё равно нужен —
+       окно починки обязано знать, что лежит на Диске, иначе затёртое самой починкой
+       искалось бы по месту в списке, а оно стоит не там (А20) */
+    if (!w && !r.revs.length){ cb(null); return; }
     gdRevList(access, st.id, function(err, list, status){
       var cands;
       if (err && !raceNoList(err, status)){ cb(err); return; }
       r = raceRead();
+      st.twIds = (err || !list) ? null : twIds(list);   /* ++++++ TWO WRITE ++++++ что лежит на Диске — для окна починки */
+      if (!w){ cb(null); return; }   /* ++++++ TWO WRITE ++++++ */
       if (err || !list || !list.length){ r.win = null; raceSave(r); cb(null); return; }   /* Диск списка не отдаёт */
       if (w.to){ settled(list, w.to, cb); return; }
       /* Ответ своей записи не дошёл. Легла ли она и которая из ревизий её —
@@ -11098,7 +11115,7 @@ function raceTransport(raw, cfg, st, withFile){
   function settled(list, to, cb){
     var r = raceRead(), w = r.win, b, i, j, seen;
     if (!w){ cb(null); return; }
-    b = raceBetween(list, w.from, to);
+    b = twBetween(list, w, to);   /* ++++++ TWO WRITE ++++++ */
     if (b.wait){ cb('server'); return; }
     r.win = null;
     if (b.lost){ raceSave(r); gone(); cb(null); return; }
@@ -11134,7 +11151,11 @@ function raceTransport(raw, cfg, st, withFile){
           if (raceGoneStatus(nStatus)){ dropFirst(true); repair(access, cb); return; }
           cb(nErr); return;
         }
-        revText(access, rev.anc, function(aErr, aText, aStatus){
+        /* ++++++ TWO WRITE ++++++ голова уже учла эту ревизию — чинить нечего: её правку знают, а правки,
+           сделанные поверх неё, откатились бы. Предок — что читал её АВТОР: с чужим предком
+           слияние приняло бы за её правку то, чего она просто не видела */
+        if (twHas(head.text, nText)){ dropFirst(false); repair(access, cb); return; }
+        revText(access, twAnc(nText, rev.anc), function(aErr, aText, aStatus){
           var S, N, A, fix, o, w;
           if (aErr){
             /* предка нет, а затёртая ревизия прочитана: слить нечем, но
@@ -11160,6 +11181,7 @@ function raceTransport(raw, cfg, st, withFile){
           fix = raceMerge(S, N, A);
           /* ++++++ ANSWER RACE ++++++ в затёртой ревизии нет ничего, чего нет в голове файла: долг снят без записи — иначе два устройства чинили бы друг друга одинаковыми файлами */
           if (!fix.conflicts.length && arIdle(fix.text, head.text)){ dropFirst(false); repair(access, cb); return; }
+          fix.text = twStampFix(fix.text, head.text, nText, head.version);   /* ++++++ TWO WRITE ++++++ */
           o = syncRead();
           if (fix.conflicts.length){
             /* Спор одного поля. Голова — не то, что это устройство знает
@@ -11174,6 +11196,7 @@ function raceTransport(raw, cfg, st, withFile){
           }
           w = raceRead();
           w.win = { from: raceId(head.version), to: '', size: raceBytes(fix.text), sum: recHash(fix.text) };
+          if (st.twIds) w.win.known = st.twIds;   /* ++++++ TWO WRITE ++++++ */
           raceSave(w);
           raw.put(fix.text, head.version, countsOf(fix.send), function(pErr, res){
             var q;
@@ -11234,6 +11257,7 @@ function raceTransport(raw, cfg, st, withFile){
       if (from){
         r = raceRead();
         r.win = { from: from, to: '', size: raceBytes(text), sum: recHash(text) };
+        if (st.known) r.win.known = st.known;   /* ++++++ TWO WRITE ++++++ */
         raceSave(r);
       }
       raw.put(text, version, counts, function(err, res){
@@ -11264,6 +11288,445 @@ function raceTransport(raw, cfg, st, withFile){
   };
 }
 /* ++++++ DRIVE RACE END ++++++ */
+
+/* ================================= ++++++ TWO WRITE ++++++ ==
+ * ДВЕ ПОЧТИ ОДНОВРЕМЕННЫЕ ЗАПИСИ НЕ ТЕРЯЮТ ПРАВКУ (находка А20, слово
+ * владельца 17.10.2026).
+ *
+ * Замер на настоящем Диске с двух устройств (17.10.2026, drive-twowrite/
+ * live-runs/): список ревизий упорядочен по времени изменения — по моменту,
+ * когда запрос ДОШЁЛ до сервера, а не когда запись ЛЕГЛА. Запрос, пришедший
+ * первым, может лечь последним и стать головой поверх записи, пришедшей
+ * вторым, — и в списке его ревизия стоит РАНЬШЕ затёртой. Починка А15 искала
+ * затёртое МЕЖДУ прочитанной ревизией и своей и такую не видела: правка соседа
+ * терялась молча — на обоих устройствах и на Диске. А её запоздалая починка,
+ * когда следующая запись накрывала окном старую ревизию, сливала ту с чужим
+ * предком и откатывала уже принятую правку.
+ *
+ * Две стороны, и каждая закрывает потерю сама:
+ *
+ *   1. ТОТ, КТО ЗАТЁР (транспорт Диска, А15). Перед записью устройство берёт
+ *      список ревизий — что на Диске уже было (у починки, идущей следующим
+ *      обменом, — список, взятый перед ней). Затёртые — ревизии, которых в
+ *      нём не было, кроме своей: всё, что легло между проверкой метки и
+ *      записью, где бы оно ни стояло в списке. Список, взятый раньше, чем
+ *      нужно, даёт лишнюю ревизию, а не пропущенную — и лишняя безопасна:
+ *      ревизию, которую голова файла уже учла (счёт увиденного) или которая
+ *      сама голова, не чинят. Предок для слияния — ревизия, которую читал ЕЁ
+ *      автор (based), а не эта.
+ *
+ *   2. ТОТ, ЧЬЮ ЗАПИСЬ ЗАТЁРЛИ (оборот обмена). Устройство не выбрасывает
+ *      свою правку, пока не увидит её в содержимом Диска. Каждая запись файла
+ *      несёт номер записавшего устройства (seq) и счёт увиденного (seen):
+ *      { устройство: номер последней его записи, учтённой в этом содержимом }.
+ *      Своя запись помнится — какие записи она поменяла и что лежало на Диске
+ *      до неё (sync-v1.tw), — пока голова файла её не учла или пока на Диске
+ *      не лежит своя версия. Голова, которая её не учла, значит: запись
+ *      затёрта. Тогда «прошлый обмен» этих записей — то, что лежало до неё, и
+ *      слияние видит свою правку правкой: отправляет её снова, а если сосед
+ *      правил то же поле — ставит спор (правила А6). Никогда не молча.
+ *
+ * Конверт — формат 7, поля by, seq, seen и based. Ядро формата 6 его не
+ * знает: увидев 7, оно останавливается и просит обновиться — иначе потеряло
+ * бы и метки, и правки (беда А20 в нём есть).
+ *
+ * Движок слияния не тронут; всё живёт в окружении оборота (twWrap) и в
+ * транспорте Диска.
+ * ============================================================== */
+var TW_FORMAT = 7;          /* с какого формата файла у записи есть счёт увиденного */
+
+/** Метки записи файла из разобранного конверта: формат, кто записал, номер
+ *  записи, счёт увиденного, какую ревизию читал. seen === null — счёта нет. */
+function twMarksOf(e){
+  var out = { format: 0, by: '', seq: 0, seen: null, based: '' }, k;
+  if (!e || typeof e !== 'object') return out;
+  if (typeof e.syncSchema === 'number') out.format = e.syncSchema;
+  if (typeof e.by === 'string') out.by = e.by;
+  if (typeof e.seq === 'number' && e.seq > 0 && Math.floor(e.seq) === e.seq) out.seq = e.seq;
+  if (typeof e.based === 'string') out.based = e.based;
+  if (e.seen && typeof e.seen === 'object' && Object.prototype.toString.call(e.seen) !== '[object Array]'){
+    out.seen = {};
+    for (k in e.seen) if (ownKey(e.seen, k) && typeof e.seen[k] === 'number' && e.seen[k] > 0) out.seen[k] = e.seen[k];
+  }
+  return out;
+}
+/** То же по тексту файла. Не разобрался — меток нет. */
+function twMarksText(text){
+  var e;
+  try{ e = JSON.parse(text); }catch(x){ return twMarksOf(null); }
+  return twMarksOf(e);
+}
+/** Сколько своих записей учла голова файла: номер последней. Голова
+ *  прежнего формата не учла ни одной: записей формата 7 она не видела. -1 —
+ *  «не знаю»: голова формата 7 без счёта (такую пишет только подставной
+ *  сервер наборов) — порядок обычный. */
+function twSeenMe(m, me){
+  if (!m || (m.format || 0) < TW_FORMAT) return 0;
+  if (!m.seen) return -1;
+  return ownKey(m.seen, me) ? m.seen[me] : 0;
+}
+/** Счёт увиденного: поэлементный максимум двух. */
+function twSeenJoin(a, b){
+  var out = {}, k;
+  for (k in (a || {})) if (ownKey(a, k)) out[k] = a[k];
+  for (k in (b || {})) if (ownKey(b, k) && (!ownKey(out, k) || b[k] > out[k])) out[k] = b[k];
+  return out;
+}
+/** Поставить метки на разобранный конверт. Счёт — только устройств из списка
+ *  писавших (их не больше SYNC_WRITERS_MAX) и записавшего: выпавшее из счёта
+ *  устройство своё отправит снова — это безопасная сторона. */
+function twStampEnv(e, by, seq, seen, based){
+  var ws = Object.prototype.toString.call(e.writers) === '[object Array]' ? e.writers : [], out = {}, k;
+  for (k in (seen || {})) if (ownKey(seen, k) && (k === by || ws.indexOf(k) >= 0)) out[k] = seen[k];
+  e.by = by; e.seq = seq; e.seen = out; e.based = based || '';
+  return e;
+}
+/** Номер следующей своей записи. Сохраняется ДО записи: запись, чей ответ не
+ *  дошёл, номер уже заняла. Не ниже того, что учла голова: счётчик, потерянный
+ *  с записью обмена устройства, догоняет сам. */
+function twSeqNext(seenMe){
+  var o = syncRead() || {}, n = (typeof o.twSeq === 'number' && o.twSeq > 0) ? o.twSeq : 0;
+  if (seenMe > n) n = seenMe;
+  n++;
+  o.twSeq = n;
+  syncWrite(o);
+  return n;
+}
+
+/* ---- память своих записей, которых голова ещё не учла ---------------- */
+
+/** { id: { c: коллекция, q: [[номер записи, отпечаток на Диске до неё,
+ *                             отпечаток своей версии ('' — удалена),
+ *                             своя правка: { поле: отпечаток значения, '-' — поля нет }
+ *                             (null — запись удалена)], …] } }
+ *  Ездящие настройки — запись SET_BASE: вместо отпечатков — сами настройки
+ *  (без истории курсов): их база — не отпечаток, а копия. */
+function twMem(){
+  var o = syncRead(), m = o && o.tw, out = {}, id, r, i, e, good, set;
+  if (!m || typeof m !== 'object') return out;
+  for (id in m) if (ownKey(m, id)){
+    r = m[id];
+    set = id === SET_BASE;
+    if (!r || typeof r.c !== 'string' || (set ? r.c !== SET_BASE : SYNC_COLS.indexOf(r.c) < 0) ||
+        Object.prototype.toString.call(r.q) !== '[object Array]' || !r.q.length) continue;
+    good = true;
+    for (i = 0; i < r.q.length; i++){
+      e = r.q[i];
+      if (Object.prototype.toString.call(e) !== '[object Array]' || typeof e[0] !== 'number' ||
+          (set ? !arIsMap(e[1]) || !arIsMap(e[2]) : typeof e[1] !== 'string' || !e[1] || typeof e[2] !== 'string') ||
+          (e[3] !== null && !arIsMap(e[3]))) good = false;
+    }
+    if (good) out[id] = r;
+  }
+  return out;
+}
+/** Ездящие настройки без истории курсов: история объединяется сама и базы не
+ *  спрашивает. */
+function twSetCore(s){
+  var out = setTravel(s);
+  delete out.rateLog;
+  return out;
+}
+function twMemSave(m){
+  var o = syncRead(), id, n = 0;
+  if (!o) return;
+  for (id in m) if (ownKey(m, id)) n++;
+  if (n) o.tw = m; else delete o.tw;
+  syncWrite(o);
+}
+/** Своя правка записи: поля, которыми своя версия отличается от лежавшей на
+ *  Диске, — отпечатки значений ('-' — поля нет). */
+function twDiff(L, R){
+  var d = {}, f = mergeFieldsDiff(L, R), i, k;
+  for (i = 0; i < f.length; i++){ k = f[i]; d[k] = (ownKey(L, k) && L[k] !== undefined) ? recHash(L[k]) : '-'; }
+  return d;
+}
+/** В этой записи видна своя правка: каждое её поле — с тем же значением. */
+function twShows(R, d){
+  var k;
+  if (!R) return false;
+  for (k in d) if (ownKey(d, k) && ((ownKey(R, k) && R[k] !== undefined) ? recHash(R[k]) : '-') !== d[k]) return false;
+  return true;
+}
+/** Что запись файла меняет на Диске: записи, у которых там лежит другая
+ *  версия, и записи, которых в ней не будет (удалены здесь). p — версия на
+ *  Диске до записи, h — своя ('' у удалённой), d — своя правка. Новые записи
+ *  не помнятся: на Диске их нет, затереть их нечем — слияние отправит их снова. */
+function twPlan(cols, rem, tombs, sets){
+  var out = [], i, j, col, list, idx, R, hR, hL, a, b;
+  if (!cols || !rem) return out;
+  /* настройки — тоже правка, и затереть её можно так же */
+  if (sets && rem.e){
+    a = twSetCore(sets); b = twSetCore(rem.e.settings);
+    if (canonJSON(a) !== canonJSON(b)) out.push({ id: SET_BASE, c: SET_BASE, h: a, p: b, d: twDiff(a, b) });
+  }
+  for (i = 0; i < SYNC_COLS.length; i++){
+    col = SYNC_COLS[i];
+    list = arIsList(rem.cols[col]) ? rem.cols[col] : [];
+    if (!list.length) continue;
+    idx = arIndex(cols[col]);
+    for (j = 0; j < list.length; j++){
+      R = list[j];
+      if (!R || typeof R.id !== 'string') continue;
+      hR = recHash(R);
+      if (ownKey(idx, R.id)){
+        hL = recHash(idx[R.id]);
+        if (hL !== hR) out.push({ id: R.id, c: col, h: hL, p: hR, d: twDiff(idx[R.id], R) });
+      } else if (tombs && ownKey(tombs, R.id)) out.push({ id: R.id, c: col, h: '', p: hR, d: null });
+    }
+  }
+  return out;
+}
+/** Запись легла: помнить, что она поменяла. Прежние записи той же записи
+ *  остаются: база берётся по самой ранней затёртой. */
+function twRemember(plan, n){
+  var m, i, x, r;
+  if (!plan || !plan.length) return;
+  m = twMem();
+  for (i = 0; i < plan.length; i++){
+    x = plan[i];
+    r = (ownKey(m, x.id) && m[x.id].c === x.c) ? m[x.id] : { c: x.c, q: [] };
+    r.q.push([n, x.p, x.h, x.d]);
+    m[x.id] = r;
+  }
+  twMemSave(m);
+}
+/** Голова файла прочитана: судьба каждой своей записи из памяти.
+ *    видна  — своя правка лежит в голове (каждое поле тем же значением, у
+ *             удалённой — записи нет): забыть; сосед, если правил, правил
+ *             поверх неё;
+ *    учтена — голова её учла по счёту увиденного, но правки в ней нет: сосед
+ *             видел её и правил то же поле (или починка А15 отдала поле соседу
+ *             и держит спор базой) — забыть, база не трогается;
+ *    затёрта — не видна и не учтена: голова писана, не видя её.
+ *  Здесь и там одно и то же (или записи нет ни там, ни здесь) — терять нечего.
+ *  Ничего не сохраняет: забывает только обмен, кончившийся удачей (twForget),
+ *  — прерванный обмен повторит то же решение. null — «не знаю». */
+function twSettle(rem, mk, me, local){
+  var m = twMem(), s = twSeenMe(mk, me), out, id, r, i, e, R, L, x, idxR = {}, idxL = {}, held = {}, dl, tombs;
+  if (s < 0 || !rem) return null;
+  out = { s: s, recs: {} };
+  /* спорные записи и записи под надгробием: их «прошлый обмен» держит спор (А6, А16), он не сдвигается */
+  dl = syncDisputesRead();
+  for (i = 0; i < dl.length; i++) if (dl[i] && typeof dl[i].id === 'string') held[dl[i].id] = 1;
+  tombs = (local && local.syncTombs) || {};
+  for (id in m) if (ownKey(m, id)){
+    r = m[id];
+    if (r.c === SET_BASE){
+      R = rem.e ? twSetCore(rem.e.settings) : null; L = twSetCore(local ? local.settings : null);
+      x = { c: r.c, gone: [], shown: [], drop: {}, hold: false };
+    } else {
+      if (!ownKey(idxR, r.c)){ idxR[r.c] = arIndex(rem.cols[r.c]); idxL[r.c] = arIndex(local ? local[r.c] : null); }
+      R = ownKey(idxR[r.c], id) ? idxR[r.c][id] : null;
+      L = ownKey(idxL[r.c], id) ? idxL[r.c][id] : null;
+      x = { c: r.c, gone: [], shown: [], drop: {}, hold: ownKey(held, id) || ownKey(tombs, id) || ownKey(rem.tombs, id) };
+    }
+    x.rh = R ? (r.c === SET_BASE ? canonJSON(R) : recHash(R)) : '';   /* что лежит в голове: с ним сверяется база */
+    for (i = 0; i < r.q.length; i++){
+      e = r.q[i];
+      if ((R && L && recHash(L) === recHash(R)) || (!R && !L) || (e[3] ? twShows(R, e[3]) : !R)){ x.shown.push(e); x.drop[e[0]] = 1; }
+      else if (e[0] <= s) x.drop[e[0]] = 1;
+      else x.gone.push(e);
+    }
+    out.recs[id] = x;
+  }
+  return out;
+}
+/** База для слияния. Затёртая своя запись: «прошлый обмен» — то, что лежало
+ *  на Диске до самой ранней такой записи; слияние видит свою правку правкой,
+ *  правку соседа поверх — правкой соседа, одно поле — спор. Кроме записи, чья
+ *  база уже равна тому, что лежит в голове: это то, что устройство знало, или
+ *  старая копия, которую оно само заменило (мера 3 А19). Правки соседа в
+ *  голове нет, своя правка и так уйдёт снова, а база «до своей записи»
+ *  сделала бы из старой копии правку соседа и поставила ложный спор. Видная в голове
+ *  своя запись, чей обмен прервался до конца (база осталась прежней):
+ *  «прошлый обмен» — своя версия; иначе правка соседа, сделанная поверх неё,
+ *  читалась бы спором. Кроме спорной записи и записи под надгробием: их базу
+ *  держит спор нарочно. Прежняя база не трогается: возвращается копия. */
+function twBase(base, sett){
+  var out = base, hit = false, id, x, i, cur;
+  if (!sett || !base || typeof base !== 'object') return base;
+  function put(col, rid, h){
+    var c, j;
+    if (!hit){ out = {}; for (c in base) if (ownKey(base, c)) out[c] = base[c]; hit = true; }
+    if (out[col] === base[col]){
+      out[col] = {};
+      if (base[col] && typeof base[col] === 'object') for (j in base[col]) if (ownKey(base[col], j)) out[col][j] = base[col][j];
+    }
+    if (h) out[col][rid] = h; else delete out[col][rid];
+  }
+  /* настройки: база — копия ездящих настроек; история курсов в ней — прежняя */
+  function putSet(obj){
+    var c, k, o2 = {};
+    if (!hit){ out = {}; for (c in base) if (ownKey(base, c)) out[c] = base[c]; hit = true; }
+    for (k in obj) if (ownKey(obj, k)) o2[k] = JSON.parse(JSON.stringify(obj[k]));
+    if (base[SET_BASE] && typeof base[SET_BASE] === 'object' && base[SET_BASE].rateLog !== undefined) o2.rateLog = base[SET_BASE].rateLog;
+    out[SET_BASE] = o2;
+  }
+  for (id in sett.recs) if (ownKey(sett.recs, id)){
+    x = sett.recs[id];
+    if (x.c === SET_BASE){
+      if (x.gone.length){ if (!(x.rh && arIsMap(base[SET_BASE]) && canonJSON(twSetCore(base[SET_BASE])) === x.rh)) putSet(x.gone[0][1]); continue; }
+      if (!x.shown.length || !arIsMap(base[SET_BASE])) continue;
+      cur = canonJSON(twSetCore(base[SET_BASE]));
+      for (i = 0; i < x.shown.length; i++) if (cur === canonJSON(x.shown[i][1])){ putSet(x.shown[x.shown.length - 1][2]); break; }
+      continue;
+    }
+    cur = (base[x.c] && typeof base[x.c] === 'object' && ownKey(base[x.c], id)) ? base[x.c][id] : null;
+    if (x.gone.length){ if (!(x.rh && cur === x.rh)) put(x.c, id, x.gone[0][1]); continue; }
+    if (!x.shown.length || x.hold) continue;
+    for (i = 0; i < x.shown.length; i++) if (cur === x.shown[i][1]){ put(x.c, id, x.shown[x.shown.length - 1][2]); break; }
+  }
+  return out;
+}
+/** Обмен кончился удачей: забыть то, что было видно или учтено в прочитанной
+ *  голове. Записи этого обмена (их номеров в решении нет) остаются. */
+function twForget(sett){
+  var m, id, r, q, i, ch = false, x;
+  if (!sett) return;
+  m = twMem();
+  for (id in m) if (ownKey(m, id)){
+    x = ownKey(sett.recs, id) ? sett.recs[id] : null;
+    if (!x) continue;
+    r = m[id]; q = [];
+    for (i = 0; i < r.q.length; i++){
+      if (ownKey(x.drop, r.q[i][0])){ ch = true; continue; }
+      q.push(r.q[i]);
+    }
+    r.q = q;
+    if (!q.length) delete m[id];
+  }
+  if (ch) twMemSave(m);
+}
+
+/* ---- окружение оборота ---------------------------------------------- */
+
+/** Обернуть окружение оборота: голова прочитана — счёт сверен; база — с
+ *  неучтённым своим; запись — с метками, и что она поменяла, помнится; обмен
+ *  удался — учтённое забыто. Зовётся один раз на обмен, из syncCycle(); повтор
+ *  оборота идёт через то же окружение. Возвращает ответ как есть. */
+function twWrap(env, cb){
+  var st = { text: '', rem: null, mk: null, sett: null };
+  var tGet = env.tGet, tPut = env.tPut, baseHashes = env.baseHashes, remember = env.remember;
+  env.twOn = true;
+
+  env.tGet = function(done){
+    st.text = ''; st.rem = null; st.mk = null; st.sett = null;
+    tGet(function(err, res){
+      if (!err && res && !res.empty && typeof res.text === 'string'){
+        st.text = res.text;
+        st.rem = arOpen(res.text);
+        st.mk = twMarksOf(st.rem ? st.rem.e : null);
+        st.sett = twSettle(st.rem, st.mk, syncDevId(), env.localDoc());
+      }
+      done(err, res);
+    });
+  };
+  env.baseHashes = function(){ return twBase(baseHashes(), st.sett); };
+  env.tPut = function(text, version, counts, done){
+    var e, me, n, plan, s, mine = {};
+    /* нечего отправить — меток не ставим и номер не тратим: файл не пишется (А19) */
+    if (st.text && version && arIdle(text, st.text)){ tPut(text, version, counts, done); return; }
+    try{ e = JSON.parse(text); }catch(x){ tPut(text, version, counts, done); return; }
+    me = syncDevId();
+    s = st.mk ? twSeenMe(st.mk, me) : 0;
+    n = twSeqNext(s > 0 ? s : 0);
+    mine[me] = n;
+    plan = twPlan(e.collections || {}, st.rem, e.tombstones, e.settings);
+    twStampEnv(e, me, n, twSeenJoin(st.mk && st.mk.format >= TW_FORMAT ? st.mk.seen : null, mine), version || '');
+    tPut(envelopeText(e), version, counts, function(pErr, pRes){
+      /* помнится и запись, чей обмен оборвался ПОСЛЕ отправки: она могла лечь (ответ не дошёл,
+         не получен список ревизий). Не легла — голова её не учтёт и правку отправит следующий
+         обмен, как отправил бы и без памяти. «Метка другая» — до записи не дошло: помнить нечего */
+      if (pErr !== 'conflict' && !(pRes && pRes.version === version)) twRemember(plan, n);
+      done(pErr, pRes);
+    });
+  };
+  env.remember = function(o){
+    remember(o);
+    twForget(st.sett);
+  };
+  return cb;
+}
+
+/* ---- транспорт Диска: сторона затиравшего ---------------------------- */
+
+/** Номера ревизий из списка Диска. */
+function twIds(list){
+  var out = [], i;
+  for (i = 0; i < (list || []).length; i++) if (list[i] && typeof list[i].id === 'string') out.push(list[i].id);
+  return out;
+}
+/** Что было на Диске до записи — из записи обмена устройства; кривое — «не знаю». */
+function twKnownOf(v){
+  var out = [], i;
+  if (Object.prototype.toString.call(v) !== '[object Array]') return null;
+  for (i = 0; i < v.length; i++) if (typeof v[i] === 'string' && v[i]) out.push(v[i]);
+  return out;
+}
+/** Окно своей записи по списку ревизий. known — что было на Диске до записи.
+ *  Затёртые — все ревизии, которых там не было, кроме своей: место в списке
+ *  ни при чём (список — по приходу запроса). Окно без known (его записала
+ *  прежняя версия) — по-старому, по месту. */
+function twBetween(list, w, to){
+  var known = {}, ids = [], mine = false, i;
+  if (!w || !w.known) return raceBetween(list, w ? w.from : '', to);
+  for (i = 0; i < w.known.length; i++) known[w.known[i]] = 1;
+  for (i = 0; i < list.length; i++){
+    if (list[i].id === to){ mine = true; continue; }
+    if (!ownKey(known, list[i].id)) ids.push(list[i].id);
+  }
+  if (!mine) return { wait: true, ids: [] };
+  return { ids: ids };
+}
+/** Голова файла уже учла эту ревизию: в её счёте увиденного номер записи
+ *  ревизии есть. Починка такой ревизии вернула бы то, что голова уже знает, —
+ *  или откатила бы то, что правили после. */
+function twHas(headText, revText){
+  var s = twMarksText(headText), n = twMarksText(revText);
+  return !!(n.by && n.seq > 0 && s.seen && ownKey(s.seen, n.by) && s.seen[n.by] >= n.seq);
+}
+/** Предок для починки: ревизия, которую читал АВТОР затёртой; не известна —
+ *  прочитанная этим устройством (как прежде). */
+function twAnc(revText, anc){
+  var id = raceId(twMarksText(revText).based);
+  return id || anc;
+}
+/** Метки починки: счёт — того, что учли голова и затёртая; номера у починки
+ *  нет (её правки — чужие, их помнят их авторы). */
+function twStampFix(fixText, headText, revText, based){
+  var e, s = twMarksText(headText), n = twMarksText(revText);
+  try{ e = JSON.parse(fixText); }catch(x){ return fixText; }
+  twStampEnv(e, syncDevId(), 0, twSeenJoin(s.format >= TW_FORMAT ? s.seen : null, n.format >= TW_FORMAT ? n.seen : null), based);
+  return envelopeText(e);
+}
+/** Транспорт Диска поверх проверки окна: до записи — что уже лежит на Диске
+ *  (список ревизий), чтобы окно знало, что из списка новое. Диск без списка
+ *  ревизий — как прежде. */
+function twTransport(inner, cfg, st, withFile){
+  return {
+    kind: inner.kind,
+    fileId: inner.fileId,
+    get: inner.get,
+    put: function(text, version, counts, cb){
+      st.known = null;
+      if (!raceId(version)){ inner.put(text, version, counts, cb); return; }
+      cfg.auth(function(aErr, access){
+        if (aErr){ cb(aErr); return; }
+        withFile(access, function(fErr, id){
+          if (fErr){ cb(fErr); return; }
+          if (!id){ inner.put(text, version, counts, cb); return; }
+          gdRevList(access, id, function(lErr, list, status){
+            if (lErr && !raceNoList(lErr, status)){ cb(lErr); return; }
+            st.known = (lErr || !list) ? null : twIds(list);
+            inner.put(text, version, counts, cb);
+          });
+        });
+      });
+    }
+  };
+}
+/* ++++++ TWO WRITE END ++++++ */
 
 /* Лицо в лицо с ghTransport(): те же две функции, те же коды ошибок,
  * та же метка версии. Цикл обмена не различает их вовсе.
@@ -11372,7 +11835,7 @@ function gdTransport(cfg){
       });
     }
   };
-  return raceTransport(raw, cfg, st, withFile);   /* ++++++ DRIVE RACE ++++++ */
+  return twTransport(raceTransport(raw, cfg, st, withFile), cfg, st, withFile);   /* ++++++ DRIVE RACE ++++++ ++++++ TWO WRITE ++++++ */
 }
 
 /* ==================================================================
@@ -13406,6 +13869,7 @@ function syncBaseCheck(localDoc, remoteDoc, merged, localAt, remoteAt){
 function syncCycle(env, cb, attempt){
   attempt = attempt || 1;
   if (!env.arOn) cb = arWrap(env, cb);   /* ++++++ ANSWER RACE ++++++ холостой обмен не пишет, взятое с Диска — взято, затёртая копия — не правка соседа, ответ на спор не затирается (А19) */
+  if (!env.twOn) cb = twWrap(env, cb);   /* ++++++ TWO WRITE ++++++ своя правка не выбрасывается, пока голова файла её не учла (А20) */
   var cfg = env.cfg();
   if (!cfg){ cb({ err: 'off' }); return; }
 
